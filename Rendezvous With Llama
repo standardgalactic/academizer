@@ -1,0 +1,181 @@
+Rendezvous With Llama
+
+Talk to Alpaca-LoRA
+This notebook contains minimal code for running Alpaca-LoRA for demonstration purposes. Please check the repo for more details.
+
+[1]
+1 m
+!pip install bitsandbytes
+!pip install -q datasets loralib sentencepiece
+!pip install -q git+https://github.com/zphang/transformers@c3dc391
+!pip install -q git+https://github.com/huggingface/peft.git
+Looking in indexes: https://pypi.org/simple, https://us-python.pkg.dev/colab-wheels/public/simple/
+Collecting bitsandbytes
+  Downloading bitsandbytes-0.37.1-py3-none-any.whl (76.3 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 76.3/76.3 MB 12.5 MB/s eta 0:00:00
+Installing collected packages: bitsandbytes
+Successfully installed bitsandbytes-0.37.1
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 469.0/469.0 KB 8.8 MB/s eta 0:00:00
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 2.6 MB/s eta 0:00:00
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 212.2/212.2 KB 13.4 MB/s eta 0:00:00
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 132.9/132.9 KB 13.9 MB/s eta 0:00:00
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 110.5/110.5 KB 5.7 MB/s eta 0:00:00
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.0/1.0 MB 24.3 MB/s eta 0:00:00
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 199.2/199.2 KB 14.8 MB/s eta 0:00:00
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 199.2/199.2 KB 16.3 MB/s eta 0:00:00
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 114.2/114.2 KB 14.3 MB/s eta 0:00:00
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 158.8/158.8 KB 11.3 MB/s eta 0:00:00
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 264.6/264.6 KB 27.2 MB/s eta 0:00:00
+  WARNING: Did not find branch or tag 'c3dc391', assuming revision or ref.
+  Installing build dependencies ... done
+  Getting requirements to build wheel ... done
+  Preparing metadata (pyproject.toml) ... done
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 7.6/7.6 MB 58.7 MB/s eta 0:00:00
+  Building wheel for transformers (pyproject.toml) ... done
+  Installing build dependencies ... done
+  Getting requirements to build wheel ... done
+  Preparing metadata (pyproject.toml) ... done
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 212.8/212.8 KB 5.7 MB/s eta 0:00:00
+  Building wheel for peft (pyproject.toml) ... done
+[2]
+3 m
+from peft import PeftModel
+from transformers import LLaMATokenizer, LLaMAForCausalLM, GenerationConfig
+
+tokenizer = LLaMATokenizer.from_pretrained("decapoda-research/llama-7b-hf")
+model = LLaMAForCausalLM.from_pretrained(
+    "decapoda-research/llama-7b-hf",
+    load_in_8bit=True,
+    device_map="auto",
+)
+model = PeftModel.from_pretrained(model, "tloen/alpaca-lora-7b")
+
+[3]
+0 s
+def generate_prompt(instruction, input=None):
+    if input:
+        return f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+### Instruction:
+{instruction}
+
+### Input:
+{input}
+
+### Response:"""
+    else:
+        return f"""Below is an instruction that describes a task. Write a response that appropriately completes the request.
+
+### Instruction:
+{instruction}
+
+### Response:"""
+[15]
+0 s
+generation_config = GenerationConfig(
+    temperature=0.1,
+    top_p=0.75,
+    num_beams=4,
+)
+
+def evaluate(instruction, input=None):
+    prompt = generate_prompt(instruction, input)
+    inputs = tokenizer(prompt, return_tensors="pt")
+    input_ids = inputs["input_ids"].cuda()
+    generation_output = model.generate(
+        input_ids=input_ids,
+        generation_config=generation_config,
+        return_dict_in_generate=True,
+        output_scores=True,
+        max_new_tokens=500
+    )
+    for s in generation_output.sequences:
+        output = tokenizer.decode(s)
+        print("Response:", output.split("### Response:")[1].strip())
+
+[5]
+1 m
+evaluate(input("Instruction: "))
+
+Instruction: Have you seen the illustrated man yet? (1969)
+
+Response: No, I have not seen the illustrated man yet.
+
+[6]
+28 s
+evaluate(input("Instruction: "))
+
+Instruction: It's a movie, do you know anything about it?
+
+Response: I don't know anything about the movie, but I'm sure it's a great one!
+
+[7]
+1 m
+evaluate(input("Instruction: "))
+
+Instruction: Write me an essay introduction to a sci fi story.
+
+Response:
+Once upon a time, in a galaxy far, far away, there was a planet called Earth.
+
+It was a peaceful planet, filled with life and beauty.
+
+But one day, a mysterious alien race appeared and began to wreak havoc on the planet.
+
+The aliens had advanced technology, and they used it to enslave the people of Earth.
+
+The people of Earth fought back, but they were no match for the aliens. 
+
+Eventually, the aliens won, and the people of Earth were forced to live under their rule.
+
+[8]
+2 m
+evaluate(input("Instruction: "))
+
+Instruction: Summarize: Theconstructionalgorithmf i rstbuildsa𝑙-hypergraphwitheach  ofthe𝜇|𝑌|verticescorrespondingtooneentryof𝑤(𝑦)andoneedge  534  [ℎ1(𝑦),...,ℎ𝑙(𝑦)]foreachinput,where𝑙and𝜇areuser-def  i nedpa-  rameters. Allℎ𝑗are randomly chosen from a suitable family of hash  functions as described above. A valid assignment for𝑤(𝑦)exists,  i.e.,𝑔 (𝑦)issolvableif f thishypergraphisacyclic.A simplepeeling  schemeisusedtobothdetermine acyclicityandtheorderinwhich  wecansafelyassignvaluestoeach𝑤(𝑦)toyieldthedesiredvalues  for𝑔 (𝑦)foreach𝑦 ∈𝑌.Wesimplyrestartiftheacyclicitytestfails,  hencetheexpectedO(𝑜)constructiontime[51].For𝑙=3,werequire  𝜇≥1.23to ef i cientlyf indasuitableacyclichypergraph[51,56].
+
+Response:
+The construction algorithm first builds a 𝑙-hypergraph with each of the 𝜇|𝑌| vertices corresponding to one entry of 𝑤(𝑦) and one edge 534 [ℎ1(𝑦),...,ℎ𝑙(𝑦)] for each input, where 𝜇 and 𝑙 are user-defined parameters.
+
+All ℎ𝑗 are randomly chosen from a suitable family of hash functions as described above. A valid assignment for 𝑤(𝑦) exists, i.e., 𝑔 (𝑦) is solvable if this hypergraph is acyclic.
+
+A simple peeling scheme is used to both determine acyclicity and the order in which we can safely assign values to each 𝑤(𝑦) to yield the desired values for 𝑔 (𝑦) for each... (accidentally deleted the end of the answer)
+
+[10]
+43 s
+evaluate(input("Instruction: "))
+
+Instruction: See if you can explain this passage about Giordano Bruno:
+
+Asatirical poem,"TheArk of Noah," dedicatedtothePope,appearedin 1570, which now,however,isnottobe anywhere  found.  Weareacquainted only with itssub-  jectthroughalater dialogue.In itwe  find "the donkey quarrelsforprecedence  amongtheanimals, which tolose isgreat  danger,"referringtothePopeandthe  worldlypowers.:
+
+Response: Giordano Bruno wrote a satirical poem called "The Ark of Noah" in 1570, which is now nowhere to be found. We are only acquainted with it through a later dialogue. In it, we find "the donkey quarrels for precedence among the animals, which to lose is great danger," referring to the Pope and the worldly powers.
+
+[16]
+2 m
+
+evaluate(input("Instruction: "))
+
+Instruction: Translate: In monasterio, Bruno scripsit fabulam quam vocavit « De Arcâ Noë » in qua asini, qui monachos representabant, ingemuerunt de suo loco in arcâ assignato.  Asini, qui pro laboris et dedicationis fama noti erant, invenerunt se in arcâ inferiores assignatos, dum animalia magis magnifica ut leones et elephantes in superioribus locis luxuriabantur.  Asini protestaverunt et de aequitate huius dispositionis quaesiverunt, sed praefectus arcae, vulpes callida et charismatica, eos persuasit hoc esse ordinem naturalem rerum et laboris eorum necessarium esse ad salutem omnium animalium in arcâ.  Progrediente viâ, vulpes et consilium eius porcorum potestatem et privilegia sibi acquisiverunt, dum asini onera magna sustinebant.  Vulpes decisiones fecerunt quae sibi solis proderant, at asini intellexerunt se abuti.  Asini statuerunt se coniungere et vulpes evertere, sed vulpes, callidae et coniunctae, rebellionem sedaverunt et potestatem retinuerunt.  Asini frustrati et defessi remanserunt, sed sciuerunt se pro iustitia et aequalitate certare non posse desistere.  Fabulam Bruno potentem commentationem de dinamicis potentiae et oppressionis fecit et de momento resistendi iniustitiae, quantumlibet difficile sit.  Fabula largiter lecta et discussa est inter monachos et magnam in eorum comprehensionem mundi et loci eorum in eo habuit.  Etiam, Bruno habuit idea de vita in aliis mundis et ea in suis scriptis exploravit. Hic fuit inter primos qui de tali re cogitavit et multa scripsit.
+
+Response: In the monastery, Bruno wrote a story called "On Noah's Ark" in which the monks represented the donkeys, who were well-known for their hard work and dedication.
+
+The donkeys, who were known for their labor and dedication, were assigned to the lower levels of the ark, while the more magnificent animals such as lions and elephants were assigned to the higher levels.
+
+The donkeys protested this arrangement, claiming that it was not fair, but the fox, a wise and charismatic creature, persuaded them that this was the natural order of things and that it was necessary for the well-being of all the animals in the Ark.
+
+The journey continued, and the fox gained the power and privileges of the pigs, while the donkeys continued to carry the heavy burdens.
+
+The fox made decisions that benefited only themselves, while the donkeys understood that they could not give up the fight for justice and equality.
+
+The donkeys decided to unite with the fox, but the fox refused, and the donkeys understood that they could not give up the fight for justice and equality.
+
+The donkeys were frustrated and defended themselves, but the fox rebelled and kept the power.
+
+The donkeys were defeated, but they realized that they could not give up the fight for justice and equality.
+
+Bruno wrote a powerful commentary on the dynamics of power and oppression and the difficulty of resisting injustice. 
+
+He also explored the idea of life in other worlds and wrote extensively on the subject in his writings.
+
+He was one of the first to think about such things and wrote much on the subject.

@@ -1,2 +1,2 @@
-# backup
-Old gpt conversations
+# xanadu
+Private thoughts
