@@ -9,6 +9,6 @@ Denotation
 Engine with
 Multiplexor
 Indexing of
-Zip-files and
-Executables in a github
+Zero-shot learning
+Examples in a github
 Repository using wikipedia
