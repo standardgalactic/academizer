@@ -1,6 +1,4 @@
-# Lithophone
-
-ACADEMIZER
+# ACADEMIZER
 
 Algorithmic
 Complexity reduction
