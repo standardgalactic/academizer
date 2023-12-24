@@ -14,7 +14,7 @@ fi
 base_directory="$PWD"
 
 # List of directories to process
-directories=("abraxas" "alphabet" "audiobooks" "Centerfuge" "eclectric-oil" "example" "Haplopraxis/IFM" "keen-unicoder" "logical-connectives" "mindgame" "mirror" "negentropy" "phonograph" "psychohistory" "quantum-soup" "standardgalactic.github.io" "technobabble" "unfinished-thoughts" "xanadu" "zygomindfulness")
+directories=("abraxas" "alphabet" "audiobooks" "autodoxx" "Centerfuge" "eclectric-oil" "example" "Haplopraxis/IFM" "keen-unicoder" "library" "logical-connectives" "mindgame" "mirror" "negentropy" "phonograph" "psychohistory" "quantum-soup" "standardgalactic.github.io" "substrate" "technobabble" "unfinished-thoughts" "xanadu" "zygomindfulness")
 
 # Loop through each specified directory
 for dir in "${directories[@]}"; do
@@ -42,13 +42,13 @@ for dir in "${directories[@]}"; do
         echo "Git pull completed on $primary_branch"
         sleep 5
 
-        git add .
-        echo "Git add completed"
-        sleep 5
+        # git add .
+        # echo "Git add completed"
+        # sleep 5
 
-        git commit -m "Imported from $dir"
-        echo "Git commit completed"
-        sleep 5
+        # git commit -m "Imported from $dir"
+        # echo "Git commit completed"
+        # sleep 5
 
         # Uncomment the next line to enable git push
         # git push origin "$primary_branch"

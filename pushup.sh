@@ -7,7 +7,7 @@ base_directory="$PWD"
 academizer_directory="/mnt/c/Users/Mechachleopteryx/OneDrive/Documents/Github/academizer"
 
 # List of directories to process
-directories=("abraxas" "alphabet" "audiobooks" "Centerfuge" "eclectric-oil" "example" "Haplopraxis/IFM" "keen-unicoder" "logical-connectives" "mindgame" "mirror" "negentropy" "phonograph" "psychohistory" "quantum-soup" "standardgalactic.github.io" "technobabble" "unfinished-thoughts" "xanadu" "zygomindfulness")
+directories=("abraxas" "alphabet" "audiobooks" "autodoxx" "Centerfuge" "eclectric-oil" "example" "Haplopraxis/IFM" "keen-unicoder" "library" "logical-connectives" "mindgame" "mirror" "negentropy" "phonograph" "psychohistory" "quantum-soup" "standardgalactic.github.io" "substrate" "technobabble" "unfinished-thoughts" "xanadu" "zygomindfulness")
 
 
 # Loop through each specified directory
