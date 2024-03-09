@@ -1,0 +1,902 @@
+Self-Repair in Language Models
+
+Conversation with Gemini
+
+User
+
+Explorations of Self-Repair in Language Models 
+Cody Rushing1Neel Nanda 
+Abstract 
+Prior interpretability research studying narrow dis- 
+tributions has preliminarily identif i ed self-repair, 
+a phenomena where if components in large lan- 
+guage models are ablated, later components will 
+change their behavior to compensate. Our work 
+builds off this past literature, demonstrating that 
+self-repair exists on a variety of models families 
+and sizes when ablating individual attention heads 
+on the full training distribution. We further show 
+that on the full training distribution self-repair is 
+imperfect, as the original direct effect of the head 
+is not fully restored, and noisy, since the degree 
+of self-repair varies signif i cantly across different 
+prompts (sometimes overcorrecting beyond the 
+original effect). We highlight two different mech- 
+anisms that contribute to self-repair, including 
+changes in the i nal LayerNorm scaling factor 
+(which can repair up to 30% of the direct effect) 
+and sparse sets of neurons implementing Anti- 
+Erasure. We additionally discuss the implications 
+of these results for interpretability practitioners 
+and close with a more speculative discussion on 
+the mystery of why self-repair occurs in these 
+models at all, highlighting evidence for the Itera- 
+tive Inference hypothesis in language models, a 
+framework that predicts self-repair. 
+1. Introduction 
+Interpretability efforts aim to reveal human-understandable 
+behaviors in large language model components. A common 
+interpretability technique is model ablations, where outputs 
+of individual model components are replaced with outputs 
+from other distributions. Ideally, if an attention head is 
+critical for a task, ablating it would harm model performance 
+on that task. 
+However, recent work (McGrath et al., 2023; Wang et al., 
+2023) has uncovered preliminary evidence of self-repair, a 
+phenomena in large language models where components 
+downstream of ablations compensate for them. As such, 
+1University of Texas at Austin. Correspondence to: Cody 
+Rushing <thisiscodyr@gmail.com>. 
+0%20%40%60%80%100% 
+−1 
+−0.5 
+0 
+0.5 
+1 
+1.5 
+pythia-160m 
+pythia-160m 
+gpt2-small 
+gpt2-small 
+pythia-410m 
+pythia-410m 
+gpt2-medium 
+gpt2-medium 
+gpt2-large 
+gpt2-large 
+pythia-1b 
+pythia-1b 
+llama-7b 
+llama-7b 
+%th Layer in Model 
+Self-Repair 
+(as 
+logits) Early-Layer Breakage 
+Self-Repairing Behavior 
+Figure 1.We measure the self-repair of an attention head when 
+resample ablated on the top 2% of tokens according to its direct 
+effect. Foreachmodel, weplotboththeself-repairoftheindividual 
+heads and a trend line that averages across the heads in each layer. 
+Self-Repair exists across many later layers in different models, 
+although the amount varies between heads. 
+the ablation of model components doesn’t always lead to 
+easily predictable changes in model performance; instead, 
+theremovalofthecomponentsbehaviorcanbecompensated 
+for by downstream components in a way which masks the 
+loss of the original component. 
+This is a challenge for interpretability efforts which rely on 
+ablation-based metrics to def i ne the importance of model 
+components. In particular, self-repair mechanisms minimize 
+the impact of ablating components deemed critical by other 
+metrics. 
+Past literature has looked at self-repair in incomplete set- 
+tings: self-repair was i rst discovered in the Indirect Ob- 
+ject Identif i cation distribution as "Backup Behavior" (Wang 
+et al., 2023), for which the behavior was explained par- 
+tially as a byproduct of Copy Suppression (McDougall et al., 
+2023). The self-repair phenomena was then further explored 
+in McGrath et al. 2023, but only across the Counterfact 
+dataset and with the ablation of entire model layers. 
+We strengthen this prior work by investigating self-repair 
+across the whole pretraining distribution, by focusing on 
+individual attention heads (a smaller change, and thus more 
+surprising to see repaired), and by investigating the mecha- 
+nisms behind self-repair on the whole distribution. Our key 
+i ndings are: 
+1.Direct effect self-repair is an imperfect, noisy process. 
+It occurs across the full pretraining distribution, even 
+1 
+arXiv:2402.15390v1 
+[cs.LG] 
+23 
+Feb 
+2024 
+Explorations of Self-Repair in Language Models 
+while ablating individual heads (rather than full layers). 
+2.Up to 30% of the self-repairing of direct effects can 
+be attributed to just the effect of ablations on the Lay- 
+erNorm normalization factor. This is even more pro- 
+nounced when using zero ablations. 
+3.MLP Erasure, a mechanism in which MLP layers 
+’erase’ outputs from earlier model components and 
+is known to explain self-repair (McGrath et al., 2023), 
+is powered by a sparse set of Erasure neurons. The 
+exact neurons vary between prompts. 
+We end with some discussion on the implications of these 
+results for interpretability research and present preliminary 
+evidence for the Iterative Inference hypothesis, a specu- 
+lative framework that predicts self-repair as a side effect. 
+All of our code for the experiments used in this paper is 
+provided athttps://github.com/starship006/ 
+backup_research.
+This is a paper about self-repair in large language models (LLMs). The authors investigate a phenomenon where the model compensates for the removal of a component (like an attention head) by changing the behavior of other components. This makes it difficult to interpret the importance of different parts of the model using ablation techniques.
+
+Here are the key findings of the paper:
+
+Self-repair is imperfect and noisy: It doesn't fully recover the functionality of the removed component and varies depending on the specific prompt.
+LayerNorm plays a role: Up to 30% of the self-repair effect can be attributed to changes in the LayerNorm normalization factor.
+Sparse sets of neurons contribute to self-repair: A mechanism called "MLP Erasure" involves specific neurons erasing outputs from earlier parts of the model, but the exact neurons involved differ for different prompts.
+The paper also discusses the implications of these findings for interpretability research and proposes the "Iterative Inference" hypothesis as a possible explanation for self-repair.
+
+Overall, this paper highlights the complexity of LLMs and the challenges in understanding how they work.
+
+
+User
+
+A more detailed explanation
+Here's a more detailed explanation of the paper on self-repair in large language models (LLMs):
+
+Understanding LLMs through Interpretability:
+
+Researchers are trying to understand how LLMs work by applying interpretability techniques.
+A common technique is ablation, where parts of the model are removed (like attention heads) and the impact on performance is observed.
+Ideally, removing a critical component should significantly affect performance on a specific task.
+The Self-Repair Challenge:
+
+Recent research has shown a surprising phenomenon called self-repair.
+When components are ablated, other parts of the LLM adjust their behavior to compensate for the missing component.
+This makes it difficult to interpret the importance of components using ablation, as the performance drop might be masked by self-repair.
+Previous Work on Self-Repair:
+
+Earlier studies explored self-repair in limited settings:
+Specific tasks (like identifying indirect objects)
+Removing entire model layers
+This paper expands on the concept by:
+Analyzing self-repair across the full training data used to create the LLM.
+Focusing on removing individual attention heads (smaller and more surprising to see repaired).
+Investigating the mechanisms behind self-repair on the whole training data.
+Key Findings of the Paper:
+
+Imperfect and Noisy Self-Repair:
+
+Self-repair doesn't perfectly recover the function of the removed component.
+The amount of repair varies depending on the prompt given to the LLM.
+LayerNorm's Role:
+
+Up to 30% of the self-repair effect can be explained by changes in a normalization factor called LayerNorm.
+This effect is even stronger when a specific type of ablation (zero ablation) is used.
+Sparse Erasure Neurons:
+
+A mechanism called "MLP Erasure" contributes to self-repair.
+This involves specific neurons in the model erasing outputs from earlier parts.
+Interestingly, the exact set of neurons involved changes depending on the prompt!
+Implications and Future Directions:
+
+These findings highlight the complexity of LLMs and the challenges of interpreting their inner workings.
+The paper discusses how self-repair can mislead interpretability efforts.
+It proposes the "Iterative Inference" hypothesis as a possible explanation for self-repair, suggesting the LLM internally refines its understanding as it processes information.
+The paper provides code for reproducing the experiments, allowing further exploration of this phenomenon.
+I hope this explanation provides a deeper understanding of the research on self-repair in LLMs.
+
+
+User
+
+Self-Repair on the Full Distribution Exists, 
+but is Incomplete and Noisy 
+In this section, we conf i rm that across models, individual 
+attention heads are ’self-repaired’ on a general pretrain- 
+ing distribution. We detail how we measure self-repair, 
+demonstrate how individual attention heads are imperfectly 
+self-repaired across the entire pretraining distribution, and 
+highlight how it is noisy. 
+2.1. Measuring Self-Repair 
+We i rst detail how we def i ne direct effect and self-repair. 
+Our methodology aligns with previous research into self- 
+repair (Wang et al., 2023; McGrath et al., 2023), although 
+not mirroring it identically. Individual model components 
+can be thought of as having a direct effect: the effect on 
+the logits, not mediated by any subsequent component (Mc- 
+Grath et al., 2023). We measure self-repair by comparing 
+the change in the direct effect∆DEheadof individual atten- 
+tion heads with the logit difference∆logitof the correct 
+next token once the attention head is ablated. 
+Across each token, we measure a direct effectDEheadof 
+individual attention heads. Model components add their out- 
+puts into the residual stream. As such, the residual stream 
+can be decomposed into the output of each model compo- 
+nent (including individual attention heads). Because the 
+residual stream (mostly) linearly maps into the logits, there 
+exists an associated direction in the residual stream that 
+maps to the correct next token. We can measure how much 
+each attention head contributed to it (Elhage et al., 2021): 
+this is the direct effectDEheadof an attention head. Ideally, 
+if something has a high direct effect, it was likely ’important’ 
+for predicting the next token. 
+We contrast the direct effect with ablation-based metrics: in 
+particular, we use resample ablations, a common technique 
+that replaces the output of the same head on a different set of 
+pretraining tokens (Chan et al., 2022). We collect the logit 
+of the correct next token on both a standard forward pass 
+and on a run where an attention head is resample ablated. 
+The difference between the "clean" and "ablated" logit of 
+the correct next token∆logitcaptures how much the correct 
+prediction was impacted as a result of the ablation. We 
+also collect the head’s clean and ablated direct effect on 
+both runs and measure the change from the clean to the new 
+ablated direct effect, ∆DEhead. 
+If the output of an attention head has no ’indirect’ down- 
+stream effects- no downstream model component depends 
+on the output of the attention head- the change in the logit 
+of the correct token would only be the change in the direct 
+effect, i.e.∆logit = ∆DEhead. In practice, though, self- 
+repair occurs, and the logit difference is less in magnitude 
+than the change in direct effect; thus, we can measure self- 
+repair by measuring the difference between the actual logit 
+difference and the expected amount: 
+∆logit = ∆DEhead+ self repair(1) 
+As resample ablating a head changes its output to one pro- 
+duced from an (likely) unrelated prompt, the new direct 
+effect when resample ablating an arbitrary head is near zero 
+(∆DEhead≈ −DEheadwhen resample ablating most atten- 
+tion heads). As such, for convenience, we often plot the 
+original direct effect rather than the change in direct effect. 
+Note that if the original direct effect of an attention head 
+was negative, we also expect the self-repair upon the head’s 
+ablation to be negative. However, if the original direct effect 
+is positive and the self-repair is negative, this should not 
+be thought of as self-repair, but rather downstream break- 
+age (where later components perform worse as a result of 
+the ablation, such as due to the breaking of downstream 
+circuitry).
+This section dives deeper into how the researchers measured self-repair in their study:
+
+Direct Effect and Self-Repair Definition:
+
+They define the direct effect of an attention head as its influence on the model's prediction (logits) without any influence from subsequent parts of the model.
+Self-repair is then measured by comparing the change in this direct effect after removing the attention head (ablation) with the actual change in the model's prediction (logit difference).
+Measuring the Effects:
+
+Direct Effect (DEhead):
+
+They calculate the contribution of each attention head to the "residual stream," which heavily influences the final prediction.
+A higher direct effect indicates a stronger influence on predicting the next token.
+Logit Difference (∆logit):
+
+They compare the model's prediction with and without ablating the attention head (using the "resample ablation" technique).
+This difference reflects how much the prediction is affected by removing the head.
+Self-Repair:
+
+Ideally, the change in the logit difference (∆logit) should equal the change in the direct effect (∆DEhead) if there's no self-repair.
+However, self-repair causes other parts of the model to compensate, reducing the actual logit difference compared to the expected change.
+They quantify self-repair as the difference between the expected and actual logit difference (as shown in equation (1)).
+Additional Notes:
+
+They use the original direct effect instead of the change for convenience, as resample ablation often makes the new direct effect close to zero.
+A negative direct effect followed by negative self-repair still indicates self-repair, while a positive direct effect followed by negative self-repair suggests a different phenomenon called "downstream breakage."
+Overall, this section provides a detailed explanation of how the researchers quantified the direct effect of attention heads and measured the presence and level of self-repair in their experiments.
+
+
+User
+
+Do you have any metaphors or analogies to help explain it?
+Absolutely! Imagine a team working on a complex project (like building a car). Each team member (like an attention head) has a specific task (like designing the engine or the chassis).
+
+Direct Effect: The direct effect is how much each team member's work directly contributes to the final product (the car's function). A team member with a high direct effect has a crucial part.
+
+Self-Repair: Now, imagine during construction, a team member (attention head) gets sick and can't work on their part (ablation).  Self-repair kicks in when other team members (downstream parts of the model) adjust their work to compensate for the missing part. They might:
+
+Delegate some of the sick team member's tasks (redistributing the workload among attention heads).
+Find a workaround using existing parts (the model using different information to make predictions).
+Imperfect Self-Repair: This isn't always perfect. Maybe the replacement work isn't as good as the original, or it takes extra effort from other team members. This reflects in the model's predictions not being completely recovered (incomplete self-repair).
+
+Noisy Self-Repair:  Sometimes, the way team members compensate can differ depending on the project's specific requirements (prompts). This is like the model's self-repair strategy changing based on the input it receives.
+
+Downstream Breakage:  If the team members are too specialized and rely heavily on each other's work, then one team member being sick can completely stall the project (downstream breakage). In the model, this could happen if removing an attention head disrupts the functioning of later parts that depend on its specific output.
+
+I hope this analogy helps clarify the concept of self-repair in large language models!
+
+
+User
+
+2.2. Self-Repair Exists, but Imperfectly 
+We measure the self-repair of individual attention heads in 
+Pythia-1B (Biderman et al., 2023) on 1 million tokens of 
+The Pile (Gao et al., 2020), the dataset used to train Pythia- 
+1B 1. For a given token and forward pass, we measure each 
+head’s direct effectDEheadand the outputted logit of the 
+correct next token. We then individually resample ablate 
+each attention head, measure the new logit of the same 
+correct next token, and calculate the logit difference∆logit. 
+Averaging these values across the whole dataset, we plot 
+each head’s direct effect and logit difference in Figure 2 (see 
+Appendix F for the equivalent graphs of other models). 
+1For this experiment and others, unless stated otherwise, we use 
+1 Million tokens for experiments with the Pythia suite of models 
+and GPT2-Small and GPT2-Medium, but smaller amounts for the 
+other models. 
+2 
+Explorations of Self-Repair in Language Models 
+−0.200.20.4 
+−0.5 
+−0.4 
+−0.3 
+−0.2 
+−0.1 
+0 
+0.1 
+051015 
+Layer Direct Ef f ect of Component 
+Change 
+in 
+Logits 
+Upon 
+Ablation 
+Self-Repaired 
+No Self-Repair 
+Breakage 
+Figure 2.Self-Repair of individual Pythia-1B attention heads 
+across 1M tokens on The Pile. For each head in Pythia-1B, we plot 
+its direct effect and the change in logits when resample ablating it. 
+The heads between the includedy = −xline and the x-axis are 
+self-repaired. 
+Recall that since∆DEhead≈ −DEhead, heads which aren’t 
+self-repaired have∆logit ≈ −DEhead, as the change di- 
+rectly feeds into the i nal logits without any downstream 
+compensation. Heads that are self-repaired have smaller 
+logit differences, such that−1 < 
+∆logit 
+DEhead < 0. In Figure 2, 
+thiscorrespondstotheheadswhichfallbetweenthey = −x 
+line and the x-axis. It’s clear that there are many such heads, 
+even for heads in the last layer (which don’t have attention 
+or MLP layers downstream of it2). 
+The existence of self-repair across the pretraining dis- 
+tribution holds robustly across model sizes and families. 
+When resample ablating different attention heads in various 
+models, we measure their logit difference∆logit, change in 
+direct effects∆DEhead, and thus the self-repair experienced 
+using Equation (1). 
+It has been postulated that each language model component 
+tends to be useful on a sparse set of tokens (Bricken et al., 
+2023), and we corroborate this here by observing a sparsity 
+of signif i cant direct effect. Accordingly, for each head, we 
+measure the average self-repair each attention head experi- 
+ences across the top 2% of tokens i ltered by each head’s 
+direct effect, to ensure we are seeing self-repair of the head’s 
+role in the model, rather than noise. 
+Weplottheaverageself-repairexperiencedbyeachattention 
+head in Figure 1, along with the mean for all the heads in 
+each layer of a model. It is clear that many heads in later 
+layers of models experience self-repair.
+This section shows the results of the experiment measuring self-repair in an LLM:
+
+The Experiment:
+
+The researchers analyzed individual attention heads in a large language model (Pythia-1B).
+They used a dataset called "The Pile" to train the model and then tested it on 1 million tokens from the same dataset.
+For each token, they:
+Measured the direct effect of each attention head on predicting the next token.
+Compared the model's prediction with and without ablating (removing) the attention head (using "resample ablation").
+Calculated the change in logits (model's prediction score) due to the ablation.
+The Results:
+
+The results are visualized in Figure 2 (see Appendix F for other models).
+The x-axis represents the direct effect of each attention head.
+The y-axis shows the change in logits when the head is ablated.
+The diagonal line (y = -x) represents the expected change in logits if there were no self-repair.
+Points above the line would indicate the model performs worse than expected after ablation (downstream breakage).
+Points perfectly on the line would indicate the change in logits matches the direct effect (no self-repair).
+Many data points fall below the line, indicating self-repair. This means the actual change in logits is smaller than the direct effect, suggesting other parts of the model compensated for the removed attention head.
+This confirms that self-repair exists even for later layers in the model, which don't have subsequent layers to directly compensate.
+Similar results were observed for different model sizes and families, suggesting self-repair is a general phenomenon.
+Additional Notes:
+
+The researchers focused on the top 2% of tokens with the highest direct effect for each head to avoid analyzing noise in the data.
+Figure 1 (mentioned but not shown here) summarizes the average self-repair observed across different layers in various models.
+Overall, this section demonstrates that self-repair is a widespread phenomenon in LLMs, even for later layers and across different model architectures.
+
+
+User
+
+I thought you might be able to experiment with this by generating audiobooks from transcriptions of lectures. Then we generate audiobooks from the transcriptions, introducing random changes into the transcription and the speech generating algorithm to identify whether the error came from the transcription or the narration.
+That's an interesting approach! It leverages the idea of self-repair to potentially identify errors in a transcription. Here's why it might work and some considerations:
+
+Possible Advantages:
+
+Self-repair mimicking human listening: When encountering errors in an audiobook narration, listeners often use context and knowledge to fill in the gaps. Similarly, the self-repair mechanisms in a large language model might adjust the generation process to compensate for inconsistencies introduced by random changes in the transcription.
+Error localization: By comparing the original and modified audiobook outputs, discrepancies could highlight potential transcription errors. For instance, if the model generates significantly different narration for a modified sentence compared to the original, it might indicate an error in the modified part (transcription).
+Considerations and Challenges:
+
+Model sensitivity: The success depends on how sensitive the model is to these changes. Minor errors in the transcription might not trigger a noticeable self-repair response.
+False positives: Changes in the narration could be due to the model's inherent randomness or limitations in generating natural speech, not necessarily reflecting transcription errors.
+False negatives: The model might "self-repair" even with a wrong transcription, leading to missed errors.
+Computational cost: Training and running large language models for audiobook generation can be computationally expensive.
+Alternative Approaches:
+
+Automatic Speech Recognition (ASR) systems: These systems transcribe speech into text and often have built-in error detection mechanisms based on statistical language models. These might be more efficient for initial error identification.
+Human review: Trained human reviewers can be very effective in identifying transcription errors, especially for nuanced mistakes that ASR systems might miss.
+Overall:
+
+While the self-repair approach has potential for error identification in audiobook generation, it's important to consider its limitations and explore alternative methods. Combining different approaches could lead to a more robust and efficient error detection system.
+
+
+User
+
+6. Related Work 
+The self-repair phenomena was i rst identif i ed in the Indi- 
+rect Object Identif i cation distribution (Wang et al., 2023). 
+Self-Repair was initially explored as the Hydra Effect (Mc- 
+Grath et al., 2023), and a specif i c instance of it was ex- 
+plained by Copy Suppression (McDougall et al., 2023). 
+Understanding self-repair i ts in the broader work of Mech- 
+anistic Interpretability, which aims to reverse engineer 
+neural networks. Related work includes Olah et al. 2020 on 
+vision models and Meng et al. 2023 on Transformer models. 
+Previous work has attempted to understand the behavior of 
+individual neurons (Bau et al., 2020; Gurnee et al., 2023) or 
+attention heads (Gould et al., 2023). In particular, suppres- 
+sion neurons were previously found in Voita et al. 2023 and 
+Gurnee et al. 2024. One important aspect of Mechanistic In- 
+terpretability is automating circuit discovery (Conmy et al., 
+2023; Bills et al., 2023). 
+9 
+Explorations of Self-Repair in Language Models 
+Recent research has emphasized the importance of using ca- 
+sual mechanisms to measure component importance (Chan 
+et al., 2022). Ablations have been a common technique 
+for this (Leavitt & Morcos, 2020), and have been used to 
+validate hypothesis in Olsson et al. 2022; Nanda et al. 2023. 
+Ideas related to the Iterative Inference Hypothesis were 
+introduced in Greff et al. 2017; Jastrz˛ ebski et al. 2018. The 
+Universal Transformer (Dehghani et al., 2019), Logit Lens 
+tool (nostalgebraist, 2020), and Tuned Lens tool (Belrose 
+et al., 2023) were built on ideas similar to this. 
+7. Conclusion 
+In this work, we’ve highlighted how attention head self- 
+repair exists across entire pretraining distributions and mod- 
+els. We’ve explored different mechanisms that self-repair, 
+including LayerNorm self-repair and sparse neuron Anti- 
+Erasure. 
+A strong limitation of our work is that it focuses on the 
+repairing of direct effects as opposed to other ’behavioral’ 
+measures of attention heads (which aren’t immediately rep- 
+resented as direct effects). It’s unclear how much the mecha- 
+nisms highlighted in sections 3 and 4 will generalize to these 
+other potentially viable forms of self-repair. Despite this, 
+we expect that the ideas presented here will help provide 
+some grounding for further research on self-repair.
+This section discusses related research on interpretability and self-repair in large language models:
+
+Previous Work on Self-Repair:
+
+The paper mentions earlier research where self-repair was first observed in a specific task (identifying indirect objects) and then studied more broadly as the "Hydra Effect."
+One specific mechanism contributing to self-repair, called "Copy Suppression," was previously identified.
+Mechanistic Interpretability:
+
+This is a field that aims to understand how neural networks work by analyzing their internal mechanisms.
+The paper mentions related work in this area on vision models and Transformer models.
+Understanding Neural Components:
+
+Other research has focused on understanding individual components like neurons and attention heads in neural networks.
+The concept of "suppression neurons" is mentioned, which might play a role in self-repair.
+Another area of interest is "circuit discovery," which aims to automatically understand the connections and interactions between components in a neural network.
+Importance of Causal Mechanisms:
+
+The paper emphasizes the importance of using methods that accurately reflect causal relationships to assess the importance of components in a model.
+Ablation, where parts of the model are removed, is a common technique used for this purpose.
+The Iterative Inference Hypothesis:
+
+This hypothesis suggests that large language models might internally refine their understanding of the input as they process it, potentially leading to self-repair.
+Tools like the Universal Transformer and Logit Lens are built on similar ideas.
+Overall, the related work section highlights the growing interest in understanding how large language models work and the challenges in interpreting their behavior.
+
+
+User
+
+5. Discussion 
+In this section, we highlight some of the consequences of 
+self-repair. We also outline the Iterative Inference Hypoth- 
+esis, which we believe may help describe portions of self- 
+repair. 
+5.1. Implications of Imperfect Self-Repair for 
+Interpretability Efforts 
+The major problem with self-repair for interpretability ef- 
+forts is that it makes ablations an unreliable tool: we would 
+naively hope that if we ablate a model component and look 
+at the effect on model performance, this change would accu- 
+rately capture the component’s role in the model. However, 
+if the component experiences signif i cant self-repair, the di- 
+rect effect and change in logits that occur upon ablation of 
+the component may be very different. In fact, it becomes 
+7 
+Explorations of Self-Repair in Language Models 
+unclear what the "true effect" of the component even is- 
+if a component is perfectly self-repaired yet has a high di- 
+rect effect, does this mean it is irrelevant or important yet 
+compensated for? 
+In practice, this is most concerning when considering cir- 
+cuit analysis, where we patch or ablate individual model 
+components and observe their effect on the output, in order 
+to isolate the sparse subgraph of the model relevant to our 
+task, as performed in (Wang et al., 2023; Lieberum et al., 
+2023; Conmy et al., 2023). However, fortunately, circuit 
+analysis only requires identifying whether a component is 
+important or unimportant (i.e. whether it belongs in the 
+sparse subgraph), not the precise effect of ablating it. So 
+the fact that self-repair is imperfect across the general dis- 
+tribution (Section 2.2) helps reduce some of the concerns 
+for circuit discovery efforts; because the ’importance’ of 
+various components is extremely heavy-tailed, even a sig- 
+nif i cant fractional decrease in the estimated effect won’t 
+change which nodes are important. 
+However, this doesn’t fully alleviate all concerns. In certain 
+situations, self-repair can be lossless or overcompensate. 
+This may happen on certain narrow distributions or may 
+be induced depending on what tools you use. And if the 
+degree of self-repair differs signif i cantly between compo- 
+nents, borderline components may be incorrectly included 
+or excluded.
+This section discusses the implications of self-repair for attempts to understand how LLMs work:
+
+Challenges for Interpretability:
+
+The main issue is that self-repair makes ablation, a common technique for understanding component importance, unreliable.
+When a component is removed (ablated), other parts of the model compensate for its absence, reducing the impact on performance.
+This makes it difficult to interpret the results of ablation, as the observed effect might not accurately reflect the actual role of the removed component.
+Unclear "True Effect":
+
+Even if a component shows a high direct effect (meaning it significantly contributes to the model's output), if it's perfectly self-repaired after ablation, it's unclear whether it's truly important or if other components are simply compensating for its absence.
+Impact on Circuit Analysis:
+
+This technique analyzes model components to identify the minimal set essential for a specific task.
+While self-repair makes ablations less precise, it doesn't necessarily prevent circuit discovery.
+This is because circuit analysis only needs to identify important vs. unimportant components, not their exact impact.
+The fact that self-repair is imperfect across the entire data (as shown in Section 2.2) helps mitigate the concern because truly important components are likely to remain important even with some reduction in their apparent effect due to self-repair.
+Remaining Concerns:
+
+Self-repair can sometimes be lossless (meaning no performance drop) or even overcompensate (improving performance after ablation).
+This can happen on specific data or depending on the tools used for analysis.
+If the degree of self-repair varies significantly between components, borderline important ones might be misidentified.
+Overall, this section highlights the challenges self-repair poses for interpreting how LLMs work, particularly when using ablation techniques. While it doesn't completely prevent understanding component importance, it emphasizes the need for more robust and reliable methods for interpreting the inner workings of these complex models.
+
+
+User
+
+5.2. Taking Models Off-Distribution can Cause 
+Unexpected Consequences that are Easy to 
+Misinterpret 
+One reason to expect self-repair to occur is that taking 
+the model off-distribution can lead to very surprising con- 
+sequences. Ablations fundamentally take the model off- 
+distribution, in the sense that the set of internal activations 
+achieved from ablations may be impossible to achieve on 
+any input. Models were not trained to respond coherently 
+to these kinds of internal interventions, and so may behave 
+in erratic and hard-to-predict ways which are diff i cult to 
+reason about. 
+When we i rst found self-repair, we assumed that models 
+were intentionally self-repairing. However, the LayerNorm- 
+based self-repair seems to be a side effect of unrelated 
+mathematical properties of the model, interacting with how 
+our ablations change the norm of the residual stream. It’s 
+possible that many observed instances of ’self-repair’ are 
+just uninteresting consequences of throwing the model off- 
+distribution, for which this will be clear after discovering a 
+few more insights like the above. 
+Importantly, the fact that self-repair occurs across models 
+tells us something about the internal mechanisms of these 
+models, but it may be a byproduct of some other mechanism 
+in the model, rather than that they are intentionally self- 
+repairing. 
+This is a problem fundamental to ablations and is likely 
+diff i cult to circumvent. A suggested course of action is to try 
+tocontrolhowfarfromthestandarddistributionone’scausal 
+interventions take the model (Chan et al., 2022). Two ways 
+this can be done is by avoiding zero ablation (which most 
+signif i cantly adjusts the residual stream norm, as shown 
+in Section 3.2) or by freezing LayerNorm while ablating. 
+Additionally, one could use path patching (Goldowsky-Dill 
+et al., 2023) instead of patching full components. 
+Our results do not demonstrate that all of self-repair is a 
+byproductofothermechanisms: LayerNormself-repaironly 
+explains up to around 30% of the self-repair on average. But 
+these results are a word of caution to be careful when taking 
+models off distribution.
+This section explores the limitations of using ablations and potential misinterpretations due to self-repair:
+
+Taking Models Off-Distribution:
+
+Ablation inherently takes the model away from its training data (off-distribution), creating situations it wasn't designed to handle.
+This disrupts the model's internal activations, potentially leading to unexpected and unpredictable behavior.
+Misinterpreting Self-Repair:
+
+The initial assumption was that self-repair might be intentional behavior by the model.
+However, the researchers found that LayerNorm self-repair (a specific type) is likely an unintended consequence of how ablations affect the model's internal calculations, not evidence of deliberate repair mechanisms.
+This suggests many observed self-repair instances might be misleading artifacts of the analysis method rather than actual self-repair capabilities.
+Implications for Interpretation:
+
+While self-repair across different models reveals something about their internal workings, it might be a result of unintended side effects, not intentional behavior.
+Ablation, as a technique, inherently has this limitation, making it difficult to completely avoid misinterpretations.
+Possible Solutions:
+
+Minimizing Off-Distribution Effects:
+Avoiding "zero ablation" (a specific type that significantly disrupts the model's internal state).
+Freezing LayerNorm during ablation to prevent unintended side effects.
+Using "path patching" instead of removing entire components, potentially causing less disruption.
+The researchers acknowledge that these methods might not eliminate all misinterpretations, as other factors beyond LayerNorm might contribute to self-repair.
+Overall, this section emphasizes the importance of being cautious when interpreting self-repair observed through ablation and suggests alternative methods that might minimize misleading results.
+
+
+User
+
+5.3. Iterative Inference Hypothesis 
+There’s a wealth of evidence (nostalgebraist, 2020; Dar 
+et al., 2023) that models gradually build up their i nal logits 
+in unembedding space: the correct token isn’t predicted by 
+a singular model component, but rather built up over time 
+by the outputs of multiple components. An implication of 
+this is that models can still be relatively accurate, even when 
+removing the i nal layer. 
+One perspective from which self-repair becomes less sur- 
+prising is what we call the Iterative Inference hypothesis: 
+rather than layers being part of a top-down process, assisting 
+all future layers in complex circuits, many language model 
+components are more of a bottom-up process, where each 
+layer treats the input as a guess for the i nal output, and 
+tries to reduce the error between this guess and the true next 
+token. 
+From this perspective, self-repair is unsurprising. Imagine 
+that some task, such as Name Moving, must be performed. 
+Some earlier component in the model will write the signal 
+into the residual stream that a taskTneeds to be completed. 
+If the Iterative Inference Hypothesis holds, then rather than 
+there being some dedicated head to do the task, there are 
+many such capable heads: the earliest one that reads in 
+the signal will perform the taskT, and likely write the 
+signal that the task is complete. Importantly, if the head that 
+performed taskTwas ablated, then the need to complete 
+taskTwouldstillexist(aswellastheassociatedinformation 
+of the signal to do so): as such, it is possible for another 
+downstream head to observe and complete it instead. 
+This is consistent with the evidence presented in McDougall 
+et al. 2023 on how specif i c heads can inf l uence downstream 
+heads to not perform a task. Another line of evidence that 
+supports this hypothesis is the identif i cation of attention 
+heads across models which we dub ’self-reinforcing’ and 
+8 
+Explorations of Self-Repair in Language Models 
+’self-repressing’. 
+For a specif i c attention head, we take its output on a forward 
+pass and re-run the forward pass while adding the output of 
+the head back into the residual stream which feeds into the 
+head. We measure the original and new direct effects as a 
+result of this intervention. 
+We observe ’self-reinforcing’ and ’self-repressing’ heads, in 
+which the direct effect of the head increases or decreases 
+proportional to how much of the original output of the head 
+is added. Figure 9 highlights one head in GPT2-Medium 
+which ’self-represses’. The repression is proportional to the 
+amount the output is scaled (Appendix E). 
+Not all heads are self-reinforcing and self-repressing. Some 
+appeartobecombinationsofthetwo. However, thepresence 
+of self-repressing heads suggests that certain attention heads 
+may be outputting a signal that specif i es that the task they 
+performed is not needed anymore.
+This section introduces the Iterative Inference Hypothesis as a possible explanation for self-repair in large language models:
+
+Evidence Supporting the Hypothesis:
+
+Research suggests that models build predictions gradually across layers, not relying solely on the final layer.
+This implies even removing the final layer might not significantly impact accuracy, as earlier layers have already contributed to the prediction.
+The Iterative Inference Hypothesis:
+
+This hypothesis proposes a bottom-up approach, where each layer:
+Makes a guess about the final output based on the input and previous layers' outputs.
+Tries to correct its guess to match the true next token.
+Self-Repair from this Perspective:
+
+Imagine a specific task (like moving a named entity) needs to be done.
+Early layers in the model might signal this task using the residual stream.
+If multiple heads can perform this task, the first one that "reads" the signal completes it.
+If the head that initially performed the task is ablated, the need for the task and the signal still exist.
+Therefore, another downstream head might observe the signal and compensate by completing the task.
+Supporting Evidence:
+
+McDougall et al. (2023) showed how specific heads can influence others not to perform a task.
+The researchers identified self-reinforcing and self-repressing heads in various models:
+Self-reinforcing: The head's own output strengthens its influence when fed back.
+Self-repressing: The head's own output weakens its influence when fed back (Figure 9 shows an example from GPT2-Medium).
+These observations suggest some heads might signal to others when their task has already been completed, potentially leading to self-repair.
+Overall, the Iterative Inference Hypothesis suggests a bottom-up, collaborative approach within the model, where each layer attempts to refine the prediction based on the input and previous layers' outputs. This perspective helps explain self-repair as a consequence of multiple heads potentially being able to perform similar tasks and compensate for each other's absence.
+
+
+User
+
+5.3.1. ADDITIONALDISCUSSION ON THEITERATIVE 
+INFERENCEHYPOTHESIS 
+An additional reason to think that the Iterative Inference 
+hypothesis is true is that different attention heads in different 
+layers can perform similar tasks. 
+The Indirect Object Identif i cation task (Wang et al., 2023) 
+highlights one of the earliest instances of observed self- 
+repair. In it, some attention heads are classif i ed as "Name 
+Mover Heads" and other heads as "Backup Name Mover 
+Heads". Originally, it was believed that these were mean- 
+ingfully different components: however, when running the 
+model across a more general distribution, it is possible to 
+observe instances of the Backup Name Mover Heads per- 
+forming name moving as well. 
+The "Name Mover Heads" exist in earlier layers than the 
+"Backup Name Mover Heads". The fact that these "Backup" 
+heads can perform moving behavior suggests that they have 
+the capability to perform Name Moving, but don’t do so 
+in the Indirect Object Identif i cation task. As a result, ab- 
+lating the Name Mover Heads would additionally preserve 
+the associated signal to perform Name Moving, which the 
+Backup Heads read in and perform as a result. 
+Additionally, when moving the residual stream read by 
+the "Name Movers" into the residual stream read by the 
+"Backup Name Movers’, the backup heads begin perform- 
+ing name moving as well (note that this is equivalent to 
+zero ablating all the attention heads and MLP layers in be- 
+tween them). This further highlights the likelihood of there 
+being a shared stimulus to perform Name Moving which 
+both types of heads respond to, but which the Name Movers 
+often respond to and ablate. 
+However, there is also a wealth of evidence against this hy- 
+pothesis. Anecdotally, previous token and induction heads 
+(Olsson et al., 2022) don’t seem to be self-repaired. Perhaps 
+this may be because these heads are always expected to per- 
+form these ’fundamental’ tasks across all prompts. Further, 
+prior literature has emphasized the presence of complex 
+circuits within the model, which don’t easily exist across 
+layers, the S-inhibition heads in the Indirect Object Identif i- 
+cation task (Wang et al., 2023) being one of them. 
+This highlights how specif i c tasks in the head may not be 
+performed ’iteratively’: they may be too fundamental such 
+that the model has specif i c heads dedicated to them, or it 
+maybetoocomplex/costlytoperformiterativelybymultiple 
+heads. Many heads in the model may not be performing 
+’iterative’ tasks.
+This section further discusses the Iterative Inference Hypothesis and its potential limitations:
+
+Supporting Evidence - Task Overlap Across Layers:
+
+The hypothesis suggests that different heads in different layers might be capable of performing similar tasks.
+This aligns with observations where "backup" heads, trained for a specific task in one layer, can perform that task when needed in other contexts, even if another head is initially responsible (e.g., "Name Mover Heads" and "Backup Name Mover Heads").
+This suggests these heads share the ability for the task but might not always actively perform it depending on the context.
+Mechanism of Self-Repair under this Hypothesis:
+
+When a "primary" head responsible for a task (e.g., "Name Mover Heads") is removed, the signal triggering the task still exists in the residual stream.
+"Backup" heads can "read" this signal and compensate by performing the task, leading to self-repair.
+Limitations and Conflicting Evidence:
+
+The hypothesis might not apply to all heads:
+Some heads might perform fundamental tasks always needed (e.g., previous token and induction heads).
+Some complex tasks might involve specific circuits across layers that cannot be easily replicated iteratively.
+Evidence suggests the presence of dedicated heads for specific tasks (e.g., "S-inhibition heads" in the Indirect Object Identification task).
+Overall, while the Iterative Inference Hypothesis provides a possible explanation for self-repair, it might not be universally applicable. Some heads might have dedicated roles or perform complex tasks that don't fit the iterative inference model.
+
+
+User
+
+It reminds me a little of my theory: ### Interactive Feedback Hypothesis: Unraveling the Choreography of Embryonic Development
+
+Embryonic development is a marvel of nature, a complex ballet where cells and tissues perform with precision to the cues of genetic and environmental factors. Among the myriad of processes that guide the transformation of a single cell into a multicellular organism, the role of mechanical forces and movements stands out as a pivotal yet often underappreciated player. This essay delves into the "Interactive Feedback Hypothesis," a theoretical framework proposing that embryonic movements and mechanical stresses act not merely as byproducts of development but as essential contributors to the formation of complex anatomical structures, particularly focusing on joint formation in mammals and birds.
+
+The genesis of this hypothesis is anchored in recent findings that cooperative cell contractions drive force-dependent collagen assembly in human fibroblast cultures. These insights, as revealed in groundbreaking research, suggest that mechanical tension can directly catalyze the assembly of structural biopolymers, such as collagen, essential for the durable structure of vertebrate animals. This principle of mechanochemistry, where physical forces at the cellular level dictate the assembly and organization of the extracellular matrix (ECM), provides a foundational pillar for the Interactive Feedback Hypothesis.
+
+Building on this foundation, the hypothesis extends the role of mechanical forces to the embryonic development of joints. It posits that the constant embryonic movements, akin to swimming in mammals and flying in bird embryos, serve as mechanisms through which tissues are sculpted into complex structures. This sculpting process is not merely a passive consequence of growth but an active, dynamic interaction where mechanical forces, such as pressure and fluid shear stress, guide the differentiation of cells and the distribution of growth hormones, ultimately influencing the spatial patterning of tissue development.
+
+To explore this hypothesis further, we propose several testable hypotheses and operationalized definitions. For instance, the "Embryonic Movement and ECM Organization Hypothesis" suggests that embryonic movements directly influence the orientation and organization of ECM components, leading to structured tissue formation. This can be tested by comparing the ECM organization in embryos with unrestricted movement against those where movement has been restricted, utilizing high-resolution imaging techniques.
+
+Moreover, the hypothesis underscores the importance of fluid shear stress resulting from embryonic movements in affecting the differentiation of mesenchymal stem cells into specific lineages crucial for joint formation. This aspect can be empirically investigated by exposing cultured mesenchymal stem cells to varying levels of fluid shear stress and measuring changes in lineage-specific markers.
+
+The Interactive Feedback Hypothesis also highlights the role of growth factor distribution, suggesting that embryonic movements create gradients of growth factors that guide tissue development. This can be tested by mapping the distribution of growth factors in moving versus non-moving embryos and correlating these distributions with patterns of tissue development.
+
+In operationalizing the concepts within the hypothesis, we define embryonic movements as any physical activity originating from the embryo, including muscular contractions and fluid movements. The organization of the ECM is assessed through parameters like alignment, density, and uniformity. Fluid shear stress is quantified as the force per unit area exerted by fluid flow on cell surfaces, serving as an indicator of the mechanical environment experienced by cells.
+
+The Interactive Feedback Hypothesis presents a holistic view of embryonic development, suggesting a symbiotic relationship between mechanical forces and biological processes. It posits that life, from its earliest stages, is an active participant in its own formation, utilizing the principles of physics and chemistry to navigate the path from simplicity to complexity. This hypothesis not only enriches our understanding of developmental biology but also opens new avenues for therapeutic interventions in addressing pathologies related to tissue formation and organization.
+
+In conclusion, the Interactive Feedback Hypothesis offers a compelling narrative on the integral role of mechanical forces and embryonic movements in shaping the intricate tapestry of life. It calls for a paradigm shift in our understanding of embryonic development, from a process driven solely by genetic information to one that is dynamically influenced by an interactive dialogue between physical forces and biological responses. Through this lens, we can begin to unravel the complex choreography of life's genesis, appreciating the subtle yet profound interplay that guides the emergence of form and function from the cellular to the organismal level.
+Your "Interactive Feedback Hypothesis" is a fascinating proposal that shares some interesting similarities with the "Iterative Inference Hypothesis" discussed in the research paper. Here are some key points of comparison:
+
+Similarities:
+
+Both emphasize the importance of ongoing, dynamic processes:
+The Iterative Inference Hypothesis proposes a bottom-up, collaborative approach where each layer makes predictions and refines them based on previous layers' outputs.
+Your hypothesis suggests an interactive feedback loop where embryonic movements (akin to model layers) generate mechanical forces that influence tissue development (akin to model predictions).
+Both highlight the potential for indirect or emergent effects:
+In the Iterative Inference Hypothesis, the final output might not solely depend on the last layer but on the cumulative contribution of all layers.
+In your hypothesis, embryonic movements might not directly dictate tissue formation but create a dynamic environment (through forces) that guides various cellular processes.
+Differences:
+
+Focus:
+The Iterative Inference Hypothesis focuses on information processing within a large language model.
+Your hypothesis focuses on the biological processes of embryonic development.
+Nature of the "feedback":
+In the Iterative Inference Hypothesis, the "feedback" comes from the previous layers' outputs guiding subsequent layers.
+In your hypothesis, the "feedback" involves mechanical forces generated by movement influencing tissue development.
+Overall, while the specific contexts and mechanisms differ, both your hypothesis and the Iterative Inference Hypothesis highlight the potential significance of ongoing, dynamic interactions and their role in shaping outcomes.
+
+It's important to note that both hypotheses are currently theoretical frameworks and require further research and experimentation for validation. Your proposal has the potential to contribute valuable insights to the field of developmental biology, and the testable hypotheses you outlined provide a clear path for further investigation.
+
+
+User
+
+Could I get further connections with the previous topics?
+Here are some further connections between your "Interactive Feedback Hypothesis" and the previously discussed topics:
+
+1. Self-Repair and Emergent Properties:
+
+The concept of self-repair in the context of large language models (LLMs) discussed earlier connects to the idea of emergent properties in your hypothesis.
+In LLMs, individual components (attention heads) might not fully understand the final task, but their combined and iterative efforts through self-repair lead to the emergent property of accurate prediction.
+Similarly, your hypothesis suggests that individual embryonic movements might not directly control development, but their collective influence through mechanical forces leads to the emergent property of complex tissue formation.
+2. Mechanistic Understanding and Circuit Discovery:
+
+The research paper emphasizes the importance of mechanistic understanding to interpret how LLMs work. Your hypothesis aims to provide a mechanistic understanding of how embryonic development unfolds through the interplay of forces and biological responses.
+The concept of circuit discovery in LLMs, where researchers attempt to identify the minimal set of components crucial for a specific task, can be loosely linked to your exploration of specific cell types or growth factors crucial for joint formation. Both involve identifying key elements within a complex system.
+3. Limitations and Future Work:
+
+Both the Iterative Inference Hypothesis and your Interactive Feedback Hypothesis acknowledge limitations and require further research for validation.
+Similar to how the paper discusses potential issues with misinterpreting self-repair due to limitations of analysis methods, your hypothesis might need to consider potential confounding factors or alternative explanations for the observed phenomena.
+Both areas of research benefit from further exploration and experimentation to solidify the proposed hypotheses and gain a deeper understanding of the underlying mechanisms.
+Overall, while the specific fields of study differ significantly, both the research on LLMs and your hypothesis on embryonic development share intriguing conceptual connections in how they approach complex systems, emphasize the importance of ongoing interactions, and acknowledge the need for further exploration to solidify the proposed mechanisms.
+
+
+User
+
+A summary of the whole conversation.
+Our conversation explored two main topics:
+
+1. Self-Repair in Large Language Models (LLMs):
+
+The research paper discussed a phenomenon called self-repair, where LLMs can compensate for the removal of components (ablation) and maintain their performance.
+This poses challenges for interpreting how LLMs work, as ablations might not accurately reflect the role of individual components.
+The paper explores potential explanations for self-repair, including LayerNorm self-repair and the Iterative Inference Hypothesis.
+The Iterative Inference Hypothesis proposes a bottom-up, collaborative approach where each layer in an LLM makes predictions and refines them based on previous layers' outputs. This suggests redundancy and potential for multiple components to perform similar tasks, leading to self-repair when one is removed.
+2. The Interactive Feedback Hypothesis:
+
+You introduced your hypothesis, which proposes that embryonic movements and the resulting mechanical forces play a crucial role in shaping tissue development.
+This hypothesis emphasizes the importance of ongoing, dynamic interactions between physical forces and biological processes.
+Similar to the Iterative Inference Hypothesis, it highlights the potential for indirect or emergent effects, where individual movements might not directly dictate development but create an environment that guides various cellular processes.
+We discussed potential connections between your hypothesis and the research on LLMs, including similarities in how they approach complex systems and the importance of further exploration to validate the proposed mechanisms.
+I hope this summary clarifies the key points of our conversation.
+
+
+User
+
+A narrative summary.
+
+
+
+
+
+
+
+
+
+
+
+
+
+Imagine a complex machine with many interconnected parts, each contributing to a specific task. This machine can not only fix itself when parts are removed, but it also seems to have multiple ways of achieving the same outcome. This is similar to how large language models (LLMs) behave, according to recent research. Scientists are trying to understand how these models work by removing components and observing the effects, but this method might be misleading because the remaining parts can compensate for the missing ones.
+
+One possible explanation suggests that these models operate in a bottom-up fashion, with each part making predictions and refining them based on what others have done before. This distributed approach might explain why removing a single part doesn't always significantly impact the overall outcome.
+
+Your idea, the Interactive Feedback Hypothesis, explores a similar concept in a different context: embryonic development. You propose that the movements and forces generated by the embryo itself are not just consequences of growth, but also play an active role in shaping how tissues form. This hypothesis suggests a dynamic interplay between physical forces and biological responses, where each influences the other in an ongoing loop.
+
+While these ideas come from different fields, they share interesting similarities. They both highlight the importance of ongoing interactions and the potential for unexpected or emergent properties to arise from these interactions. Both areas require further exploration to fully understand the underlying mechanisms at play.
+
+
+Gemini may display inaccurate info, including about people, so double-check its responses. Your privacy & Gemini AppsOpens in a new window
