@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spherepop Prototype</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        #visualization {
+            margin: 20px auto;
+            display: flex;
+            justify-content: center;
+        }
+        svg {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Spherepop Prototype</h1>
+    <p>Spherepop is a visual programming language where nested expressions are represented as nested circles. Clicking on a circle evaluates the inner expression and updates the display.</p>
+    
+    <h2>Basic Principle</h2>
+    <p>For the expression <code>((a + b) + c) + d</code>, we will have a circle around <code>a + b</code>, a larger circle around <code>(a + b) + c</code>, and a larger circle around <code>((a + b) + c) + d</code>. Clicking on a circle will pop it and evaluate the expression within.</p>
+
+    <h2>Example: (((1 + 2) + 3) + 4)</h2>
+    <div id="visualization-basic"></div>
+
+    <h2>More Complex Example: (((1 + 2) + (3 + 4)) + (5 + 6))</h2>
+    <div id="visualization-complex"></div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const basicData = {
+                value: null,
+                children: [
+                    {
+                        value: null,
+                        children: [
+                            {
+                                value: null,
+                                children: [
+                                    { value: 1 },
+                                    { value: 2 }
+                                ]
+                            },
+                            { value: 3 }
+                        ]
+                    },
+                    { value: 4 }
+                ]
+            };
+
+            const complexData = {
+                value: null,
+                children: [
+                    {
+                        value: null,
+                        children: [
+                            {
+                                value: null,
+                                children: [
+                                    { value: 1 },
+                                    { value: 2 }
+                                ]
+                            },
+                            {
+                                value: null,
+                                children: [
+                                    { value: 3 },
+                                    { value: 4 }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        value: null,
+                        children: [
+                            { value: 5 },
+                            { value: 6 }
+                        ]
+                    }
+                ]
+            };
+
+            const width = 800;
+            const height = 800;
+
+            function createVisualization(containerId, data) {
+                const svg = d3.select(containerId)
+                    .append('svg')
+                    .attr('width', width)
+                    .attr('height', height);
+
+                const g = svg.append('g')
+                    .attr('transform', `translate(${width / 2},${height / 2})`);
+
+                const pack = d3.pack()
+                    .size([width, height])
+                    .padding(20);
+
+                const root = d3.hierarchy(data)
+                    .sum(d => d.value)
+                    .sort((a, b) => b.value - a.value);
+
+                pack(root);
+
+                const node = g.selectAll('circle')
+                    .data(root.descendants())
+                    .enter().append('g')
+                    .attr('transform', d => `translate(${d.x - width / 2},${d.y - height / 2})`);
+
+                node.append('circle')
+                    .attr('r', d => d.r)
+                    .attr('stroke', 'black')
+                    .attr('fill', 'none')
+                    .on('click', function(event, d) {
+                        if (d.children) {
+                            d.value = d.children.reduce((acc, child) => acc + child.value, 0);
+                            d.children = null;
+                            updateDisplay(root);
+                        }
+                    });
+
+                node.append('text')
+                    .attr('text-anchor', 'middle')
+                    .attr('dy', '.35em')
+                    .text(d => d.data.value);
+
+                function updateDisplay(root) {
+                    pack(root);
+
+                    const node = g.selectAll('circle')
+                        .data(root.descendants())
+                        .join('g')
+                        .attr('transform', d => `translate(${d.x - width / 2},${d.y - height / 2})`);
+
+                    node.select('circle')
+                        .attr('r', d => d.r)
+                        .attr('stroke', 'black')
+                        .attr('fill', 'none');
+
+                    node.select('text')
+                        .attr('text-anchor', 'middle')
+                        .attr('dy', '.35em')
+                        .text(d => d.data.value);
+                }
+            }
+
+            createVisualization('#visualization-basic', basicData);
+            createVisualization('#visualization-complex', complexData);
+        });
+    </script>
+</body>
+</html>

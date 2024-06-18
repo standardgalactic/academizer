@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic Typing Tutor</title>
+    <style>
+        @font-face {
+            src: url('fonts/Sga-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-family: 'Sga Regular';
+        }
+
+        body {
+            font-family: 'Sga Regular', Arial, sans-serif;
+            color: #00ff00;
+            background: black;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        #tutor {
+            position: relative;
+            z-index: 1;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            text-align: center;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 0 20px #00ff00;
+            border: 2px solid #00ff00;
+        }
+
+        #current-lesson {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        #input-field {
+            width: 100%;
+            padding: 10px;
+            font-size: 18px;
+            background-color: black;
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            box-sizing: border-box;
+        }
+
+        #status {
+            margin-top: 20px;
+        }
+
+        #toggle-sga, #toggle-keyboard {
+            margin-top: 10px;
+        }
+
+        #file-input-label {
+            display: inline-block;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        button {
+            background-color: black;
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #00ff00;
+            color: black;
+        }
+    </style>
+    <!-- Meta tags for social media sharing -->
+    <meta property="og:title" content="Galactic Typing Tutor">
+    <meta property="og:description" content="Learn to type in Standard Galactic!">
+    <meta property="og:image" content="galactic-typing-tutor.png">
+    <meta property="og:url" content="http://yourwebsite.com/galactic-typing-tutor">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Galactic Typing Tutor">
+    <meta name="twitter:description" content="Learn to type in Standard Galactic!">
+    <meta name="twitter:image" content="galactic-typing-tutor.png">
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+    <div id="tutor">
+        <div id="current-lesson">Press Start to Begin</div>
+        <input type="text" id="input-field" disabled />
+        <div id="status"></div>
+        <button id="start-button">Start</button>
+        <div>
+            <label for="toggle-sga">Toggle to Latin</label>
+            <input type="checkbox" id="toggle-sga">
+        </div>
+        <div>
+            <label for="toggle-keyboard">Toggle to QWERTY</label>
+            <input type="checkbox" id="toggle-keyboard">
+        </div>
+        <label id="file-input-label" for="file-input">Choose File</label>
+        <input type="file" id="file-input" accept=".txt">
+        <div id="file-status">No File Selected</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('starfield');
+        const context = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let stars = [];
+        const numStars = 1000;
+        const speed = 0.05;
+
+        for (let i = 0; i < numStars; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                z: Math.random() * canvas.width
+            });
+        }
+
+        function updateStars() {
+            for (let star of stars) {
+                star.z -= speed;
+                if (star.z <= 0) {
+                    star.x = Math.random() * canvas.width;
+                    star.y = Math.random() * canvas.height;
+                    star.z = canvas.width;
+                }
+            }
+        }
+
+        function drawStars() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            for (let star of stars) {
+                const x = (star.x - canvas.width / 2) * (canvas.width / star.z);
+                const y = (star.y - canvas.height / 2) * (canvas.width / star.z);
+                const size = (canvas.width / star.z) * 0.5; // Reduce size multiplier for smaller stars
+                context.beginPath();
+                context.arc(x + canvas.width / 2, y + canvas.height / 2, size, 0, Math.PI * 2);
+                context.fillStyle = '#ffffff';
+                context.fill();
+                context.closePath();
+            }
+        }
+
+        function animate() {
+            updateStars();
+            drawStars();
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Typing tutor functionality
+        const lessonsQwerty = [
+            "asdf jkl;",
+            "dada sad fad",
+            "sasa fafa dad",
+            "fads lads",
+            "sad lads",
+            "ask salad",
+            "dada's salad",
+            "fall dad's salad",
+            "fake lads"
+        ];
+
+        const lessonsDvorak = [
+            "aoeu htns",
+            "dada sad fad",
+            "sasa fafa dad",
+            "fads lads",
+            "sad lads",
+            "ask salad",
+            "dada's salad",
+            "fall dad's salad",
+            "fake lads"
+        ];
+
+        let currentLessonIndex = 0;
+        let lessons = lessonsDvorak; // Default to Dvorak
+        let useSga = true; // Default to Standard Galactic
+
+        const currentLessonElement = document.getElementById('current-lesson');
+        const inputField = document.getElementById('input-field');
+        const statusElement = document.getElementById('status');
+        const startButton = document.getElementById('start-button');
+        const toggleSgaCheckbox = document.getElementById('toggle-sga');
+        const toggleKeyboardCheckbox = document.getElementById('toggle-keyboard');
+        const fileInput = document.getElementById('file-input');
+        const fileInputLabel = document.getElementById('file-input-label');
+        const fileStatus = document.getElementById('file-status');
+
+        const galacticStandardAlphabet = {
+            a: '', b: '', c: '', d: '', e: '',
+            f: '', g: '', h: '', i: '', j: '',
+            k: '', l: '', m: '', n: '', o: '',
+            p: '', q: '', r: '', s: '', t: '',
+            u: '', v: '', w: '', x: '', y: '', z: ''
+        };
+
+        startButton.addEventListener('click', startLesson);
+        toggleSgaCheckbox.addEventListener('change', toggleSga);
+        toggleKeyboardCheckbox.addEventListener('change', toggleKeyboard);
+        fileInput.addEventListener('change', handleFileUpload);
+
+        function startLesson() {
+            if (currentLessonIndex >= lessons.length) {
+                currentLessonIndex = 0;
+            }
+            updateLessonText();
+            inputField.value = '';
+            inputField.disabled = false;
+            inputField.focus();
+            statusElement.textContent = '';
+            inputField.addEventListener('input', checkInput);
+        }
+
+        function toggleSga() {
+            useSga = !useSga;
+            updateLessonText();
+        }
+
+        function toggleKeyboard() {
+            lessons = toggleKeyboardCheckbox.checked ? lessonsQwerty : lessonsDvorak;
+            currentLessonIndex = 0; // Restart from the first lesson
+            updateLessonText();
+        }
+
+        function updateLessonText() {
+            let lessonText = lessons[currentLessonIndex];
+            if (useSga) {
+                currentLessonElement.textContent = translateToSGA(lessonText);
+            } else {
+                currentLessonElement.textContent = lessonText;
+            }
+        }
+
+        function checkInput() {
+            let lessonText = lessons[currentLessonIndex];
+            const userInput = inputField.value;
+
+            if (userInput === lessonText) {
+                currentLessonIndex++;
+                inputField.removeEventListener('input', checkInput);
+                inputField.disabled = true;
+                statusElement.textContent = 'Correct! Press Start for the next lesson.';
+                if (currentLessonIndex < lessons.length) {
+                    currentLessonElement.textContent = 'Great! Press Start for the next lesson.';
+                } else {
+                    currentLessonElement.textContent = 'Congratulations! You have completed all lessons.';
+                }
+            } else if (lessonText.startsWith(userInput)) {
+                statusElement.textContent = 'Keep typing...';
+            } else {
+                statusElement.textContent = 'Incorrect, try again!';
+            }
+        }
+
+        function translateToSGA(text) {
+            return text.split("").map(char => galacticStandardAlphabet[char.toLowerCase()] || char).join("");
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const contents = e.target.result;
+                    lessons = contents.split('\n');
+                    currentLessonIndex = 0;
+                    updateLessonText();
+                    fileStatus.textContent = translateToSGA("File Loaded");
+                };
+                reader.readAsText(file);
+            } else {
+                fileStatus.textContent = translateToSGA("No File Selected");
+            }
+        }
+
+        fileInputLabel.textContent = translateToSGA("Choose File");
+        fileStatus.textContent = translateToSGA("No File Selected");
+    </script>
+</body>
+</html>

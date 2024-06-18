@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic Translator</title>
+    <style>
+        @font-face {
+            src: url('fonts/Sga-Regular.woff2') format('woff2'),
+                 url('fonts/Sga-Regular.woff') format('woff'),
+                 url('fonts/Sga-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-family: 'Sga Regular';
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px; 
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+        }
+
+        .translation-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .translation {
+            flex: 1;
+        }
+
+        .sga-textarea {
+            font-family: 'Sga Regular', sans-serif;
+        }
+
+        .arial-textarea {
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <h1>Standard Galactic Translator</h1>
+
+    <div class="translation-container">
+        <div class="translation">
+            <h2>Input (Arial)</h2>
+            <textarea id="arial-input" class="arial-textarea" placeholder="Type here..."></textarea>
+        </div>
+        <div class="translation">
+            <h2 id="translation-label">Translation (SGA)</h2>
+            <textarea id="translation-output" class="sga-textarea" readonly></textarea>
+        </div>
+    </div>
+
+<!--
+    <div>
+        <label for="toggle">Toggle to Unicode</label>
+        <input type="checkbox" id="toggle" onchange="toggleTranslation()">
+    </div>
+
+    <button onclick="exportImage()">Download as PNG</button>
+-->
+
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <button onclick="exportImage()">Download as PNG</button>
+        <label for="toggle">Toggle to Unicode</label>
+        <input type="checkbox" id="toggle" onchange="toggleTranslation()">
+    </div>
+
+
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        // Galactic Standard Alphabet translation
+        const galacticStandardAlphabet = {
+            a: '', b: '', c: '', d: '', e: '',
+            f: '', g: '', h: '', i: '', j: '',
+            k: '', l: '', m: '', n: '', o: '',
+            p: '', q: '', r: '', s: '', t: '',
+            u: '', v: '', w: '', x: '', y: '', z: ''
+        };
+
+        function toGalacticStandardAlphabet(char) {
+            return galacticStandardAlphabet[char.toLowerCase()] || char;
+        }
+
+        function translateToSGA(text) {
+            return text.split("").map(toGalacticStandardAlphabet).join("");
+        }
+
+        function translateToUnicode(text) {
+            return text;
+        }
+
+        // Current translation mode
+        let translationMode = "SGA";
+        document.getElementById("toggle").checked = false;
+
+        function toggleTranslation() {
+            translationMode = document.getElementById("toggle").checked ? "Unicode" : "SGA";
+            const label = translationMode === "SGA" ? "Translation (SGA)" : "Translation (Unicode)";
+            document.getElementById("translation-label").innerText = label;
+            updateTranslation();
+        }
+
+        // Update translation output based on input
+        function updateTranslation() {
+            const inputText = document.getElementById("arial-input").value;
+            const translatedText = translationMode === "SGA" ? translateToUnicode(inputText) : translateToSGA(inputText);
+            document.getElementById("translation-output").value = translatedText;
+        }
+
+        // Update SGA or Unicode output based on input
+        document.getElementById("arial-input").addEventListener("input", updateTranslation);
+
+        // Load the custom font before exporting the image
+        function loadFont() {
+            return new Promise((resolve) => {
+                const font = new FontFace('Sga Regular', 'url(fonts/Sga-Regular.woff2)');
+                font.load().then(() => {
+                    document.fonts.add(font);
+                    resolve();
+                });
+            });
+        }
+
+        async function exportImage() {
+            await loadFont();
+
+            const inputText = document.getElementById("arial-input").value;
+            const translatedText = translationMode === "SGA" ? translateToUnicode(inputText) : translateToSGA(inputText);
+
+            const canvas = document.getElementById("canvas");
+            const ctx = canvas.getContext("2d");
+
+            // Set font size
+            const fontSize = 30;
+            const maxWidth = 750;
+            const lineHeight = 40;
+            const padding = 25;
+
+            ctx.font = `${fontSize}px Arial`;
+            const arialLines = wrapText(ctx, "" + inputText, padding, padding, maxWidth, lineHeight);
+            ctx.font = `${fontSize}px 'Sga Regular'`;
+            const sgaLines = wrapText(ctx, (translationMode === "SGA" ? "" : "") + translatedText, padding, (arialLines + 1) * lineHeight, maxWidth, lineHeight);
+
+            // Set canvas size based on text content
+            canvas.width = 800;
+            canvas.height = (arialLines + sgaLines + 3) * lineHeight;
+
+            // Draw background
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Arial text
+            ctx.fillStyle = "#000000";
+            ctx.font = `${fontSize}px Arial`;
+            wrapText(ctx, "" + inputText, padding, padding, maxWidth, lineHeight);
+
+            // Draw SGA or Unicode text
+            ctx.font = `${fontSize}px 'Sga Regular'`;
+            wrapText(ctx, (translationMode === "SGA" ? "" : "") + translatedText, padding, (arialLines + 1) * lineHeight, maxWidth, lineHeight);
+
+            // Download the image
+            const dataURL = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = dataURL;
+            link.download = "galactic_translation.png";
+            link.click();
+        }
+
+        // Function to wrap text for canvas
+        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+            const lines = text.split('\n');
+            let lineCount = 0;
+            for (let i = 0; i < lines.length; i++) {
+                let line = '';
+                const words = lines[i].split(/(\s+)/);
+                for (let j = 0; j < words.length; j++) {
+                    let testLine = line + words[j];
+                    let metrics = ctx.measureText(testLine);
+                    let testWidth = metrics.width;
+                    if (testWidth > maxWidth && j > 0) {
+                        ctx.fillText(line, x, y);
+                        line = words[j];
+                        y += lineHeight;
+                        lineCount += 1;
+                    } else {
+                        line = testLine;
+                    }
+                }
+                ctx.fillText(line, x, y);
+                y += lineHeight;
+                lineCount += 1;
+            }
+            return lineCount;
+        }
+
+    </script>
+<img src="galactic_translation_sample.png" alt="Standard Galactic">
+<img src="galactic_translation_sample_02.png" alt="Standard Galactic">
+<br>
+<!--
+<img src="test-01.png" alt="Standard Galactic">
+<img src="test-02.png" alt="Standard Galactic">
+<br>
+<img src="test-03.png" alt="Standard Galactic">
+<br>
+<img src="test-04.png" alt="Standard Galactic"><img src="test-05.png" alt="Standard Galactic">
+<img src="test-06.png" alt="Standard Galactic">
+<img src="test-07.png" alt="Standard Galactic">
+<img src="test-08.png" alt="Standard Galactic">
+<img src="test-09.png" alt="Standard Galactic">
+  <br>
+common  <br>
+unicode  <br>
+email-address@gmail.com  <br>
+R ® ® ® § § ™ σ τ υ δ ι ο  <br>
+  <br>
+<img src="special-characters.png" alt="Special Characters">
+-->
+<img src="advice.png" alt="Advice">
+    
+</body>
+</html>
