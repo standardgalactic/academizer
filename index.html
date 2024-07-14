@@ -3,42 +3,320 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starfield</title>
     <style>
-        @font-face {
-            src: url('fonts/CursiveGalactic-Regular.ttf') format('truetype');
-            font-weight: normal;
-            font-style: normal;
-            font-family: 'Cursive Galactic';
-        }
-        body {
-            font-family: 'Cursive Galactic', Arial, sans-serif;
-            color: #00ff00;
-            background: black;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            flex-direction: column;
-            text-align: center;
-        }
-        .galactic-text {
-            font-family: 'Cursive Galactic', Arial, sans-serif;
-            font-size: 2em; /* Adjust the font size */
-            margin: 20px 0; /* Add some margin for spacing */
-        }
-        .paraclete-image {
-            max-width: 60%; /* Adjust the max-width */
-            height: auto;
-        }
-    </style>
-</head>
-<body>
-    <img src="paraclete.webp" alt="Paraclete" class="paraclete-image" id="image">
-    <div class="galactic-text" id="title">
-        <!-- This text will be displayed in Cursive Galactic -->
-        Evolution of the Paraclete
-    </div>
-</body>
-</html>
+       @font-face {
+          src: url('fonts/Sga-Regular.woff2') format('woff2'),
+               url('fonts/Sga-Regular.woff') format('woff'),
+               url('fonts/Sga-Regular.ttf') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+          font-family: 'Sga Regular';
+    }
 
+    body {
+        font-family: 'Sga Regular';
+            padding: 20px; 
+    }
+
+    canvas {
+        display: block;
+    }
+        /* This is optional to make the control panel look nicer */
+#controlPanel {
+    z-index: 1000; /* Make sure it's on top */
+    max-width: 300px; /* Set a max-width if you like */
+    font-size: 14px; /* Adjust font-size as needed */
+}
+</style>
+<script src="planets.js"></script>
+</head>
+
+<body>
+    <div id="controlPanel" style="display:none; position:fixed; top:10px; right:10px; background-color:rgba(0,0,0,0.7); color:white; padding:10px; border-radius:8px;">
+    <p>Controls:</p>
+    <ul>
+        <li>C: Show Commands</li>
+        <li>WASD: Move ship</li>
+        <li>QE: Rotate left/right</li>
+        <li>RF: View up/down</li>
+        <li>HL: Warp left and right</li>
+        <li>JK: Zip down and up </li>
+        <li>Z: Toggle Standard Galactic</li>
+        <li>X: Toggle Labels</li>
+        <li>G: Global Reset</li>
+        
+        <!-- Add any additional controls here -->
+    </ul>
+</div>
+<script>
+    let isUsingCustomFont = true;
+    let canvas = document.createElement("canvas");
+    let context = canvas.getContext("2d");
+    context.font = "30px 'Sga Regular'";
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+
+    let controlPanelTimeout;
+
+function toggleControlPanel() {
+    let controlPanel = document.getElementById("controlPanel");
+    if (controlPanel.style.display === "none") {
+        controlPanel.style.display = "block";
+        resetControlPanelTimeout();
+    } else {
+        controlPanel.style.display = "none";
+        clearTimeout(controlPanelTimeout);
+    }
+}
+
+function resetControlPanelTimeout() {
+    clearTimeout(controlPanelTimeout);
+    controlPanelTimeout = setTimeout(() => {
+        document.getElementById("controlPanel").style.display = "none";
+    }, 10000);
+}
+        let spaceship = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            speed: 0,
+            maxSpeed: 5,
+            acceleration: 0.1
+        };
+
+        let words = planetsList;
+        let bubbles = [];
+        for (let i = 0; i < 1000; i++) {
+            bubbles.push({
+                x: Math.random() * canvas.width - spaceship.x,
+                y: Math.random() * canvas.height - spaceship.y,
+                z: Math.random() * canvas.width,
+                size: 3,
+                speed: Math.random() * 0.5 + 0.1,
+                word: words[Math.floor(Math.random() * words.length)],
+                isFocused: false
+            });
+        }
+
+        let controls = {
+            up: false, down: false,
+            leftRotate: false, rightRotate: false,
+            leftView: false, downView: false,
+            upView: false, rightView: false,
+
+            showLabels: true, 
+        };
+
+        let viewRotationX = 0;   // Rotation for h and l
+        let viewRotationY = 0;   // Rotation for j and k
+    
+        function draw() {
+            context.fillStyle = "#000000";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let bubble of bubbles) {
+                let verticalMoveFactor = controls.upView ? 1 : controls.downView ? -1 : 0;
+                bubble.y += verticalMoveFactor * 5;
+             
+                let scale = canvas.width / bubble.z;
+                let x = spaceship.x + bubble.x * scale;
+                let y = spaceship.y + bubble.y * scale;
+
+                if (bubble.isFocused) {
+                    context.fillStyle = "#FF0000";
+                    context.fillText("Planetary Brake Activating!", canvas.width / 2 - 100, 30);
+                }
+
+                context.strokeStyle = "#ffffff";
+                context.beginPath();
+                context.arc(x, y, bubble.size * scale, 0, Math.PI * 2);
+                context.fillStyle = "#000";
+                context.fill();
+                context.closePath();
+                context.stroke();
+                if (scale > 0.1 && controls.showLabels) {
+                    context.fillStyle = "#ffffff";
+                    context.fillText(bubble.word, x, y);
+                }
+            }
+        }
+
+        function update() {
+            if (controls.up) {
+                spaceship.speed += spaceship.acceleration;
+                if (spaceship.speed > spaceship.maxSpeed) {
+                    spaceship.speed = spaceship.maxSpeed;
+                }
+            } else if (controls.down) {
+                spaceship.speed -= spaceship.acceleration;
+                if (spaceship.speed < 0) {
+                    spaceship.speed = 0;
+                }
+            }
+
+            let rotateViewFactor = controls.rightView ? 0.025 : controls.leftView ? -0.025 : 0;
+            
+            for (let bubble of bubbles) {
+                let angle = Math.atan2(bubble.y - spaceship.y, bubble.x - spaceship.x) + viewRotationX;
+                let distance = Math.sqrt((bubble.x - spaceship.x) ** 2 + (bubble.y - spaceship.y) ** 2);
+                bubble.x = spaceship.x + distance * Math.cos(angle);
+                bubble.y = spaceship.y + distance * Math.sin(angle) + viewRotationY;
+                
+                angle += rotateViewFactor;
+                distance = Math.sqrt((bubble.x - spaceship.x) ** 2 + (bubble.y - spaceship.y) ** 2);
+                bubble.x = spaceship.x + distance * Math.cos(angle);
+                bubble.y = spaceship.y + distance * Math.sin(angle);
+            }
+
+            
+
+            let rotateFactor = controls.rightRotate ? 1 : controls.leftRotate ? -1 : 0;
+
+            for (let bubble of bubbles) {
+                if (bubble.isFocused) {
+                    bubble.size += 0.05;
+                }
+
+                bubble.z -= spaceship.speed;
+                bubble.x += rotateFactor * 5;
+
+                if (bubble.z < 0.5 || bubble.z > canvas.width || bubble.x < -canvas.width / 2 || bubble.x > canvas.width * 1.5 || bubble.y < -canvas.height / 2 || bubble.y > canvas.height * 1.5) {
+                    bubble.x = Math.random() * canvas.width - spaceship.x;
+                    bubble.y = Math.random() * canvas.height - spaceship.y;
+                    bubble.z = canvas.width;
+                    bubble.isFocused = false;
+                }
+            }
+
+            // Check for focus
+            for (let bubble of bubbles) {
+                let scale = canvas.width / bubble.z;
+                let x = spaceship.x + bubble.x * scale;
+                let y = spaceship.y + bubble.y * scale;
+
+                if (x > spaceship.x - 20 && x < spaceship.x + 20 && y > spaceship.y - 20 && y < spaceship.y + 20) {
+                    bubble.isFocused = true;
+                } else {
+                    bubble.isFocused = false;
+                }
+            }
+        }
+
+        document.addEventListener("keydown", function(event) {
+            switch (event.key) {
+                case 'c':
+                    toggleControlPanel();
+                    break;
+                case 'w':
+                    controls.up = true;
+                    break;
+                case 's':
+                    controls.down = true;
+                    break;
+                case 'a':
+                    controls.leftRotate = true;
+                    break;
+                case 'd':
+                    controls.rightRotate = true;
+                    break;
+                case 'q':
+                    controls.leftView = true;
+                    break;
+                 case 'g': // Simulate F5 reset
+                    location.reload(); 
+                    break;
+                case 'e':
+                    controls.rightView = true;
+                    break;
+           
+                case 'r':
+                    controls.upView = true;
+                    break;
+                case 'f':
+                    controls.downView = true;
+                    break;
+                case 'x': // Toggle the labels
+                    controls.showLabels = !controls.showLabels;
+                    break;
+                case 'h':
+                    viewRotationX -= 0.05;   // You can adjust the value for a faster or slower rotation
+                    break;
+        case 'l':
+            viewRotationX += 0.05;
+            break;
+        case 'j':
+            viewRotationY += 5;     // Adjust the value for a faster or slower vertical view change
+            break;
+        case 'k':
+            viewRotationY -= 5;
+            break;
+            case 'z': // Toggle the font
+                    if (isUsingCustomFont) {
+                        document.body.style.fontFamily = "Sga Regular";
+                        context.font = "30px 'Sga Regular'";
+                    } else {
+                        document.body.style.fontFamily = "sans-serif";
+                        context.font = "15px sans-serif";
+                    }
+                    isUsingCustomFont = !isUsingCustomFont;
+                    break;
+            }
+        });
+
+        document.addEventListener("keyup", function(event) {
+                if (event.key === 'c') {
+                resetControlPanelTimeout();
+            }
+                        switch (event.key) {
+                case 'w':
+                    controls.up = false;
+                    break;
+                case 's':
+                    controls.down = false;
+                    break;
+                case 'a':
+                    controls.leftRotate = false;
+                    break;
+                case 'd':
+                    controls.rightRotate = false;
+                    break;
+                case 'q':
+                    controls.leftView = false;
+                    break;
+                case 'e':
+                    controls.rightView = false;
+                    break;
+                case 'h':
+                    controls.leftView = false;
+                    break;
+                case 'j':
+                    controls.downView = false;
+                    break;
+                case 'k':
+                    controls.upView = false;
+                    break;
+                case 'l':
+                    controls.rightView = false;
+                    break;
+                case 'r':
+                    controls.upView = false;
+                    break;
+                case 'f':
+                    controls.downView = false;
+                    break;
+
+            }
+        });
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
+</body>
+
+</html>
