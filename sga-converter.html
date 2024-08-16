@@ -15,39 +15,97 @@
         }
 
         body {
-            font-family: Arial, sans-serif;
-            padding: 20px; 
+            font-family: 'Sga Regular', Arial, sans-serif;
+            background: black;
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
         }
 
         textarea {
             width: 100%;
             height: 100px;
+            background-color: black;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px;
         }
 
-        .translation-container {
-            display: flex;
-            gap: 10px;
-        }
-
-        .translation {
-            flex: 1;
+        .arial-textarea {
+            font-family: Arial, sans-serif;
         }
 
         .sga-textarea {
             font-family: 'Sga Regular', sans-serif;
         }
 
-        .arial-textarea {
-            font-family: Arial, sans-serif;
+        .translation-container {
+            display: flex;
+            gap: 10px;
+            flex-direction: row;
+        }
+
+        .translation {
+            flex: 1;
+        }
+
+        button, label {
+            background-color: black;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        button:hover, label:hover {
+            background-color: #00ff00;
+            color: black;
+        }
+
+        #top-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .right-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        img {
+            margin-top: 20px;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+
+        .sga-footer {
+            font-family: 'Sga Regular';
         }
     </style>
 </head>
 <body>
-    <h1>Standard Galactic Translator</h1>
+    <div id="top-controls">
+        <h1 id="title">Standard Galactic Translator</h1>
+        <div class="right-controls">
+            <label for="interface-toggle">Toggle Interface to Latin</label>
+            <input type="checkbox" id="interface-toggle" onchange="toggleInterface()">
+        </div>
+    </div>
 
     <div class="translation-container">
         <div class="translation">
-            <h2>Input (Arial)</h2>
+            <h2 id="input-label">Input (Arial)</h2>
             <textarea id="arial-input" class="arial-textarea" placeholder="Type here..."></textarea>
         </div>
         <div class="translation">
@@ -56,23 +114,18 @@
         </div>
     </div>
 
-<!--
-    <div>
-        <label for="toggle">Toggle to Unicode</label>
-        <input type="checkbox" id="toggle" onchange="toggleTranslation()">
-    </div>
-
-    <button onclick="exportImage()">Download as PNG</button>
--->
-
-    <div style="display: flex; align-items: center; gap: 10px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 20px;">
         <button onclick="exportImage()">Download as PNG</button>
         <label for="toggle">Toggle to Unicode</label>
         <input type="checkbox" id="toggle" onchange="toggleTranslation()">
     </div>
 
+    <canvas id="canvas"></canvas>
 
-    <canvas id="canvas" style="display:none;"></canvas>
+    <div class="footer sga-footer">
+        Never Dig Straight Down <br>
+           
+    </div>
 
     <script>
         // Galactic Standard Alphabet translation
@@ -117,6 +170,21 @@
         // Update SGA or Unicode output based on input
         document.getElementById("arial-input").addEventListener("input", updateTranslation);
 
+        function toggleInterface() {
+            const isLatin = document.getElementById("interface-toggle").checked;
+            if (isLatin) {
+                document.body.style.fontFamily = "Arial, sans-serif";
+                document.getElementById("title").innerText = "Standard Galactic Translator";
+                document.getElementById("input-label").innerText = "Input (Arial)";
+                document.getElementById("translation-label").innerText = translationMode === "SGA" ? "Translation (SGA)" : "Translation (Unicode)";
+            } else {
+                document.body.style.fontFamily = "Sga Regular";
+                document.getElementById("title").innerText = "  ";
+                document.getElementById("input-label").innerText = " (Arial)";
+                document.getElementById("translation-label").innerText = translationMode === "SGA" ? " (SGA)" : "Translation (Unicode)";
+            }
+        }
+
         // Load the custom font before exporting the image
         function loadFont() {
             return new Promise((resolve) => {
@@ -138,32 +206,33 @@
             const ctx = canvas.getContext("2d");
 
             // Set font size
-            const fontSize = 30;
-            const maxWidth = 750;
-            const lineHeight = 40;
-            const padding = 25;
+            const fontSize = 16;
+            const maxWidth = 350;
+            const lineHeight = 20;
+            const padding = 10;
+            const headerSpace = 10;
 
             ctx.font = `${fontSize}px Arial`;
-            const arialLines = wrapText(ctx, "" + inputText, padding, padding, maxWidth, lineHeight);
+            const arialLines = wrapText(ctx, inputText, padding, padding, maxWidth, lineHeight);
             ctx.font = `${fontSize}px 'Sga Regular'`;
-            const sgaLines = wrapText(ctx, (translationMode === "SGA" ? "" : "") + translatedText, padding, (arialLines + 1) * lineHeight, maxWidth, lineHeight);
+            const sgaLines = wrapText(ctx, translatedText, padding, (arialLines + 1) * lineHeight, maxWidth, lineHeight);
 
             // Set canvas size based on text content
-            canvas.width = 800;
-            canvas.height = (arialLines + sgaLines + 3) * lineHeight;
+            canvas.width = 400;
+            canvas.height = (arialLines + sgaLines + 3) * lineHeight + headerSpace;
 
             // Draw background
-            ctx.fillStyle = "#FFFFFF";
+            ctx.fillStyle = "#000000";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Draw Arial text
-            ctx.fillStyle = "#000000";
+            ctx.fillStyle = "#00ff00";
             ctx.font = `${fontSize}px Arial`;
-            wrapText(ctx, "" + inputText, padding, padding, maxWidth, lineHeight);
+            wrapText(ctx, inputText, padding, padding + headerSpace, maxWidth, lineHeight);
 
             // Draw SGA or Unicode text
             ctx.font = `${fontSize}px 'Sga Regular'`;
-            wrapText(ctx, (translationMode === "SGA" ? "" : "") + translatedText, padding, (arialLines + 1) * lineHeight, maxWidth, lineHeight);
+            wrapText(ctx, translatedText, padding + headerSpace, (arialLines + 1) * lineHeight, maxWidth, lineHeight);
 
             // Download the image
             const dataURL = canvas.toDataURL("image/png");
@@ -199,31 +268,9 @@
             }
             return lineCount;
         }
-
     </script>
-<img src="galactic_translation_sample.png" alt="Standard Galactic">
-<img src="galactic_translation_sample_02.png" alt="Standard Galactic">
-<br>
-<!--
-<img src="test-01.png" alt="Standard Galactic">
-<img src="test-02.png" alt="Standard Galactic">
-<br>
-<img src="test-03.png" alt="Standard Galactic">
-<br>
-<img src="test-04.png" alt="Standard Galactic"><img src="test-05.png" alt="Standard Galactic">
-<img src="test-06.png" alt="Standard Galactic">
-<img src="test-07.png" alt="Standard Galactic">
-<img src="test-08.png" alt="Standard Galactic">
-<img src="test-09.png" alt="Standard Galactic">
-  <br>
-common  <br>
-unicode  <br>
-email-address@gmail.com  <br>
-R ® ® ® § § ™ σ τ υ δ ι ο  <br>
-  <br>
-<img src="special-characters.png" alt="Special Characters">
--->
-<img src="advice.png" alt="Advice">
-    
+    <br>
+    <!--   <img src="advice.png" alt="Advice"> -->
+    <!--           -->
 </body>
 </html>

@@ -3,174 +3,320 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Standard Galactic Alphabet</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-	<!--      -->
-    <meta name="keywords" content=", , , , , , , , , , , , , , , , , ,  , , , , , -, , , , , , , , , , -, , , , , , , , , , , , , , , , , , , , , , , , , , ">
-
+    <title>Starfield</title>
     <style>
-        @font-face {
-            src: url('fonts/Sga-Regular.woff2') format('woff2'),
-                 url('fonts/Sga-Regular.woff') format('woff'),
-                 url('fonts/Sga-Regular.ttf') format('truetype');
-            font-family: 'Sga Regular';
-        }
+       @font-face {
+          src: url('fonts/Sga-Regular.woff2') format('woff2'),
+               url('fonts/Sga-Regular.woff') format('woff'),
+               url('fonts/Sga-Regular.ttf') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+          font-family: 'Sga Regular';
+    }
 
-        body {
-            font-family: 'Sga Regular', Arial, sans-serif;
-            color: #00ff00;
-            background: black;
-            margin: 0;
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            justify-content: flex-start;
-            padding-top: 50px;
-        }
+    body {
+        font-family: 'Sga Regular';
+            padding: 20px; 
+    }
 
-        .sga-font {
-            font-size: 24px; /* Larger font size for SGA */
-            line-height: 1.4; /* Consistent line spacing for SGA */
-        }
-
-        .latin-font {
-            font-family: 'Roboto', sans-serif;
-            font-size: 19px; /* Adjusted font size for Latin to closely match SGA */
-            line-height: 1.3; /* Consistent line spacing for Latin */
-        }
-
-        img {
-            max-width: 100%;
-            height: auto;
-        }
-
-        a {
-            color: #00ff00;
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        .content {
-            width: 90%;
-            max-width: 800px;
-            text-align: left;
-        }
-
-        .toggle-font {
-            cursor: pointer;
-            background: #005500;
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            margin: 20px 0;
-            font-size: 15px;
-            font-family: 'Roboto', sans-serif; /* Default font for button */
-        }
-    </style>
+    canvas {
+        display: block;
+    }
+        /* This is optional to make the control panel look nicer */
+#controlPanel {
+    z-index: 1000; /* Make sure it's on top */
+    max-width: 300px; /* Set a max-width if you like */
+    font-size: 14px; /* Adjust font-size as needed */
+}
+</style>
+<script src="planets.js"></script>
 </head>
-<body class="sga-font">
-    <div class="content">
-        <h1>Standard Galactic Alphabet</h1>
-        <button class="toggle-font" onclick="toggleFont()">Toggle to Latin (Control-Z)</button>
-        <p><img src="Images/sample-03.png" alt="Sample Image 03"/></p>
-        <h2>Dvorak Keyboard</h2>
-        <p><img src="dvorak-sga.png" alt="Dvorak SGA Keyboard Layout"/></p>
-        <h2>A Minimal Set of Rules for Learning Cistercian Numbers</h2>
-        <p><img src="cistercian.png" alt="Cistercian Numbers"/></p>
-        <h2>Dactyl</h2>
-        <p><img src="dactyl.gif" alt="Dactyl Keyboard Animation"/></p>
-        <p>Digital Analog Clock</p>
-        <p><img src="dactyl/example.png" alt="Digital Analog Clock Example"/></p>
-        <p><img src="Images/planetary-brake.png" alt="Planetary Brake Image"/></p>
-        <h2>Standard Galactic Alphabet</h2>
-        <p><a href="https://standardgalactic.github.io/">Live Demo</a> (Press the "z" key to toggle SGA font)</p>
-        <p>Try the <a href="https://standardgalactic.github.io/sga-converter.html">Galactic Translator</a></p>
-        <p>Also available <a href="https://github.com/standardgalactic/standardgalactic.github.io/blob/main/Galactic-Translator.apk">as an Android app</a></p>
-        <p><img src="Images/sga-regular.png" alt="SGA Regular Font Sample"/></p>
-        <p><img src="cheat-sheet.png" alt="SGA Cheat Sheet"/></p>
-        <h2>Personal Biography</h2>
-        <p><img src="Images/biography.png" alt="Biography Image"/></p>
-        <p>All-Caps</p>
-        <p><img src="Images/sample-01.png" alt="Sample Image 01"/></p>
-        <p>Unicode</p>
-        <p><img src="Images/sample-02.png" alt="Sample Image 02"/></p>
-    <h1>How to Use</h1>
+
+<body>
+    <div id="controlPanel" style="display:none; position:fixed; top:10px; right:10px; background-color:rgba(0,0,0,0.7); color:white; padding:10px; border-radius:8px;">
+    <p>Controls:</p>
+    <ul>
+        <li>C: Show Commands</li>
+        <li>WASD: Move ship</li>
+        <li>QE: Rotate left/right</li>
+        <li>RF: View up/down</li>
+        <li>HL: Warp left and right</li>
+        <li>JK: Zip down and up </li>
+        <li>Z: Toggle Standard Galactic</li>
+        <li>X: Toggle Labels</li>
+        <li>G: Global Reset</li>
+        
+        <!-- Add any additional controls here -->
+    </ul>
+</div>
+<script>
+    let isUsingCustomFont = true;
+    let canvas = document.createElement("canvas");
+    let context = canvas.getContext("2d");
+    context.font = "30px 'Sga Regular'";
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+
+    let controlPanelTimeout;
+
+function toggleControlPanel() {
+    let controlPanel = document.getElementById("controlPanel");
+    if (controlPanel.style.display === "none") {
+        controlPanel.style.display = "block";
+        resetControlPanelTimeout();
+    } else {
+        controlPanel.style.display = "none";
+        clearTimeout(controlPanelTimeout);
+    }
+}
+
+function resetControlPanelTimeout() {
+    clearTimeout(controlPanelTimeout);
+    controlPanelTimeout = setTimeout(() => {
+        document.getElementById("controlPanel").style.display = "none";
+    }, 10000);
+}
+        let spaceship = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            speed: 0,
+            maxSpeed: 5,
+            acceleration: 0.1
+        };
+
+        let words = planetsList;
+        let bubbles = [];
+        for (let i = 0; i < 1000; i++) {
+            bubbles.push({
+                x: Math.random() * canvas.width - spaceship.x,
+                y: Math.random() * canvas.height - spaceship.y,
+                z: Math.random() * canvas.width,
+                size: 3,
+                speed: Math.random() * 0.5 + 0.1,
+                word: words[Math.floor(Math.random() * words.length)],
+                isFocused: false
+            });
+        }
+
+        let controls = {
+            up: false, down: false,
+            leftRotate: false, rightRotate: false,
+            leftView: false, downView: false,
+            upView: false, rightView: false,
+
+            showLabels: true, 
+        };
+
+        let viewRotationX = 0;   // Rotation for h and l
+        let viewRotationY = 0;   // Rotation for j and k
     
-    <h2>Install SGA-Regular.ttf</h2>
-    
-    <h3>To use as System language in Windows</h3>
-    <p><strong style="color: red;">!! Very Dangerous !!</strong> <br><strong style="color: red;">!! Do not use unless you know what you are doing !!</strong></p>
-    <p>Run <code>vorticon.reg</code> to set SGA-Regular as system language, and <code>vorticon-restore.reg</code> to return it to normal.</p>
-    <p>May need to restart Windows for it to take effect.</p>
+        function draw() {
+            context.fillStyle = "#000000";
+            context.fillRect(0, 0, canvas.width, canvas.height);
 
-    <h3>For your web browser</h3>
-    <p>Use FOUT (Flash Of Unstyled Text)</p>
-    <p>Adjust the designated font settings for your browser and add the following CSS Style Sheet in order to override webpage defaults:</p>
+            for (let bubble of bubbles) {
+                let verticalMoveFactor = controls.upView ? 1 : controls.downView ? -1 : 0;
+                bubble.y += verticalMoveFactor * 5;
+             
+                let scale = canvas.width / bubble.z;
+                let x = spaceship.x + bubble.x * scale;
+                let y = spaceship.y + bubble.y * scale;
 
-    <pre><code>
-/* Apply your custom font globally */
-body { font-family: 'SGA Regular' !important; }
+                if (bubble.isFocused) {
+                    context.fillStyle = "#FF0000";
+                    context.fillText("Planetary Brake Activating!", canvas.width / 2 - 100, 30);
+                }
 
-/* Specific styling for web page titles (usually h1 tags) */
-h1, .title, .heading { font-family: 'SGA Regular' !important; }
-
-/* Specific styling for page subtitles (usually h2 tags) */
-h2, .subtitle { font-family: 'SGA Regular' !important; }
-
-/* Apply custom font to links */
-a { font-family: 'SGA Regular' !important; }
-
-/* Apply custom font to navigation menus */
-nav, .navbar, .menu { font-family: 'SGA Regular' !important; }
-
-/* Apply custom font to buttons */
-button, .btn { font-family: 'SGA Regular' !important; }
-
-/* Apply custom font to form elements */
-input, textarea, select { font-family: 'SGA Regular' !important; }
-
-/* Additional elements that might need custom styling */
-p, span, div, li { font-family: 'SGA Regular' !important; }
-
-/* Attempt to style browser-specific elements (experimental) */
-.titlebar, .tab-title { font-family: 'SGA Regular' !important; }
-    </code></pre>
-
-    </div>
-    <script>
-        let isUsingCustomFont = true; // Initial state: using SGA
-        const body = document.body;
-        const button = document.querySelector('.toggle-font');
-
-        function toggleFont() {
-            if (isUsingCustomFont) {
-                body.classList.add('latin-font');
-                body.classList.remove('sga-font');
-                button.textContent = 'Toggle to SGA (Control-Z)';
-                button.style.fontFamily = 'Roboto, sans-serif';
-            } else {
-                body.classList.add('sga-font');
-                body.classList.remove('latin-font');
-                button.textContent = 'Toggle to Latin (Control-Z)';
-                button.style.fontFamily = 'Sga Regular';
+                context.strokeStyle = "#ffffff";
+                context.beginPath();
+                context.arc(x, y, bubble.size * scale, 0, Math.PI * 2);
+                context.fillStyle = "#000";
+                context.fill();
+                context.closePath();
+                context.stroke();
+                if (scale > 0.1 && controls.showLabels) {
+                    context.fillStyle = "#ffffff";
+                    context.fillText(bubble.word, x, y);
+                }
             }
-            isUsingCustomFont = !isUsingCustomFont;
+        }
+
+        function update() {
+            if (controls.up) {
+                spaceship.speed += spaceship.acceleration;
+                if (spaceship.speed > spaceship.maxSpeed) {
+                    spaceship.speed = spaceship.maxSpeed;
+                }
+            } else if (controls.down) {
+                spaceship.speed -= spaceship.acceleration;
+                if (spaceship.speed < 0) {
+                    spaceship.speed = 0;
+                }
+            }
+
+            let rotateViewFactor = controls.rightView ? 0.025 : controls.leftView ? -0.025 : 0;
+            
+            for (let bubble of bubbles) {
+                let angle = Math.atan2(bubble.y - spaceship.y, bubble.x - spaceship.x) + viewRotationX;
+                let distance = Math.sqrt((bubble.x - spaceship.x) ** 2 + (bubble.y - spaceship.y) ** 2);
+                bubble.x = spaceship.x + distance * Math.cos(angle);
+                bubble.y = spaceship.y + distance * Math.sin(angle) + viewRotationY;
+                
+                angle += rotateViewFactor;
+                distance = Math.sqrt((bubble.x - spaceship.x) ** 2 + (bubble.y - spaceship.y) ** 2);
+                bubble.x = spaceship.x + distance * Math.cos(angle);
+                bubble.y = spaceship.y + distance * Math.sin(angle);
+            }
+
+            
+
+            let rotateFactor = controls.rightRotate ? 1 : controls.leftRotate ? -1 : 0;
+
+            for (let bubble of bubbles) {
+                if (bubble.isFocused) {
+                    bubble.size += 0.05;
+                }
+
+                bubble.z -= spaceship.speed;
+                bubble.x += rotateFactor * 5;
+
+                if (bubble.z < 0.5 || bubble.z > canvas.width || bubble.x < -canvas.width / 2 || bubble.x > canvas.width * 1.5 || bubble.y < -canvas.height / 2 || bubble.y > canvas.height * 1.5) {
+                    bubble.x = Math.random() * canvas.width - spaceship.x;
+                    bubble.y = Math.random() * canvas.height - spaceship.y;
+                    bubble.z = canvas.width;
+                    bubble.isFocused = false;
+                }
+            }
+
+            // Check for focus
+            for (let bubble of bubbles) {
+                let scale = canvas.width / bubble.z;
+                let x = spaceship.x + bubble.x * scale;
+                let y = spaceship.y + bubble.y * scale;
+
+                if (x > spaceship.x - 20 && x < spaceship.x + 20 && y > spaceship.y - 20 && y < spaceship.y + 20) {
+                    bubble.isFocused = true;
+                } else {
+                    bubble.isFocused = false;
+                }
+            }
         }
 
         document.addEventListener("keydown", function(event) {
-            if (event.ctrlKey && event.key === 'z') {
-                toggleFont();
+            switch (event.key) {
+                case 'c':
+                    toggleControlPanel();
+                    break;
+                case 'w':
+                    controls.up = true;
+                    break;
+                case 's':
+                    controls.down = true;
+                    break;
+                case 'a':
+                    controls.leftRotate = true;
+                    break;
+                case 'd':
+                    controls.rightRotate = true;
+                    break;
+                case 'q':
+                    controls.leftView = true;
+                    break;
+                 case 'g': // Simulate F5 reset
+                    location.reload(); 
+                    break;
+                case 'e':
+                    controls.rightView = true;
+                    break;
+           
+                case 'r':
+                    controls.upView = true;
+                    break;
+                case 'f':
+                    controls.downView = true;
+                    break;
+                case 'x': // Toggle the labels
+                    controls.showLabels = !controls.showLabels;
+                    break;
+                case 'h':
+                    viewRotationX -= 0.05;   // You can adjust the value for a faster or slower rotation
+                    break;
+        case 'l':
+            viewRotationX += 0.05;
+            break;
+        case 'j':
+            viewRotationY += 5;     // Adjust the value for a faster or slower vertical view change
+            break;
+        case 'k':
+            viewRotationY -= 5;
+            break;
+            case 'z': // Toggle the font
+                    if (isUsingCustomFont) {
+                        document.body.style.fontFamily = "Sga Regular";
+                        context.font = "30px 'Sga Regular'";
+                    } else {
+                        document.body.style.fontFamily = "sans-serif";
+                        context.font = "15px sans-serif";
+                    }
+                    isUsingCustomFont = !isUsingCustomFont;
+                    break;
             }
         });
 
-        // Initialize with correct font setup on page load
-        document.addEventListener("DOMContentLoaded", function() {
-            body.classList.add('sga-font'); // Ensure initial load is SGA font
+        document.addEventListener("keyup", function(event) {
+                if (event.key === 'c') {
+                resetControlPanelTimeout();
+            }
+                        switch (event.key) {
+                case 'w':
+                    controls.up = false;
+                    break;
+                case 's':
+                    controls.down = false;
+                    break;
+                case 'a':
+                    controls.leftRotate = false;
+                    break;
+                case 'd':
+                    controls.rightRotate = false;
+                    break;
+                case 'q':
+                    controls.leftView = false;
+                    break;
+                case 'e':
+                    controls.rightView = false;
+                    break;
+                case 'h':
+                    controls.leftView = false;
+                    break;
+                case 'j':
+                    controls.downView = false;
+                    break;
+                case 'k':
+                    controls.upView = false;
+                    break;
+                case 'l':
+                    controls.rightView = false;
+                    break;
+                case 'r':
+                    controls.upView = false;
+                    break;
+                case 'f':
+                    controls.downView = false;
+                    break;
+
+            }
         });
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        loop();
     </script>
 </body>
+
 </html>
