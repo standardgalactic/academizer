@@ -14,7 +14,7 @@ fi
 base_directory="$PWD"
 
 # List of directories to process
-directories=("abraxas" "agora" "alphabet" "brain" "Centerfuge" "eclectric-oil" "example" "Haplopraxis/IFM" "keen-unicoder" "library" "logical-connectives" "mindgame" "mirror" "negentropy" "phonograph" "prototypes" "psychohistory" "quantum-soup" "standardgalactic.github.io" "technobabble" "unfinished-thoughts" "unscannable-interfaces" "substrate" "systada" "xanadu" "zygomindfulness")
+directories=("systada" "library")
 
 # Loop through each specified directory
 for dir in "${directories[@]}"; do
