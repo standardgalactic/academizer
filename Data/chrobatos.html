@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrobatos — Resistor Color Code Game</title>
+    <meta property="og:image" content="sample-answers.png">
+    <style>
+        @font-face {
+            src: url('fonts/Sga-Regular.woff2') format('woff2'),
+                 url('fonts/Sga-Regular.woff') format('woff'),
+                 url('fonts/Sga-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-family: 'Sga Regular';
+        }
+
+        body {
+            font-family: 'Sga Regular', Arial, sans-serif;
+            color: #00ff00;
+            background: black;
+            margin: 0;
+            overflow: auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #game-container {
+            text-align: center;
+            width: 80%;
+            max-width: 800px;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            box-shadow: 0 0 20px #00ff00;
+            border: 2px solid #00ff00;
+            margin: 20px 0;
+        }
+
+        .legend, .example, .scoreboard, .highscore {
+            margin: 20px 0;
+        }
+
+        .color-block {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            margin: 0 5px;
+        }
+
+        .legend-item {
+            display: inline-block;
+            text-align: center;
+            margin: 5px;
+        }
+
+        .example input {
+            background-color: black;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px;
+            font-family: inherit;
+        }
+
+        button {
+            background-color: black;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        button:hover {
+            background-color: #00ff00;
+            color: black;
+        }
+
+        @keyframes flashCorrect {
+            from { background-color: black; }
+            to { background-color: #00ff00; }
+        }
+
+        @keyframes flashIncorrect {
+            from { background-color: black; }
+            to { background-color: red; }
+        }
+
+        .hidden-image {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Chrobatos</h1>
+        <h2>Resistor Color Code Game</h2>
+        <button onclick="toggleFont()">Toggle Font (Ctrl+Z)</button>
+        <div class="legend">
+            <h2>Color Code Legend</h2>
+            <div id="legend-colors"></div>
+        </div>
+        <div class="examples">
+            <h2>Guess the Color Codes</h2>
+            <div id="examples-container"></div>
+            <button onclick="verifyAnswers()">Verify</button>
+        </div>
+        <div class="scoreboard">
+            <h2>Score: <span id="score">0</span></h2>
+        </div>
+        <div class="highscore">
+            <h2>High Score</h2>
+            <input type="text" id="name" placeholder="Your Name"> 
+            <button onclick="saveHighScore()">Save High Score</button>
+            <p id="highScoreDisplay"></p>
+        </div>
+    </div>
+
+    <img src="sample-answers.png" alt="Sample Answers" class="hidden-image">
+
+    <script>
+        const colors = [
+            { name: 'Black', value: 0, color: '#000000' },
+            { name: 'Brown', value: 1, color: '#A52A2A' },
+            { name: 'Red', value: 2, color: '#FF0000' },
+            { name: 'Orange', value: 3, color: '#FFA500' },
+            { name: 'Yellow', value: 4, color: '#FFFF00' },
+            { name: 'Green', value: 5, color: '#008000' },
+            { name: 'Blue', value: 6, color: '#0000FF' },
+            { name: 'Violet', value: 7, color: '#EE82EE' },
+            { name: 'Grey', value: 8, color: '#808080' },
+            { name: 'White', value: 9, color: '#FFFFFF' }
+        ];
+
+        let examples = [];
+        let score = 0;
+        let isUsingCustomFont = true;
+
+        function createLegend() {
+            const legendContainer = document.getElementById('legend-colors');
+            colors.forEach(color => {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+
+                const colorBlock = document.createElement('div');
+                colorBlock.className = 'color-block';
+                colorBlock.style.backgroundColor = color.color;
+
+                const colorValue = document.createElement('div');
+                colorValue.innerText = color.value;
+
+                legendItem.appendChild(colorBlock);
+                legendItem.appendChild(colorValue);
+                legendContainer.appendChild(legendItem);
+            });
+        }
+
+        function generateExamples() {
+            const examplesContainer = document.getElementById('examples-container');
+            examplesContainer.innerHTML = '';
+            examples = [];
+            for (let i = 0; i < 10; i++) {
+                const exampleColors = [];
+                for (let j = 0; j < 4; j++) {
+                    const randomColor = colors[Math.floor(Math.random() * 10)];
+                    exampleColors.push(randomColor);
+                }
+                examples.push(exampleColors);
+
+                const exampleDiv = document.createElement('div');
+                exampleDiv.className = 'example';
+                exampleDiv.id = `example${i}`;
+
+                exampleColors.forEach(color => {
+                    const colorBlock = document.createElement('div');
+                    colorBlock.className = 'color-block';
+                    colorBlock.style.backgroundColor = color.color;
+                    exampleDiv.appendChild(colorBlock);
+                });
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `guess${i}`;
+                exampleDiv.appendChild(input);
+
+                const resultSpan = document.createElement('span');
+                resultSpan.className = 'result';
+                resultSpan.id = `result${i}`;
+                exampleDiv.appendChild(resultSpan);
+
+                examplesContainer.appendChild(exampleDiv);
+            }
+        }
+
+        function verifyAnswers() {
+            score = 0;
+            let allCorrect = true;
+            for (let i = 0; i < 10; i++) {
+                const guess = document.getElementById(`guess${i}`).value;
+                const correctAnswer = examples[i].map(color => color.value).join('');
+                if (guess === correctAnswer) {
+                    document.getElementById(`result${i}`).innerHTML = 'Correct';
+                    score++;
+                } else {
+                    document.getElementById(`result${i}`).innerHTML = 'Incorrect';
+                    allCorrect = false;
+                }
+            }
+            document.getElementById('score').innerText = score;
+            if (allCorrect) {
+                document.body.style.animation = 'flashCorrect 0.5s';
+                setTimeout(() => {
+                    document.body.style.animation = '';
+                    alert('Congratulations! All answers are correct!');
+                }, 500);
+            } else {
+                document.body.style.animation = 'flashIncorrect 0.5s';
+                setTimeout(() => {
+                    document.body.style.animation = '';
+                }, 500);
+            }
+        }
+
+        function saveHighScore() {
+            const name = document.getElementById('name').value;
+            if (name) {
+                const highScoreDisplay = document.getElementById('highScoreDisplay');
+                highScoreDisplay.innerHTML = `High Score: ${score} by ${name}`;
+            } else {
+                alert('Please enter your name');
+            }
+        }
+
+        function toggleFont() {
+            if (isUsingCustomFont) {
+                document.body.style.fontFamily = "Arial, sans-serif";
+                document.querySelectorAll('input').forEach(input => input.style.fontFamily = "Arial, sans-serif");
+                isUsingCustomFont = false;
+            } else {
+                document.body.style.fontFamily = "Sga Regular";
+                document.querySelectorAll('input').forEach(input => input.style.fontFamily = "Sga Regular");
+                isUsingCustomFont = true;
+            }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'z') {
+                toggleFont();
+            }
+        });
+
+        createLegend();
+        generateExamples();
+    </script>
+</body>
+</html>

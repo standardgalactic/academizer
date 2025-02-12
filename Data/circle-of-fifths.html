@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circle of Fifths Transposer</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            background-color: #fff;
+            border: 1px solid #ccc;
+        }
+        #controls {
+            margin-top: 10px;
+        }
+        button {
+            padding: 10px;
+            margin: 5px;
+        }
+        #progressionDisplay {
+            margin-top: 15px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+	<h1>Circle of Fifths</h1>
+	<img src="circle-of-fifths.jpg" style="max-width: 100%; height: auto;" /><br>
+
+<h2>Circle of Fifths Transposer</h2>
+<canvas id="circleCanvas" width="400" height="400"></canvas>
+<div id="controls">
+    <button onclick="rotateCircle(-1)">Rotate Left</button>
+    <button onclick="rotateCircle(1)">Rotate Right</button>
+</div>
+<div id="progressionDisplay"></div>
+
+<script>
+    const canvas = document.getElementById("circleCanvas");
+    const ctx = canvas.getContext("2d");
+    const outerRadius = 150;
+    const innerRadius = 100;
+
+    // Chord names for Circle of Fifths
+    const chordsMajor = ["C", "G", "D", "A", "E", "B", "F#", "Db", "Ab", "Eb", "Bb", "F"];
+    const chordsMinor = ["Am", "Em", "Bm", "F#m", "C#m", "G#m", "D#m", "Bbm", "Fm", "Cm", "Gm", "Dm"];
+    const progressionDisplay = document.getElementById("progressionDisplay");
+    const progressions = {
+        "I-IV-V": [0, 5, 7],
+        "ii-V-I": [2, 7, 0],
+    };
+
+    let rotationIndex = 0;
+
+    function drawCircleOfFifths() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw static I, IV, V labels
+        drawFixedLabels();
+
+        // Draw major chords around the outer circle
+        for (let i = 0; i < chordsMajor.length; i++) {
+            const angle = (i + rotationIndex) * (2 * Math.PI / chordsMajor.length) - Math.PI / 2;
+            const x = canvas.width / 2 + Math.cos(angle) * outerRadius;
+            const y = canvas.height / 2 + Math.sin(angle) * outerRadius;
+            ctx.font = "16px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "black";
+            ctx.fillText(chordsMajor[i], x, y);
+        }
+
+        // Draw minor chords around the inner circle
+        for (let i = 0; i < chordsMinor.length; i++) {
+            const angle = (i + rotationIndex) * (2 * Math.PI / chordsMinor.length) - Math.PI / 2;
+            const x = canvas.width / 2 + Math.cos(angle) * innerRadius;
+            const y = canvas.height / 2 + Math.sin(angle) * innerRadius;
+            ctx.font = "14px Arial";
+            ctx.fillStyle = "gray"; // Keep relative minors in gray
+            ctx.fillText(chordsMinor[i], x, y);
+        }
+
+        // Update the progression display with transposed chords
+        displayTransposedProgressions();
+    }
+
+    function drawFixedLabels() {
+        const labelRadius = outerRadius + 30;
+        const labels = ["IV", "I", "V"];
+        const labelAngles = [Math.PI * (5/6), 0, Math.PI * (1/6)];  // Correct angles for IV (11), I (12), V (1)
+
+        labels.forEach((label, index) => {
+            const angle = labelAngles[index] - Math.PI / 2;  // Adjust to position above
+            const x = canvas.width / 2 + Math.cos(angle) * labelRadius;
+            const y = canvas.height / 2 + Math.sin(angle) * labelRadius;
+            ctx.font = "18px Arial";
+            ctx.fillStyle = "red";
+            ctx.fillText(label, x, y);
+        });
+
+        // Draw minor labels in blue at the same positions as major
+        drawMinorLabels();
+    }
+
+    function drawMinorLabels() {
+        const labelRadius = outerRadius + 15;  // Minor labels closer to the center
+        const minorLabels = ["ii", "vi", "iii"];
+        const minorLabelAngles = [Math.PI * (5/6), 0, Math.PI * (1/6)];  // Match positions with IV (11), I (12), V (1)
+
+        minorLabels.forEach((label, index) => {
+            const angle = minorLabelAngles[index] - Math.PI / 2;  // Adjust to position above
+            const x = canvas.width / 2 + Math.cos(angle) * labelRadius;
+            const y = canvas.height / 2 + Math.sin(angle) * labelRadius;
+            ctx.font = "14px Arial";
+            ctx.fillStyle = "blue"; // Minor labels in blue
+            ctx.fillText(label, x, y);
+        });
+    }
+
+    function displayTransposedProgressions() {
+        const rootChordIndex = (0 + rotationIndex) % chordsMajor.length;
+        const transposedProgressions = [];
+
+        for (const [name, indices] of Object.entries(progressions)) {
+            const transposedChords = indices.map(index => {
+                const chordIndex = (index + rotationIndex) % chordsMajor.length;
+                return chordsMajor[chordIndex];
+            });
+            transposedProgressions.push(`${name}: ${transposedChords.join(" - ")}`);
+        }
+
+        progressionDisplay.innerHTML = transposedProgressions.join("<br>");
+    }
+
+    function rotateCircle(direction) {
+        rotationIndex = (rotationIndex + direction + chordsMajor.length) % chordsMajor.length;
+        drawCircleOfFifths();
+    }
+
+    // Initial draw
+    drawCircleOfFifths();
+</script>
+<h3>𝘕𝘰𝘵 𝘸𝘰𝘳𝘬𝘪𝘯𝘨 𝘺𝘦𝘵</h3>
+</body>
+</html>

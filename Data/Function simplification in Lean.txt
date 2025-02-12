@@ -1,0 +1,903 @@
+Function simplification in Lean
+Open sidebar
+Function simplification in Lean
+Model: GPT-4
+Simplify: -- We can use any constants in the previous definitions:
+
+-- A function that takes a value of type �� and returns a function that takes a value of type �� and returns it
+#check �� b x, x     -- �� ��� �� ��� ��
+
+-- The same function, but with explicit types for the parameters
+#check �� (b : ��) (x : ��), x    -- �� ��� �� ��� ��
+
+-- A function that takes two functions g and f, and returns their composition
+#check �� g f x, g (f x)
+                              -- (�� ��� ��) ��� (�� ��� ��) ��� �� ��� ��
+
+-- Lean lets us combine lambdas, so the second example is equivalent to the first. We can also use any types:
+
+-- A function that takes two types and returns a function that takes a value of each type and returns the second one
+#check �� �� �� b x, x
+#check �� (�� �� : Type*) b x, x
+
+-- A function that takes three types and returns a function that takes two functions and returns their composition
+#check �� �� �� �� g f x, g (f x)
+#check �� (�� �� �� : Type*) g f x, g (f x)
+
+-- The last expression denotes the same function as before. Within a lambda expression �� x : ��, t, the variable x is a ���bound variable���: it is really a placeholder, whose ���scope��� does not extend beyond t. For example, the variable b in the expression �� b x, x has nothing to do with the constant b declared earlier. In fact, the expression denotes the same function as �� u z, z. Formally, the expressions that are the same up to a renaming of bound variables are called alpha equivalent, and are considered ���the same.��� Lean recognizes this equivalence.
+1 / 1
+ChatGPT
+ChatGPT
+From your examples, it appears you're using Lean, a theorem prover and programming language designed to test and prove mathematical theories. To simplify your functions, let's first break down what each one is doing:
+�� b x, x: This is a function that takes two inputs,
+b
+and
+x
+, and simply returns
+x
+. The type is �� ��� �� ��� ��, which signifies it takes an input of type �� and another of type ��, then returns a value of type ��.
+�� (b : ��) (x : ��), x: This is the same as the above function, but with explicit typing of the parameters.
+�� g f x, g (f x): This is a function composition operator. It takes two functions
+g
+and
+f
+and an argument
+x
+, and it applies
+f
+to
+x
+and then applies
+g
+to the result. The type of this function is (�� ��� ��) ��� (�� ��� ��) ��� �� ��� ��, which signifies that it takes a function from �� to ��, a function from �� to ��, and a value of type ��, and returns a value of ��.
+�� �� �� b x, x and �� (�� �� : Type*) b x, x: These functions take two type arguments, �� and ��, and two values,
+b
+and
+x
+, and return
+x
+. They're similar to the first function but with the types of parameters being explicitly passed in the function.
+�� �� �� �� g f x, g (f x) and �� (�� �� �� : Type*) g f x, g (f x): These functions take three type arguments, ��, ��, and ��, two functions
+g
+and
+f
+, and a value
+x
+, and return the result of function composition of
+g
+and
+f
+with
+x
+as the argument. They are similar to the third function but with types of parameters and functions being explicitly passed in the function.
+Your last remark about alpha equivalence is a property of lambda calculus, stating that two lambda expressions are equivalent if they are the same up to renaming of their bound variables. Lean, being a tool based on lambda calculus, recognizes this equivalence.
+In summary, your functions aren't particularly complex, so there's not much to simplify without changing their behavior. If you need further explanation or have more complex functions to discuss, feel free to provide more context or examples.
+1 / 1
+I meant to explain it simply
+1 / 1
+ChatGPT
+ChatGPT
+Ah, I see. You're asking for a simpler explanation. Let's try this:
+�� b x, x: This function takes two inputs and just returns the second one. It's like you give it two things, but it only gives you the second one back.
+�� (b : ��) (x : ��), x: This does the same thing as the first function. The only difference is that now we're specifying what kind of things (or "types") the inputs can be.
+�� g f x, g (f x): This one is a bit more complex. It takes three inputs. The first two inputs are themselves functions, and the third one is just a regular input. It applies the second function to the input, then applies the first function to that result. In other words, it's like a machine that uses two other smaller machines in sequence to transform an item.
+�� �� �� b x, x and �� (�� �� : Type*) b x, x: These functions are the same as the first one. The only difference is that we're now specifying the types of the inputs right at the start.
+�� �� �� �� g f x, g (f x) and �� (�� �� �� : Type*) g f x, g (f x): These functions do the same thing as the third function. Again, the only difference is that we're specifying the types of everything right at the start.
+The last part about "alpha equivalence" is a fancy way of saying that the names we use for things inside these functions don't really matter. As long as the function does the same thing, we consider it to be the same function, even if the names of things inside it are different.
+In summary, these functions are about taking in some inputs and then doing something with those inputs. Some functions just return one of the inputs, while others use the inputs in more complex ways.
+1 / 1
+Notice that applying a term t : �� ��� �� to a term s : �� yields an expression t s : ��. Returning to the previous example and renaming bound variables for clarity, notice the types of the following expressions:
+
+try it!
+constants �� �� �� : Type
+constant f : �� ��� ��
+constant g : �� ��� ��
+constant h : �� ��� ��
+constants (a : ��) (b : ��)
+
+#check (�� x : ��, x) a                -- ��
+#check (�� x : ��, b) a                -- ��
+#check (�� x : ��, b) (h a)            -- ��
+#check (�� x : ��, g (f x)) (h (h a))  -- ��
+
+#check (�� (v : �� ��� ��) (u : �� ��� ��) x, v (u x)) g f a   -- ��
+
+#check (�� (Q R S : Type*) (v : R ��� S) (u : Q ��� R) (x : Q),
+        v (u x)) �� �� �� g f a        -- ��
+As expected, the expression (�� x : ��, x) a has type ��. In fact, more should be true: applying the expression (�� x : ��, x) to a should ���return��� the value a. And, indeed, it does:
+
+try it!
+constants �� �� �� : Type
+constant f : �� ��� ��
+constant g : �� ��� ��
+constant h : �� ��� ��
+constants (a : ��) (b : ��)
+
+#reduce (�� x : ��, x) a                -- a
+#reduce (�� x : ��, b) a                -- b
+#reduce (�� x : ��, b) (h a)            -- b
+#reduce (�� x : ��, g (f x)) a          -- g (f a)
+
+#reduce (�� (v : �� ��� ��) (u : �� ��� ��) x, v (u x)) g f a   -- g (f a)
+
+#reduce (�� (Q R S : Type*) (v : R ��� S) (u : Q ��� R) (x : Q),
+       v (u x)) �� �� �� g f a        -- g (f a)
+The command #reduce tells Lean to evaluate an expression by reducing it to normal form, which is to say, carrying out all the computational reductions that are sanctioned by the underlying logic. The process of simplifying an expression (�� x, t)s to t[s/x] ��� that is, t with s substituted for the variable x ��� is known as beta reduction, and two terms that beta reduce to a common term are called beta equivalent. But the #reduce command carries out other forms of reduction as well:
+
+try it!
+constants m n : nat
+constant b : bool
+
+#print "reducing pairs"
+#reduce (m, n).1        -- m
+#reduce (m, n).2        -- n
+
+#print "reducing boolean expressions"
+#reduce tt && ff        -- ff
+#reduce ff && b         -- ff
+#reduce b && ff         -- bool.rec ff ff b
+
+#print "reducing arithmetic expressions"
+#reduce n + 0           -- n
+#reduce n + 2           -- nat.succ (nat.succ n)
+#reduce 2 + 3           -- 5
+1 / 1
+ChatGPT
+ChatGPT
+Great, let's break down what's happening in this Lean code:
+constants �� �� �� : Type
+: This sets up three types (��, ��, ��).
+constant f : �� ��� ��
+,
+constant g : �� ��� ��
+,
+constant h : �� ��� ��
+: This sets up three functions (f, g, h), each transforming one type into another.
+constants (a : ��) (b : ��)
+: This sets up two constants,
+a
+of type ��, and
+b
+of type ��.
+Then we check types of lambda expressions, followed by their reduced forms:
+(�� x : ��, x) a
+: The lambda function here is a function that takes an input and returns it as is. This function is then applied to
+a
+, resulting in
+a
+itself.
+(�� x : ��, b) a
+: The lambda function here is a function that takes an input but then ignores it and always returns
+b
+. This function is then applied to
+a
+, but it still returns
+b
+.
+(�� x : ��, g (f x)) a
+: The lambda function here takes an input, applies
+f
+to it, and then applies
+g
+to the result. When this is applied to
+a
+, we get
+g (f a)
+.
+(�� (v : �� ��� ��) (u : �� ��� ��) x, v (u x)) g f a
+: This lambda function takes three arguments, two functions and an input. It applies the second function to the input, then applies the first function to the result. So when applied to
+g
+,
+f
+, and
+a
+, it gives us
+g (f a)
+.
+(�� (Q R S : Type*) (v : R ��� S) (u : Q ��� R) (x : Q), v (u x)) �� �� �� g f a
+: This lambda function is similar to the previous one but with types specified for all parameters. When applied to
+��
+,
+��
+,
+��
+,
+g
+,
+f
+, and
+a
+, it also gives us
+g (f a)
+.
+In the last part, Lean demonstrates reductions of pairs, boolean expressions, and arithmetic expressions using the
+#reduce
+command. This command simplifies expressions by applying computational reductions defined by the underlying logic (like beta reduction in lambda calculus, and boolean and arithmetic operations).
+1 / 1
+tional behavior, and supports a notion of reduction, or normalization. In principle, two terms that reduce to the same value are called definitionally equal. They are considered ���the same��� by the underlying logical framework, and Lean does its best to recognize and support these identifications.
+
+It is this computational behavior that makes it possible to use Lean as a programming language as well. Indeed, Lean extracts bytecode from terms in a computationally pure fragment of the logical framework, and can evaluate them quite efficiently:
+
+try it!
+#eval 12345 * 54321
+In contrast, the #reduce command relies on Lean���s trusted kernel, the part of Lean that is responsible for checking and verifying the correctness of expressions and proofs. As such, the #reduce command is more trustworthy, but far less efficient. We will have more to say about #eval in Chapter 11, and it will play a central role in Programming in Lean. In this tutorial, however, we will generally rely on #reduce instead.
+1 / 1
+ChatGPT
+ChatGPT
+You're talking about Lean's capabilities in terms of both computation and proof verification.
+Lean supports a notion of reduction or normalization. When two terms reduce to the same value, they are considered definitionally equal. Lean tries to recognize and utilize these identifications.
+The computational features of Lean also enable it to be used as a programming language. Lean can extract bytecode from terms within its logical framework and execute it efficiently. This is demonstrated with the
+#eval 12345 * 54321
+command which will compute the multiplication of these two numbers.
+Lean has a trusted core (kernel) which is used to verify the correctness of expressions and proofs. The
+#reduce
+command uses this kernel and is therefore considered more reliable but less efficient compared to
+#eval
+.
+You mention
+#eval
+will play a crucial role in "Programming in Lean" and that there will be more on this in Chapter 11. However, in this tutorial, we're mainly focusing on
+#reduce
+.
+So, Lean is not only a tool for proving mathematical theorems but also a functional programming language that can compute expressions efficiently. The balance between these two aspects of Lean (theorem proving and computation) is key to its design and usage.
+1 / 1
+2.4. Introducing Definitions
+As we have noted above, declaring constants in the Lean environment is a good way to postulate new objects to experiment with, but most of the time what we really want to do is define objects in Lean and prove things about them. The def command provides one important way of defining new objects.
+
+try it!
+def foo : (��� ��� ���) ��� ��� := �� f, f 0
+
+#check foo    -- (��� ��� ���) ��� ���
+#print foo    -- �� (f : ��� ��� ���), f 0
+We can omit the type when Lean has enough information to infer it:
+
+try it!
+def foo' := �� f : ��� ��� ���, f 0
+The general form of a definition is def foo : �� := bar. Lean can usually infer the type ��, but it is often a good idea to write it explicitly. This clarifies your intention, and Lean will flag an error if the right-hand side of the definition does not have the right type.
+
+Lean also allows us to use an alternative format that puts the abstracted variables before the colon and omits the lambda:
+
+try it!
+def double (x : ���) : ��� := x + x
+#print double
+#check double 3
+#reduce double 3    -- 6
+
+def square (x : ���) := x * x
+#print square
+#check square 3
+#reduce square 3    -- 9
+
+def do_twice (f : ��� ��� ���) (x : ���) : ��� := f (f x)
+
+#reduce do_twice double 2    -- 8
+These definitions are equivalent to the following:
+
+try it!
+def double : ��� ��� ��� := �� x, x + x
+def square : ��� ��� ��� := �� x, x * x
+def do_twice : (��� ��� ���) ��� ��� ��� ��� := �� f x, f (f x)
+We can even use this approach to specify arguments that are types:
+
+try it!
+def compose (�� �� �� : Type*) (g : �� ��� ��) (f : �� ��� ��) (x : ��) :
+  �� :=
+g (f x)
+1 / 1
+ChatGPT
+ChatGPT
+Sure, let's talk about introducing definitions in Lean:
+def foo : (��� ��� ���) ��� ��� := �� f, f 0
+: This defines a function named
+foo
+that takes as input a function
+f
+from natural numbers to natural numbers and applies
+f
+to 0. The
+#check foo
+command then confirms the type of
+foo
+and
+#print foo
+shows its definition.
+def foo' := �� f : ��� ��� ���, f 0
+: This is a similar definition to the previous one, but here we do not specify the type of
+foo'
+before
+:=
+. Lean can infer it for us.
+def double (x : ���) : ��� := x + x
+: This defines a function
+double
+that takes a natural number and doubles it. Similarly,
+def square (x : ���) := x * x
+defines a function
+square
+that squares a natural number.
+def do_twice (f : ��� ��� ���) (x : ���) : ��� := f (f x)
+: This is a more complex function that takes a function
+f
+and a natural number
+x
+, applies
+f
+to
+x
+twice and returns the result. When applied to the
+double
+function and the number 2, as in
+do_twice double 2
+, it returns 8.
+def double : ��� ��� ��� := �� x, x + x
+,
+def square : ��� ��� ��� := �� x, x * x
+and
+def do_twice : (��� ��� ���) ��� ��� ��� ��� := �� f x, f (f x)
+are equivalent definitions to the previous ones, but written in a more explicit lambda calculus form.
+def compose (�� �� �� : Type*) (g : �� ��� ��) (f : �� ��� ��) (x : ��) : �� := g (f x)
+: This defines a
+compose
+function that takes three types, two functions, and a value, and applies the functions in sequence to the value.
+In summary, Lean allows for a flexible and readable way of defining functions using the
+def
+keyword.
+1 / 1
+Above, we discussed the process of ���currying��� a function, that is, taking a function f (a, b) that takes an ordered pair as an argument, and recasting it as a function f' a b that takes two arguments successively. As another exercise, we encourage you to complete the following definitions, which ���curry��� and ���uncurry��� a function.
+
+try it!
+def curry (�� �� �� : Type*) (f : �� �� �� ��� ��) : �� ��� �� ��� �� := sorry
+
+def uncurry (�� �� �� : Type*) (f : �� ��� �� ��� ��) : �� �� �� ��� �� := sorry
+2.5. Local Definitions
+Lean also allows you to introduce ���local��� definitions using the let construct. The expression let a := t1 in t2 is definitionally equal to the result of replacing every occurrence of a in t2 by t1.
+
+try it!
+#check let y := 2 + 2 in y * y   -- ���
+#reduce  let y := 2 + 2 in y * y   -- 16
+
+def t (x : ���) : ��� :=
+let y := x + x in y * y
+
+#reduce t 2   -- 16
+Here, t is definitionally equal to the term (x + x) * (x + x). You can combine multiple assignments in a single let statement:
+
+try it!
+#check   let y := 2 + 2, z := y + y in z * z   -- ���
+#reduce  let y := 2 + 2, z := y + y in z * z   -- 64
+1 / 1
+ChatGPT
+ChatGPT
+Sure, let's go over this:
+Currying and Uncurrying Functions
+: Currying is the technique of translating the evaluation of a function that takes multiple arguments into evaluating a sequence of single-argument functions. The
+curry
+and
+uncurry
+functions you have are placeholders (indicated by
+sorry
+) which mean they are yet to be defined.
+curry
+function would take a function
+f
+that expects a tuple of type
+�� �� ��
+and transforms it into a function that expects two parameters of type
+��
+and
+��
+respectively.
+uncurry
+would do the opposite. It takes a function
+f
+that expects two parameters of type
+��
+and
+��
+respectively and transforms it into a function that expects a tuple of type
+�� �� ��
+.
+Local Definitions
+: In Lean, you can use the
+let
+keyword to create local definitions. For example,
+let y := 2 + 2 in y * y
+means "let y be the result of 2 + 2, and then calculate y * y". The scope of
+y
+is only within this expression. When you use
+#reduce
+, Lean will compute the value of the expression, in this case 16.
+Similarly,
+def t (x : ���) : ��� := let y := x + x in y * y
+defines a function
+t
+that takes a natural number
+x
+, doubles it (saved as
+y
+), and then returns
+y * y
+.
+You can also combine multiple assignments in a single
+let
+statement. For example,
+let y := 2 + 2, z := y + y in z * z
+first defines
+y
+as 2 + 2 and then
+z
+as
+y + y
+, and finally calculates
+z * z
+.
+These techniques allow you to write more structured and readable code in Lean.
+1 / 1
+So can you give some examples of general programs in lean?
+1 / 1
+ChatGPT
+ChatGPT
+Absolutely, here are a few examples of Lean programs that perform common tasks:
+A function that doubles an input number
+lean
+Copy code
+def double (x : ���) : ��� := x * 2
+#reduce double 3 -- 6
+A function that calculates factorial
+lean
+Copy code
+def factorial : ��� ��� ���
+| 0        := 1
+| (n + 1)  := (n + 1) * factorial n
+#reduce factorial 5 -- 120
+A function that checks if a number is even
+lean
+Copy code
+def is_even (n : ���) : bool := n % 2 = 0
+#reduce is_even 4 -- true
+A recursive function that computes the nth Fibonacci number
+lean
+Copy code
+def fibonacci : ��� ��� ���
+| 0 := 0
+| 1 := 1
+| (n + 2) := fibonacci n + fibonacci (n + 1)
+#reduce fibonacci 10 -- 55
+A function that computes the length of a list
+lean
+Copy code
+def length {�� : Type} : list �� ��� ���
+| []       := 0
+| (x :: xs) := 1 + length xs
+#reduce length [1, 2, 3] -- 3
+A function that reverses a list
+lean
+Copy code
+def reverse {�� : Type} : list �� ��� list ��
+| [] := []
+| (x :: xs) := reverse xs ++ [x]
+#reduce reverse [1, 2, 3] -- [3, 2, 1]
+These examples demonstrate some of the capabilities of Lean for defining mathematical functions and working with data types. The
+#reduce
+command is used to evaluate the function on specific inputs.
+1 / 1
+What about a function that draws shapes?
+1 / 1
+ChatGPT
+ChatGPT
+Lean is a theorem prover and functional programming language focused on logical formalism and correctness. It is not designed to have graphical capabilities or a standard library for drawing shapes like you might find in languages such as Python or JavaScript.
+However, one could theoretically encode graphical data within Lean and then use an external program to render it. For instance, you might have a function in Lean that generates SVG (Scalable Vector Graphics) data or other textual representation of graphical data.
+Here's an illustrative (not executable in Lean) example:
+lean
+Copy code
+def point (x y : ���) : string := "(" ++ repr x ++ "," ++ repr y ++ ")"
+
+def draw_circle (radius : ���) : string :=
+  "circle at " ++ point radius radius ++ " with radius " ++ repr radius
+
+#eval draw_circle 5
+In this example, the
+draw_circle
+function would generate a string that could be interpreted as a command to draw a circle by some other software.
+This is a conceptual representation and it isn't actually how you would draw graphics in a real-world application, but it illustrates the point that Lean can generate data that could potentially be used to drive graphical output when interpreted by another program.
+1 / 1
+namespace hidden
+
+universe u
+
+constant list   : Type u ��� Type u
+
+constant cons   : �� �� : Type u, �� ��� list �� ��� list ��
+constant nil    : �� �� : Type u, list ��
+constant head   : �� �� : Type u, list �� ��� ��
+constant tail   : �� �� : Type u, list �� ��� list ��
+constant append : �� �� : Type u, list �� ��� list �� ��� list ��
+
+end hidden
+1 / 1
+ChatGPT
+ChatGPT
+It looks like you are defining a simple list data type within a new namespace called
+hidden
+.
+This list data type is parameterized by a type
+��
+(making it a polymorphic or "generic" type), and has several associated functions:
+cons
+is a function that takes a value of type
+��
+, a list of
+��
+, and returns a new list of
+��
+with the value prepended.
+nil
+is a function that takes a type
+��
+and returns an empty list of
+��
+.
+head
+is a function that takes a list of
+��
+and returns the first element (of type
+��
+).
+tail
+is a function that takes a list of
+��
+and returns a new list of
+��
+that consists of the original list minus the first element.
+append
+is a function that takes two lists of
+��
+and returns a new list of
+��
+that is the result of appending the second list to the first.
+Note that in Lean, lists and these associated functions are already defined in the standard library, so there is no need to define them manually unless you are doing it for educational purposes or you need some special behavior that the standard list type doesn't provide.
+1 / 1
+The namespace allows us to make a function called list, not using the one in the standard library
+1 / 1
+ChatGPT
+ChatGPT
+That's correct! In Lean, a namespace is a way to group related declarations together, and it provides a way to avoid naming conflicts between your own definitions and those in the Lean standard library or other libraries you might be using.
+When you define
+list
+within the
+hidden
+namespace, you're creating a completely separate definition that has no relation to the
+list
+from Lean's standard library. You can refer to this new definition as
+hidden.list
+, and the original
+list
+from the standard library is still accessible as
+list
+(or
+Lean.list
+, if you prefer).
+This is a powerful feature of Lean and other languages with similar namespace mechanisms. It allows you to build libraries of definitions and theorems without worrying that your names will conflict with those used elsewhere. It also allows you to, as you've done here, define your own versions of standard library functions for various purposes, like pedagogical ones.
+1 / 1
+Recall the theorem we want to prove:
+
+\sum_{k = 0}^n k = \frac{n \cdot (n + 1)}{2}
+k=0
+���
+n
+���
+ k= 
+2
+n���(n+1)
+���
+ 
+It turns out that integer division is annoyingly difficult to reason about, so let���s rewrite this as follows:
+
+2 \cdot \sum_{k = 0}^n k = n \cdot (n + 1)
+2��� 
+k=0
+���
+n
+���
+ k=n���(n+1)
+The first thing we want to do in Lean is recursively define the sum of the first nn natural numbers (you can think of this as the left-hand-side of the equation):
+
+def sum_of_first_n_nat : ��� ��� ���
+| 0 := 0
+| (nat.succ n) := (nat.succ n) + sum_of_first_n_nat n
+In Lean, the symbol ��� (for the natural numbers) is expressed with \nat. The successor function SS is defined as nat.succ. We���ve defined here a function which takes an x \in \mathbb{N}x���N and returns the sum of all the natural numbers from 00 to xx. The | character pattern-matches on the value of xx; the top line is the base case and the bottom line is the general case. You can test this function as follows (place your cursor at the end of the line to see the result in the Lean goal window):
+
+#eval sum_of_first_n_nat 4
+Now for the main event! Let���s write our theorem in Lean, then prove it:
+
+theorem closed_eq_sum_of_first_n_nat (n : ���) :
+    2 * (sum_of_first_n_nat n) = n * (nat.succ n) :=
+begin
+
+end
+Putting your cursor between the begin and end markers will bring up the current proof goal in the Lean goal window.
+
+The base case
+The ��� character denotes the thing we are currently trying to prove; we���re going to prove it inductively. Type:
+
+induction n with d hd,
+The Lean proof window will now show the following two goals, the base case and the inductive case:
+
+2 goals
+case nat.zero
+��� 2 * sum_of_first_n_nat 0 = 0 * 1
+
+case nat.succ
+d : ���,
+hd : 2 * sum_of_first_n_nat d = d * nat.succ d
+��� 2 * sum_of_first_n_nat (nat.succ d) = nat.succ d * nat.succ (nat.succ d)
+We will now make use of the workhorse rewrite tactic, rw. This tactic modifies our proof goal according to an existing definition or equation. Here, we can rewrite sum_of_first_n_nat 0 to its value by definition (0):
+
+rw sum_of_first_n_nat,
+By default Lean applies all statements to the topmost proof goal, so our base case will be rewritten as:
+
+case nat.zero
+��� 2 * 0 = 0 * 1
+We can now make use of the basic theorems nat.mul_zero, which says n * 0 = 0, and nat.zero_mul, which says 0 * n = 0:
+
+rw nat.mul_zero,
+rw nat.zero_mul,
+This proves the base case!
+1 / 1
+ChatGPT
+ChatGPT
+Great! You've started with an explanation of how to encode and prove the classic formula for the sum of the first n natural numbers in Lean. Let's go ahead and finish up the proof with the induction step.
+Given the inductive case:
+lean
+Copy code
+case nat.succ
+d : ���,
+hd : 2 * sum_of_first_n_nat d = d * nat.succ d
+��� 2 * sum_of_first_n_nat (nat.succ d) = nat.succ d * nat.succ (nat.succ d)
+You can proceed as follows:
+First, rewrite the definition of
+sum_of_first_n_nat
+at the successor of
+d
+:
+lean
+Copy code
+rw sum_of_first_n_nat,
+The goal will be:
+lean
+Copy code
+��� 2 * (nat.succ d + sum_of_first_n_nat d) = nat.succ d * nat.succ (nat.succ d)
+Use the distributive law to rewrite the left-hand side:
+lean
+Copy code
+rw mul_add,
+The goal will be:
+lean
+Copy code
+��� 2 * nat.succ d + 2 * sum_of_first_n_nat d = nat.succ d * nat.succ (nat.succ d)
+Use the inductive hypothesis to replace
+2 * sum_of_first_n_nat d
+with
+d * nat.succ d
+:
+lean
+Copy code
+rw hd,
+The goal will be:
+lean
+Copy code
+��� 2 * nat.succ d + d * nat.succ d = nat.succ d * nat.succ (nat.succ d)
+Rewrite the right-hand side using the distributive law and commutativity:
+lean
+Copy code
+rw nat.mul_succ,
+rw nat.succ_mul,
+The goal will be:
+lean
+Copy code
+��� 2 * nat.succ d + d * nat.succ d = nat.succ d * d + nat.succ d * nat.succ d
+Use the commutative law on the left-hand side to complete the proof:
+lean
+Copy code
+rw [mul_comm d, add_comm],
+The goal will be proven, ending the proof.
+Here is the complete proof:
+lean
+Copy code
+theorem closed_eq_sum_of_first_n_nat (n : ���) :
+    2 * (sum_of_first_n_nat n) = n * (nat.succ n) :=
+begin
+  induction n with d hd,
+  { rw sum_of_first_n_nat, rw nat.mul_zero, rw nat.zero_mul, },
+  { rw sum_of_first_n_nat, rw mul_add, rw hd, rw nat.mul_succ, rw nat.succ_mul, rw [mul_comm d, add_comm] }
+end
+This theorem now formally establishes in Lean that the sum of the first n natural numbers is indeed equal to n*(n+1)/2, as per the classical formula.
+1 / 1
+The inductive case
+Only the inductive case remains:
+
+case nat.succ
+d : ���,
+hd : 2 * sum_of_first_n_nat d = d * nat.succ d
+��� 2 * sum_of_first_n_nat (nat.succ d) = nat.succ d * nat.succ (nat.succ d)
+It���s worth taking some time to break down what everything means here. d and hd are our hypotheses: things which we are assuming for the purpose of proving the conclusion, denoted by ���. We can use our hypotheses in rewrites of the conclusion. Similar to the base case, we���ll first rewrite this expression according to the definition of the general case of sum_of_first_n_nat:
+
+rw sum_of_first_n_nat,
+This transforms our proof goal to:
+
+d : ���,
+hd : 2 * sum_of_first_n_nat d = d * nat.succ d
+��� 2 * (nat.succ d + sum_of_first_n_nat d) = nat.succ d * nat.succ (nat.succ d)
+We now want to multiply out 2, with the aim of being able to rewrite our proof goal with our inductive hypothesis hd. Use the nat.left_distrib theorem:
+
+rw nat.left_distrib,
+Now we have:
+
+d : ���,
+hd : 2 * sum_of_first_n_nat d = d * nat.succ d
+��� 2 * nat.succ d + 2 * sum_of_first_n_nat d = nat.succ d * nat.succ (nat.succ d)
+We can now rewrite 2 * sum_of_first_n_nat d in the proof goal using our inductive hypothesis hd!
+
+rw hd,
+to get:
+
+��� 2 * nat.succ d + d * nat.succ d = nat.succ d * nat.succ (nat.succ d)
+At this point, these are clearly equal; we just need some simple algebraic manipulations to prove it. To save space I���ll do them all in one shot, with comments.
+
+--rewrites nat.succ n to n + 1:
+rw nat.succ_eq_add_one,
+--rewrites nat.succ (n + m) to n + nat.succ m (from defn of addition)     
+--note rw usually rewrites from left to right over an equality; ��� (\l) does right to left
+rw ��� nat.add_succ,
+--rewrites nat.succ 1 to 2 (for clarity)
+rw (show nat.succ 1 = 2, by refl),
+--multiplies out d + 1
+rw left_distrib (d + 1) d 2,
+--moving things around with commutativity
+rw mul_comm 2 (d + 1),
+rw mul_comm d (d + 1),
+rw add_comm,
+And we���re done! Our proof is formally verified in Lean! In case you lost track at some point, here is a link to the Lean web editor with the full proof (move your cursor to the end of each line to see the proof state at that position). Now, some of you might be rolling your eyes at the last section. Do we really want to be wasting all this time multiplying things out line by line like we���re in grade school? Fortunately Lean provides some more advanced tactics which take care of the busywork. The entire final sequence of commands after rw hd can be replaced with just one tactic: ring. This tells Lean to intelligently search through the basic equalities underpinning the natural numbers in an attempt to make both sides of the equation equal each other. It���s part of the community-maintained MathLib, and can be accessed by putting import tactic at the top of your .lean file. This extensibility with powerful tactics is one of Lean���s great features.
+1 / 1
+ChatGPT
+ChatGPT
+It's great to see that you've arrived at the formal proof in Lean, illustrating the process of mathematical proof in a formal system. The ability to handle algebraic manipulations automatically with tactics like
+ring
+is indeed one of the powerful aspects of Lean and other interactive theorem provers, and it significantly reduces the tedium of proving such theorems.
+In case any other readers would like to see the final Lean proof code using the
+ring
+tactic for the final algebraic manipulations, here it is:
+lean
+Copy code
+import tactic   -- Required for the ring tactic
+
+def sum_of_first_n_nat : ��� ��� ���
+| 0 := 0
+| (nat.succ n) := (nat.succ n) + sum_of_first_n_nat n
+
+theorem closed_eq_sum_of_first_n_nat (n : ���) :
+    2 * (sum_of_first_n_nat n) = n * (nat.succ n) :=
+begin
+  induction n with d hd,
+  { rw sum_of_first_n_nat, rw nat.mul_zero, rw nat.zero_mul, },
+  { rw sum_of_first_n_nat, rw nat.left_distrib, rw hd, ring }
+end
+Just to clarify for the sake of completeness, the
+ring
+tactic is part of MathLib, a community-maintained library for Lean that extends Lean's built-in library with additional definitions, theorems, and tactics. This tactic automates reasoning about ring and semiring structures, which includes natural numbers under addition and multiplication. To use it, you'll need to import the
+tactic
+module as shown in the code above.
+1 / 1
+From https://ahelwer.ca/post/2020-04-05-lean-assignment/
+1 / 1
+ChatGPT
+ChatGPT
+The link you've shared leads to a detailed guide on using Lean to prove a simple algebraic theorem, namely:
+java
+Copy code
+\sum_{k =
+0
+}^
+n
+k
+=
+\frac{n \cdot (n +
+1
+)}{
+2
+}
+This theorem expresses the well-known property that the sum of the first 'n' natural numbers is equal to n times (n + 1) divided by 2. The guide walks through the process of representing this theorem in Lean, and then proving it by induction, making extensive use of Lean's tactics for rewriting expressions and doing algebraic manipulation.
+It's a great example of how Lean and other proof assistants can be used to mechanically check mathematical proofs. These tools are becoming increasingly important in areas of computer science and mathematics where it's crucial to have high assurance of correctness, such as formalized mathematics and the development of safety-critical software systems.
+Also, it's important to note that this kind of formal proof is more detailed and explicit than the proofs you typically see in mathematical papers or textbooks. It breaks down the argument into very small steps, each of which is checked by the Lean system to ensure logical validity. This gives a high level of confidence in the correctness of the final proof, but it also requires a bit more effort and detail than an informal mathematical proof.
+1 / 1
+What did we learn?
+Peter Scholze already explains in a second blog post two quite interesting things that we learnt during the process. Firstly, we learnt that the stable homotopy theory used in the original proof (via the Breen-Deligne resolution) can be eliminated. The way this was discovered was quite interesting; the formalisers were avoiding having to formalise this part of the proof but we were forced to start formalising the statements of what we needed; once these were clarified Commelin and Scholze realised that actually they could get away with a weaker theorem; initially we were calling the trick the ���Commelin complex��� but later on we discovered that the construction (but not the theorem needed about it) was made by MacLane many decades ago. And secondly Scholze seemed to learn something conceptual about the proof ��� he described it as ���what makes the proof work���. You can see his thoughts on the matter at this mathoverflow question. But in some sense this is old news (the second blog post was published over a year ago). What else did we learn?
+
+In my mind, one of the most important things we learnt is that if you get a group of mathematicians who are focussed on formalising an arbitrary piece of modern mathematics, then it can get done, however complex the theory is. In other words, we have a substantial piece of evidence showing that the software that computer scientists have developed for doing this task has now ���caught up with humans���. One could regard this as a triumph. One could also regard it as a pretty weak statement. The computer did not ���do��� the mathematics ��� the humans did it; first Scholze and Clausen did it, and then Scholze write the argument down (in pdf notes for the course in Bonn, linked to above) in a form suitable for mathematicians, and then Commelin and Massot wrote a more detailed mathematical blueprint in a ���hybrid��� part-Lean part-LaTeX format (you can view the blueprint here; it goes into much of the detail of the proof), and then finally a team of people transcribed what they had written from a human language into a computer language. One thing we learn is that the computer language (Lean���s dependent type theory, in this case) is rich and expressive enough to be able to formalise recent and complex work of a Fields Medallist. One could ask whether it is feasible to formalise this work in a weaker logic, for example in Higher Order Logic, the logic used by Isabelle/HOL and the other HOL systems. I don���t think anyone actually knows the answer to this question; I have conjectured that the answer is ���no��� but there are expert HOL users who seem to conjecture that the answer is ���yes���. My real fear is that we will never find out. Manuel Eberl is making fabulous progress formalising what I would call ���standard MSc mathematics��� such as the basic analytic theory of modular forms in a HOL system, but what we are missing is a HOL evangelist from the mathematical community (a kind of HOL version of me) and I don���t know how to create such a person. Indeed in some sense I am making the problem harder, because my constant evangelism for Lean to mathematicians has the consequence that research mathematicians who get interested in formalisation tend to come to Lean first, and the situation is becoming more and more like a monopoly. There are plus and minus points to this; one minus point is that nobody seems to be working on getting HOL to do things that ���it wasn���t designed to do��� (for example a modern treatment of sheaf cohomology, etale cohomology etc via derived functors).
+
+We also learn that formalisation can be, at times, very slow going. However one should not lose faith here. The reason it took 1 year to formalise five lines of mathematics was that a huge amount of theory-building had to be embarked upon beforehand. That theory only needs to be built once. Lean now has a working theory of short and long exact sequences, derived functors, abelian categories, complexes and so on; furthermore there is evidence that the formalisation of these definitions is usable in practice, because we used them. Indeed this is another thing that we are learning in the Lean community; instead of thinking ���what MSc course shall we formalise next��� we are thinking ���what major result shall we start working towards��� because this not only drives development but it ensures that developments of theories are actually usable.
+
+We learn that formalisation can be parallelised, although we already knew this long ago from the work of Gonthier et al on the odd order theorem, and the work of Hales et al on the Kepler conjecture (both papers have 10+ authors). Different people can be put to work on different areas of a formalisation project and do not even have to know about, or understand, what others are working on. The forthcoming paper on the formalisation will have a nice long list of authors, and this is something I���m very happy about; furthermore anyone interested in seeing the precise details of what everyone did can just look at the list of commits and committers on github ��� the details are completely open to everybody. This is open source mathematics.
+
+The future
+So where are we going and what is the point? These are very reasonable questions. One possible reaction that a mathematician might have to the work is that it is pointless, because it is a computer verification of a result which was ���basically known to be true anyway���. This is missing the point. Why are we teaching computers modern mathematics? Because I believe that one day future computer systems will be helping us, and whilst I cannot see into the future, consider the following question. Scholze and Clausen are arguing that condensed abelian groups are an important new definition in mathematics. How can AI developers create a chatbot which helps graduate students to learn about the category of condensed abelian groups, until professional mathematicians have taught computers what a condensed abelian group is? I know that some people in the machine learning crowd would answer things like ���use language models, train on the papers about condensed abelian groups��� but I am not yet convinced that this alone will turn into a useful tool. Lean (and other theorem provers) offer a framework where one can create a library of useful theorems, examples, and counterexamples. We do not even have to type in all the proofs. If ���we��� (the mathematical community, for example PhD students in arithmetic geometry) start translating important statements, examples, counterexamples, references and so on, and somehow combine this with language models, we will at least make some kind of interesting thing, which I imagine will get more helpful to humans over time. Some dream of a time where computers are better at proving theorems than humans. For me this is still complete science fiction; I have seen no evidence that we are anywhere near this milestone, and have no real vision as to how we are ever going to get there. But one can instead dream of a time where computers are helping humans to do research level mathematics, and work like this makes me believe that this goal is something I might see in my lifetime.
+
+Posted in Algebraic Geometry, liquid tensor experiment | Tagged liquid tensor experiment, Peter Scholze | 4 Comments
+The Future of Interactive Theorem Proving?
+Posted on August 16, 2022 by xenaproject
+This is a guest post, written by Zhangir Azerbayev. Zhangir is an undergraduate at Yale, majoring in computer science and mathematics. He completed this work while visiting Carnegie Mellon���s Hoskinson Center for Formal Mathematics.
+1 / 1
+ChatGPT
+ChatGPT
+This passage discusses what has been learned from a project that used the Lean proof assistant to formalize a piece of modern mathematics: a proof by Fields Medallist Peter Scholze.
+Mathematical insights
+: The formalization process revealed that certain parts of the original proof could be simplified, eliminating the need for stable homotopy theory. It also provided a clearer understanding of what makes the proof work.
+Viability of formalization
+: The successful completion of this project shows that it's possible to formalize complex, recent mathematical work using proof assistants like Lean. This means the software that computer scientists have developed for doing this task has now caught up with human ability.
+Building new theory
+: Formalizing the proof required building a lot of new theory in Lean, such as a working theory of short and long exact sequences, derived functors, abelian categories, and complexes. This theory-building work will not need to be repeated in future formalizations.
+Parallelization of formalization
+: Different people can work on different parts of a formalization project, which enables large projects to be completed more quickly.
+The author then goes on to speculate about the future of interactive theorem proving and formal mathematics. They suggest that teaching computers to understand modern mathematics could enable the development of new tools that help humans learn and do mathematics, perhaps even at the research level. They also mention the possibility of creating a library of theorems, examples, and counterexamples in Lean, which could be combined with language models to create useful mathematical tools.
+This passage gives us a glimpse into the potential benefits and challenges of formalizing mathematics, as well as some possible directions for future research and development in this area.
+1 / 1
+Introduction
+The history of interactive theorem proving can be told as a story of allowing the user to interact with the system at gradually higher levels of abstraction, getting further away from the axioms and closer to informal mathematics. Automath, the first interactive prover, floated very close to the axioms indeed. Mizar was the first attempt to make formal proofs comprehensible to mainstream mathematicians. Contemporary systems such as Coq and Isabelle add many useful features such as type classes and tactics, and most users don���t have to think about what the axioms even are. Today, there is still a learning curve to Lean, but once one learns the syntax, mathlib proofs are not terribly far from an informal version���at least compared to Automath. If we extrapolate this trend to its logical conclusion, we might imagine an interactive theorem prover where every single line of code is hidden behind the interface, and the user interacts with the machine purely in natural language. Recent advances in machine learning suggest such a system is not as far in the future as it may sound.
+
+As a very small step towards realizing this vision, myself and Edward Ayers have developed Lean Chat, a VS-code extension that provides an interface for autoformalizing natural language theorem statements in Lean. Under the hood, these translation are generated by OpenAI���s Codex, a text generation model trained on Github source code.
+
+The interface is straightforward: enter a theorem statement in good-old \LaTeX, and the app will have a go at formalizing it. If the generated formal statement is correct, fantastic! You can copy and past the statement into your Lean source file. If it is incorrect, you can give the app feedback on what to fix in a natural, conversational way. Let���s see a few examples.
+
+Examples
+Let���s begin with a simple statement about groups.
+
+
+Lean would be happy with this, and we could accept this if we���re feeling lenient. But the predicate is_group_hom is deprecated, so let���s tell the app to use the up-to-date syntax.
+
+
+I���m happy with that.
+
+Let���s give the app a slightly harder example, this time the statement of an exercise from James Munkres��� famous topology textbook.
+
+
+Perfect on the first try!
+
+The next example is due to Johan Commelin: let���s ask for a statement of Burnside���s theorem, an important result in finite group theory which is not in mathlib.
+
+
+Quite a lot is going on here. The app is able to figure out that the correct way of stating a group is finite is [group G] [fintype G], and the correct way of denoting the order of a group is fintype.card G. Moreover, it is able to interpret quite high-level instructions such as ���no need for the existential���, suggesting the app has at least partial grasp of the semantic connection between formal and informal mathematics. Slipping up on minor syntactic conventions, like writing solvable instead of is_solvable, is one of Lean Chat���s most common mistakes. These errors can almost always be fixed with dialogue.
+
+Unfortunately, Lean Chat is far from perfect, and often fails in unpredictable and somewhat comical ways. This next example was also discovered by Johan Commelin:
+
+
+For some completely unclear reason, the app decides to consider a Lie algebra over \mathbb{R} instead of my explicit instruction to use a field k, and that���s even before addressing the fact that tangent_space_at_identity is not a mathlib definition. I tried a few different responses to the app���s initial attempt, and couldn���t get it to do anything helpful.
+
+However, the app knows at least something about Lie algebras. The next example is due to Oliver Nash.
+
+
+One particular class of problem Lean Chat struggles with is Olympiad-style questions. The next example was discovered by David Renshaw:
+
+
+This example is particularly embarrassing, because despite my specific instructions, the app steadfastly sticks by its initial guess.
+
+How does this work?
+Under the hood, Lean Chat���s formalizations are generated by OpenAI���s Codex language model. The Codex model is architecturally the same as the famous GPT-3, and has a simple objective: given a string of text, predict the next word. Iterating this next-word prediction allows the model to generate coherent text. Both Codex and GPT-3 are neural networks, which means they are a function parametrized by billions of real numbers, and these parameters are tuned by gradient descent to maximize next-word prediction performance on a corpus of training data. GPT-3���s training data is virtually all the text on the internet, and Codex is trained on all the source code on Github. This explains why Codex has some modest ability at writing Lean, although Lean code is a very tiny fraction of its training data.
+
+If you take seriously the idea that neural networks are a lot like the brain, as I do, it is unsurprising that there exists some configuration of parameters that allows the network to competently use language. However, it is almost entirely a mystery why gradient descent is able to find this configuration of weights
+1 / 1
+ChatGPT
+ChatGPT
+The passage discusses the Lean Chat tool, which uses OpenAI's Codex model to automatically translate natural language theorem statements into formalized Lean code. The history of interactive theorem proving is described as a progression towards higher levels of abstraction, with the eventual goal being a system where the user interacts with the machine purely in natural language.
+Lean Chat allows a user to input a theorem statement in LaTeX and then attempts to formalize it. If the statement isn't correctly formalized, the user can provide feedback to improve the formalization.
+Examples are provided demonstrating the tool's capabilities. In some cases, Lean Chat perfectly translates the theorem into Lean on the first try, while in other cases, it requires some iterative feedback to correct minor syntactic errors. However, there are instances where the tool fails or misinterprets instructions, leading to incorrect formalizations.
+The underlying technology of Lean Chat is the Codex language model, which has the same architecture as the well-known GPT-3 model. Codex is trained to predict the next word in a string of text and uses this capability to generate coherent text. Unlike GPT-3, which is trained on virtually all text on the internet, Codex is trained on all the source code on GitHub. This training allows Codex to generate Lean code, despite Lean making up a small fraction of its training data.
+The author expresses that it is not surprising that a network can competently use language if we view neural networks as similar to the human brain. However, it remains largely a mystery why the method of gradient descent can effectively find the configuration of parameters that enables this linguistic competence.
+1 / 1
+ChatGPT may produce inaccurate information about people, places, or facts.
+ChatGPT May 24 Version
+ChatGPT
+
+
+
+
+

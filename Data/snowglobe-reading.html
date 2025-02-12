@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snowglobe Reading Prototype</title>
+    <style>
+        #textContainer {
+            position: relative;
+            height: 500px;
+            overflow: hidden;
+            border: 1px solid #000;
+            white-space: nowrap;
+        }
+        .text-line {
+            position: absolute;
+            white-space: nowrap;
+            left: 0;
+            animation-name: slideDown;
+            animation-duration: 5s;
+            animation-timing-function: ease-in-out;
+            animation-fill-mode: forwards;
+        }
+        @keyframes slideDown {
+            from { top: -30px; }
+            to { top: var(--final-position); }
+        }
+    </style>
+</head>
+<body>
+    <div id="textContainer"></div>
+    <script>
+        function placeText(text) {
+            const container = document.getElementById('textContainer');
+            container.textContent = ''; // Clear previous content
+            const words = text.split(' ');
+            let line = '';
+            let lines = []; // Store lines for reverse processing
+
+            words.forEach((word, index) => {
+                const testLine = line + word + ' ';
+                container.textContent = testLine; // Temporarily place text
+                if (container.scrollWidth > container.clientWidth && line !== '') {
+                    lines.push(line);
+                    line = word + ' ';
+                } else {
+                    line = testLine;
+                }
+            });
+
+            if (line) {
+                lines.push(line); // Add the last line
+            }
+
+            // Reverse the lines to simulate 'falling' from the top
+            lines.reverse().forEach((lineText, index) => {
+                createLine(lineText, index, lines.length);
+            });
+        }
+
+        function createLine(text, index, totalLines) {
+            const line = document.createElement('div');
+            line.className = 'text-line';
+            line.textContent = text;
+            line.style.top = '-30px'; // Start above the container
+            line.style.setProperty('--final-position', `${(index + 1) * 30}px`); // Calculate final position
+            line.style.animationDelay = `${index * 0.5}s`; // Delayed start for each line
+            document.getElementById('textContainer').appendChild(line);
+        }
+
+        // Sample text
+        const text = `Flashcard Scanner and Multi-Function Machine: A device capable of scanning flashcards, sorting them, printing new ones, erasing used ones, and shuffling them for study sessions. Sproll Reader: A mechanical device that reads and displays text from scrolls, similar to a film projector but for reading purposes. Phonetic Arabic Keyboard: A keyboard designed to facilitate the typing of Arabic script by providing a more intuitive layout for phonetic input. Wooden Pneumatic Marker Airbrush: A tool for artists and designers, combining the natural texture of wood with the precision of a pneumatic airbrush system.`;
+        placeText(text);
+    </script>
+</body>
+</html>
+

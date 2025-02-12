@@ -1,0 +1,617 @@
+I'm going to tell you a story today about the relationship between two programming languages.
+Alda is a text-based music composition language, and Clojure, as you may know, is a functional
+programming-oriented lisp that runs on the JVM.
+But first, some introductions are in order.
+Hi, I'm Dave.
+I studied music composition and bassoon performance.
+And then there was a six-year period of my life where I kind of fell into a government
+job that had nothing to do with music or programming.
+But I was dabbling in programming at the time, and at some point I got the crazy idea to
+combine my interests of music and programming.
+And out of that emerged Alda, which I'll talk about in a couple of slides.
+Since 2014, I've been working as a software engineer at ADZIRC, which has been greatly
+rewarding.
+I'd like to talk a little bit more about that because we're hiring.
+We have a booth upstairs.
+Please come say hi if you're about to say it is interesting to you.
+We're a world-class platform for decision-making at scale.
+You can use our ad-serving APIs to build your own fully-custom ad-serving platform in a
+matter of weeks.
+We get to do a lot of Clojure there, which I really enjoy.
+Clojure is my favorite programming language, among other things.
+It's a smallish company.
+We're a fully remote team of about 30 people, roughly 10 engineers, and we're looking to
+grow.
+So come find me on Slack or after the talk, or come talk to us upstairs.
+So here's the elevator pitch for Alda.
+Alda is a text format for expressing a music composition.
+Imagine if you could write music by writing and editing text in a text file in your editor
+of choice, and imagine if you had a command line client that you could use to interpret
+and perform your score.
+And then as a bonus, imagine if that were integrated into your text editor of choice
+so that you could highlight some text and press a couple of keys and hear what the music
+that you're writing played back to you.
+This is the sort of tight feedback loop that we love as programmers, and that's the sort
+of experience that I wanted to bring to music composition.
+There's a bit of context.
+This is the sort of environment that I was composing music in all through college and
+for a little while afterwards.
+This is Sibelius, which is an industry standard for music composition.
+Many professional composers use Sibelius and other programs like it.
+There's another one called Finale.
+These are highly visual, mouse-oriented-like environments for composing music.
+There are keyboard shortcuts that if you spend enough time with the software, you can learn
+them, but by and large, you are dragging things around on the screen, trying to pinpoint just
+the right line or space on the staff for the note that you want to set down, or hunting
+through menus and panels to try to find the symbol that you'd like to place on your score.
+And this worked fine for me.
+At the time, I didn't know too much about programming or software development, and I
+didn't realize that there was a problem there until I got more into software development
+and discovered the efficiency of working at the command line.
+This is the sort of environment that I find cumbersome, because you want to express an
+idea that you have in your head.
+Maybe you have your guitar out or you're at a piano or you're playing around with whatever
+instrument that you play that you're working with to help you compose music, and you just
+want to notate that.
+Sometimes it takes quite a long time to notate the idea that you have in your head, because
+it's quite complex.
+So there's this trap that you end up falling into when you spend a lot of time with software
+like this.
+My composition professor warned me against this, which is that if you lean too heavily
+on this sort of software, which you can use to play back what you've written, there's
+a play button or you can press a space bar and hear what you've written directly afterwards,
+you kind of end up writing more music that's more simplistic and repetitive, because it
+can be so difficult sometimes to notate the idea you have that you'll settle for something
+that's sort of half formed, and maybe it sounds okay to you, so you'll copy and paste it a
+bunch of times.
+So this is really creatively limiting.
+So the idea that I've been exploring is a terminal user interface for music composition.
+By contrast, this is keyboard oriented.
+I'm able to maintain focus because I'm not looking through menus or trying to visually
+lay out my score.
+Rather, I have an idea in my head, and I kind of know the notes that I want to write, and
+I'll write them.
+Maybe I've gotten one of the notes slightly wrong.
+I've forgotten an accidental or something.
+But I can highlight what I want to play and press a couple of keystrokes.
+I'll hear that slightly wrong, and I can correct it.
+So I find this sort of workflow very efficient and very liberating.
+Before I go much further, I'd like to give you just a quick demo of Alda.
+And I have a note for myself here that time is of the essence.
+I can't spend a whole lot of time on this demo.
+I have given a couple of talks in the past where I've gone into more detail and given
+a sort of gentle introduction to Alda and its various features and how to use them to
+get up and running and start writing scores.
+So I'd encourage you to check those out if what I'm showing you here is intriguing to
+you.
+But I'm not going to give you the gentle introduction here.
+I'm just going to throw you in the deep end.
+This is a transcription of an excerpt of a string quartet by Debussy.
+And before I say anything about it, I'm just going to play it.
+So I'll give you a couple brief mentions of some syntax here.
+At a high level, the score consists of four instrument parts.
+There are two violins, which I've nicknamed violin one and violin two.
+There's a viola part, and there's a cello part, and they're playing music concurrently.
+And we begin each part by specifying what octave we are in.
+Cello is an octave two, viola is an octave three, violin two is also an octave three,
+violin one is an octave four.
+A note is simply a letter optionally followed by a note length, like a quarter note.
+This is a G quarter note, and this is an F quarter note tied to an eighth note.
+And we have various other things that I don't have time to go into right now.
+Minuses and pluses are flats and sharps.
+And you may also notice that there's some parenthetical expressions
+sort of littered throughout the score.
+And if you're a closure programmer, perhaps this one looks a little bit interesting to you.
+Maybe it looks a little familiar.
+This is actually a closure, a snippet of closure code, a closure expression.
+The alder runtime is written in closure, and we expose evaluation semantics
+so that you can, it gives you sort of an inline list scripting layer, if you will.
+Here's a simpler example.
+So alder is basically two languages in one.
+There's this markup style that I've talked real briefly about,
+where you have syntactic elements that represent things directly.
+Like we're saying here, this is a piano part, and it's an octave four,
+and we have these four notes in a chord.
+But you can also express anything you could express in markup with closure code.
+There's a DSL that's built into your evaluation context
+that gives you useful functions like chord and note and pitch.
+So why is this useful?
+Well, we have the full power of closure at our disposal
+because we're literally just evaluating code within a context.
+And anybody who spent some time with closure can tell you
+that closure has a wonderful standard library,
+consisting of many useful functions out of the box.
+I'm still discovering new closure functions every day
+that I didn't know existed in the closure core namespace.
+And there are a number of useful functions for dealing with sequences,
+which translates nicely into managing sequences of notes.
+So I can do things like define a function that will return n random notes,
+and then I can say, give me four random notes, and then repeat this phrase.
+And this is the closure syntax intermingled with the markup syntax.
+This is fun because every time you evaluate it, you get different notes.
+And from there, you can continue to experiment
+and play with the closure programming language
+and see what you can do with these sequences of notes.
+Here's an example where if you use closures, iterate, and rest functions together.
+In this example, we have a sequence of 16 random notes,
+and then we're going to iterate the rest function over that.
+So next we have a sequence of just the last 15 notes,
+and then we'll have a sequence of the last 14 notes,
+and these all get spliced together.
+So you get this repeating pattern that gets shorter every time you hear it.
+That concludes that demo.
+Thanks.
+So the main thing that I want to drive home about this demo
+is that closure is sort of a subset of ALDA.
+It's sort of like cohabitating within the ALDA language as part of the language,
+which is something that will change over time.
+So keep that in the back of your mind.
+At this point, I would like to talk about architecture.
+I'll talk about how I've gone through several different phases
+of how I've put together the pieces in ALDA,
+and we'll see how closure plays a role in each of those.
+Around 2013, when I first implemented ALDA in closure,
+it was just a single closure program,
+and that was the quickest way that I could get to something
+that I could play around with.
+So you use this command line client to say,
+hey, play these three notes on a piano,
+and then this closure program will parse the code,
+it'll build up a score object in memory as a data structure,
+and it will perform that data structure as music.
+So this got me up and running.
+But there are a couple of problems.
+For one thing, closure is notorious for having a long start-up time,
+which makes it unsuitable for writing command line applications
+if you care about how fast that program can run.
+Sometimes it's on the order of several seconds,
+so you'll issue a command, and then a few seconds later,
+the program will run.
+And that was fine at first, but the more I played with it,
+the more I wanted just even more immediate feedback.
+I wanted to, you know, within milliseconds,
+I wanted to hear the music that I was writing.
+Another problem that I discovered as I was playing around
+with this initial prototype is that this workflow is synchronous.
+I would play a score, and then I would not regain control
+of my terminal until the score was finished playing.
+So I began to feel like I wanted to play a score,
+and then I would kind of pick something out.
+My ear would hear something that didn't sound quite right,
+or I wanted to tweak it, and so I immediately wanted to hit
+that up arrow and edit that command.
+So I started thinking about a more asynchronous interface.
+So those problems informed phase two.
+And this was also kind of early on in my career as a software
+developer, so I wasn't really quite aware about inter-process
+communication mechanisms.
+So I went with the only thing that I knew how to build,
+which is an HTTP server.
+And I pulled out just the part that talks to the HTTP server.
+So we have this client that's now written in Java,
+which is great because it starts up quickly.
+It's cross-platform, so I can easily create an Alda for Linux
+and macOS users and alda.exe for Windows users
+with the closure part bundled in.
+And so the workflow is that you run Alda up to start your server,
+and that spawns a new process in the background
+that's running this closure server.
+And that server is just going to sit there and wait for input
+from you.
+And so then you'll say, hey, Alda, play these three
+notes on a piano, and you'll hear the result immediately.
+The server is doing all of the work.
+So this solved the problem for me of this closure startup time
+where I wanted to hear the result immediately.
+And it solved the issue of playback being synchronous.
+But there's a new problem.
+Someone pointed out to me that, hey, HTTP is a little bit
+overkill if all you want to do is inter-process communication.
+It turns out that there's all this overhead that comes with
+HTTP.
+You have to parse headers.
+There's all these subtleties of the format.
+And if you're picking up an HTTP server library off the shelf,
+chances are it's starting a pool of threads that are going to
+handle these requests.
+Maybe all you need is one thread.
+So a contributor to Alda early on pointed out that there are
+other ways to do this.
+And so this led to the phase three.
+There's also another problem, which I'm going to skim over right
+now because I did not solve it in phase three.
+So phase three, this is actually exactly the same architecture.
+There's still just a server process in the background and a
+Java client that talks to the server.
+But I replaced the communication with 0MQ.
+What is 0MQ?
+It is a message protocol for distributed messaging.
+It's quite handy.
+There are a variety of libraries for 0MQ in a bunch of different
+Languages.
+So you can use it to talk back and forth between programs that
+Are written in different languages.
+It's a very simple protocol.
+Essentially, it's just byte arrays with frames.
+And it uses the same abstractions if you're talking between
+Multiple threads in a single process, or if you're talking
+Between multiple processes on a single machine, or if you're
+Communicating between multiple nodes on a server.
+You have the same abstractions that you can work with.
+And I like to think of 0MQ as being sort of like working with
+Sockets directly, except that it's really difficult to do that.
+So 0MQ does a lot of housekeeping for you behind the scenes.
+There are various patterns that you can achieve by plumbing
+Together different types of sockets.
+So here's a very simple example of a program you might write
+Using 0MQ.
+And the neat thing here is that the client and the server here
+Could be threads in a single program, or they could be
+Multiple programs being run across the world from each other.
+It doesn't matter.
+Each program, or each thread, creates an instance of a 0MQ
+Socket that has a particular type.
+So the client has a request socket, and the server has a
+Response socket.
+And all that's happening here is that the client is using that
+Socket to send an array of bytes to the server.
+And the server has a knowledge through the 0MQ library.
+It has this sort of implicit knowledge of where that message
+Came from.
+And so it just is listening for messages and responding to them.
+And a byte array goes back to the client.
+It's simple.
+So this solved the issue of HTTP being overkill for IPC.
+And I still had this problem that I glossed over before,
+Which is that I was starting to notice that if I played a score
+Too close together, if i was maybe trying to iterate on
+Something i was writing, and i played something back to back
+Too quickly, or if i played two scores at the same time for
+Some crazy reason, the audio would glitch out and go crazy.
+The reason for that is that i'm using the java, there's
+Actually a built-in synthesizer, a midi synthesizer in the jvm.
+And it just so happens that if you have multiple instances of
+That synthesizer in a single process, they don't play nicely
+Together.
+I suppose that they're both trying to get too greedy with
+Resources.
+So i was able to use zero mq to make things a little more
+Complicated, but achieve having playback happen in multiple
+Processes.
+So you'll notice things are starting to get a little more
+Complex in the architecture diagram here.
+So now we have these worker processes that are just the
+Sort of the business logic pulled out of the server.
+These worker processes are parsing code, evaluating that
+Code, and performing your score for you.
+So now the server has a different role.
+Now its job is to spawn and supervise these worker processes.
+And its job is to receive requests from a client, and
+Find a worker that's available and hand that request to the
+Worker, and then when the worker is done, it will hand the
+Request back to the client.
+So this is kind of nice because the client doesn't really
+Need to worry about the worker processes.
+All it cares about is where the server is, how it can talk to
+The server.
+It's running on a particular port, and it receives a
+Message, it receives a response back to the request.
+So let's revisit our problems.
+But first, let's look at the zero mq architecture diagram.
+So this is, instead of request and response sockets, the
+Semantics are slightly different.
+So we have a combination of socket types called dealer and
+Router.
+And basically the idea is that you have parties on either
+Side of the transaction here.
+You think this is a sort of business transaction.
+So your dealers are the client and the worker processes.
+And the server is just functioning as a go-between or a
+Broker.
+So the message comes in from the client.
+The server finds an available worker and routes the request
+To the worker.
+The worker sends a response back to the server, and the
+Server will route that request back to the client.
+I was surprised how easy it was to build something like this
+With zero mq.
+So let's revisit our problems.
+This fixed the issue of the audio glitching, which is great.
+But there's sort of a side effect that emerged, which is
+That this architecture is getting a bit complex at this point.
+I started running into issues.
+Some people reported issues where they would start the server
+And the server would say, okay, I'm up.
+Now I'm starting the worker processes.
+And then it would just hang there forever.
+We're like, what's going on there?
+Apparently the server was having issues starting background
+Processes of its own.
+Perhaps certain operating systems, like maybe windows,
+Operating systems, certain versions of windows, don't let
+Background processes start their own background processes.
+And this is very difficult for me to debug without having
+Somebody's computer sitting in front of me.
+So I started wanting to simplify things a little bit.
+Another issue is that this workflow, since phase two, when
+I introduced the server to begin with, the user now needs to
+Worry about having a server up and running.
+This doesn't work like it does in a lot of other, you know,
+A lot of other compilers or interpreters.
+Like if you fire up ruby, you're not needing to start a ruby
+Server to get work done.
+So I kind of wanted to solve that problem.
+Another issue is that there's a finite number of workers.
+Usually there's two by default because that's often as many
+As you need.
+But even if you have more, there's still this problem where
+If you're doing work too quickly and firing off too many
+Requests, if all of the workers are busy, then there's no
+Worker available to take your request, and the server just
+Tells you, try again later. All the workers are busy.
+So that's not a great user experience.
+So with all these things in mind, I started to put together a
+Wish list of the way I wanted all of this to work in the next
+Major version.
+I wanted to move most of the functionality into the client.
+I wanted to do away with this idea of having background processes
+That the end user has to care about and just make it a nicer
+Experience.
+But at the same time, I did want to have a background thread
+Or process for playing your scores because I wanted to
+Maintain that asynchronous workflow where you can say play
+Something and then immediately regain control of your terminal.
+So I started thinking about having a process that does
+Nothing except for just the playback bit.
+Because I was moving most of the functionality into the client,
+I would have to address that initial problem that i ran into
+In phase one, which is that the closure runtime takes a while
+To bootstrap. So i started thinking about maybe
+There's a way that i can generate native executables or just
+Get things running faster, closer to the metal.
+There's also another thing that i wanted to add in, which is
+Completely orthogonal to everything i've mentioned so far.
+So bear with me. But i want to support live coding.
+I want you to be able to play a score and maybe the score is
+That you want to play a pattern forever.
+And then while that pattern is playing, i want you to be able
+To come back and say, okay, that score you're playing?
+Change it a little bit. Let's maybe change the notes.
+And you'll hear that update the next time the pattern loops
+Through. So these are all things that i was thinking about.
+And here's the phase five architecture that i came up with.
+So this is a lot simpler, less to worry about.
+It's almost like the phase one architecture in that you just
+Have a client and you're saying, hey, do this.
+And the alde client will do most of the work of parsing your
+Code, building up a score object in memory.
+When it comes to playback, the client has transparently started
+A process in the background to use for playback.
+And the client will then communicate with that player
+Process by sending osc messages.
+So i decided to change the transport from 0mq to osc,
+Which is called open sound control.
+Osc is the de facto standard for communication between
+Computers and synthesizers and various other music software
+And multimedia devices. You can use it to control lights.
+A lot of cool applications for osc.
+The transport is udp, which is great because it's low latency.
+It's ideally suited for live audio and video applications.
+So the more i thought about it, the more i thought that osc
+Would be a good fit for alde. And it's very easy to get up
+And running with osc. There are libraries for a bunch
+Of different languages. The message structure is simple.
+It's open-ended. You basically have two parts.
+There's the address, which can have patterns in it.
+So the osc listener can listen for these messages and
+Extract the data it needs from the address part.
+So in this case, we're sending a message that is supposed to
+Play a midi note on track one. And then the rest of the message
+Is parameters. And in this case, these are all
+Numbers, but there are a variety of different types of
+Parameters that are supported by most osc libraries, like strings,
+Characters, midi messages, blobs of binary data.
+And you can even define your own custom data types.
+Which is very useful. So i'm going to go back to this
+Five diagram. And you may have noticed something
+Subtle that i've left out. Which is that i left out
+Any programming language logos. And the reason for that is that
+I was sort of saving a shocking revelation for this slide.
+You may be surprised to hear that i've switched out the
+Implementation from closure to go and kotlin.
+Yeah, gasp. This will particularly come as a
+Shock to you if you know how much i love closure.
+What am i doing here? But the reason for that is really,
+You know, for the reasons i listed in the previous slide,
+I wanted to create native executables so i can get
+Really close to the metal with performance.
+I wanted the client to do all of the work.
+And it's also important to me to generate executables that
+Are, you can just, whatever your operating system is,
+Whatever your architecture is, you can just download the
+Release from github, put it somewhere on your path, and
+It will work. And out of the options i tried,
+Which included go and rust and crystal, go is the only one
+Where i could easily do that with the executables being
+Totally devoid of dynamic linking. So no native library is
+Required. And it was interesting coming to
+Go from closure because go is a bit limiting from my
+Perspective as a closure programmer.
+It was a bit of a culture shock coming into it.
+But the more i worked with go, the more i sort of started to
+View the limitations as an asset. It's actually kind of nice
+Being limited sometimes because it makes your code easy to
+Read. It's very easy to reason about
+Something if there's only one way you can do it.
+Right. So this is where closure fits into the picture now.
+It's very important to me that i'd be able to continue to write
+Algorithmic music and closure. And i had to find a way to do
+That. And i actually found that this is a
+Better place in the diagram for closure to fit.
+Because now i have complete control of a closure process.
+Maybe i can write a closure program that drives alda.
+And that's exactly what i want to do with it.
+So i was able to get this running, to get this workflow
+Working by writing this library for closure called alda clj.
+It is a closure library for live coding music with alda.
+And what it's doing is really pretty simple.
+You have the same sort of musical dsl that i showed you
+Here in the previous demo where you have functions like note
+And chord. And under the hood, alda clj is
+Generating a string of alda, valid alda syntax that gets sent
+To the alda command line client. So i'm going to demo that for
+You now. Okay. So the library is really one
+Name space, alda.core, that has all of the useful functions in it.
+And one of the functions that you get is alda. This basically
+Just lets you shell out to the command line client.
+So you can do things like get the version or check the status
+Of the worker processes. And as you can see, you have the
+Same dsl for working with your musical score.
+And when you call this function, it not only sends the alda code
+To the command line client, it will also return the string of
+Codes. You can kind of see what you're doing.
+And, you know, i have a closure repl running in the background
+That i'm connected to. So i'm in control of this process.
+So of course it stands to reason that i have the closure
+Standard library available to me. So i can continue to do
+Interesting things with sequences. So you're sort of a basic
+Example where i have notes from c, d, e, f, and g.
+And then i'm just injecting rests in between them.
+You can see this in the alda code. C, rest, d, rest, e, rest.
+And of course i can leverage randomness, which is always fun.
+I always think it's fun to generate random sequences of
+Notes with random rhythms and random pitches.
+Because when i listen back to that, i kind of, my ear picks up
+On little things that sound interesting to me.
+And then i can go to a piano or pick up my guitar and try to
+Figure out what the notes are and compose something interesting with it.
+So i've used this to create pieces of algorithmic music.
+Here's one where i've defined a function that returns a random note.
+That has a random pitch and a random duration.
+Or it might choose to rest for a certain amount of time.
+And then i just say i've got these three parts.
+An electric piano, a timpani, and a celeste.
+And i just want each of those to invoke this function 50 times
+To figure out what part it's going to play.
+So some interesting sounds emerge from that.
+The last thing i'm going to show you is a piece that i wrote
+Specifically for this conference.
+And i wanted to demonstrate that you can use external closure
+Libraries when you're using the all to clj library.
+So in this case, i'm pulling in an htdp client and a json library.
+And what i'm doing is i'm pulling weather data from the
+National Weather Service api.
+Let's try to memorize these instruments.
+So new york is percussion.
+LA is an upright bass.
+St. Louis is a tenor sax.
+And Durham, where i'm from, is a vibraphone.
+Maybe i'll show that while i'm playing the score so we can keep it in our heads.
+So i'm hitting the api.
+What you get back is a list of 15 data points for the next
+15-hour windows in a particular city or at a particular set of coordinates.
+And so this is most of the code.
+I'm just getting, i'm fetching that forecast.
+I'm reading it, reading the json, grabbing the forecast data out of it.
+And that's about it.
+And then once i have that data in hand, i am doing this.
+So i'm using various data, various bits of information from these forecasting periods.
+The temperature, i'm using verbatim as the midi note number.
+So midi note numbers go from zero to 127.
+So these are sort of in the upper mid-range.
+But i'm also adjusting the octave so that, for example, the upright bass sounds lower.
+The wind direction affects the panning.
+So assuming that stereo works in here, you might hear the instruments moving from left to right.
+Or vice versa, depending on which direction the wind is blowing.
+And the wind speed affects how fast the notes are coming at you,
+as well as how loud they're coming at you.
+So if you hear notes getting louder and faster,
+that means that the wind is picking up in that city.
+So without further ado, hopefully this will work.
+Music
+Seems like New York is usually pretty windy.
+Music
+Notice that the tenor sax sounds kind of high, pitched.
+It's because it's been hot lately, as we're all aware.
+Music
+So anyway, you get the idea.
+That's all I've got. Looks like I've got about eight minutes left.
+Thank you.
+Applause
+So I have some time left for questions.
+Yes?
+Have you considered running in data from the recent hurricane?
+Yeah, the question was, have you considered using this on the data from the recent hurricane?
+Yes. A hurricane came through North Carolina, where I'm from.
+And it sounded about like you would expect.
+A lot of fast notes coming at you.
+Yes, in the back.
+In phase five, so I'm still using, I'll put that diagram back up.
+So I'm using Kotlin on the player side.
+So this is still a JVM process.
+Yes?
+The question is, is the similarity between Alda syntax and Lillipon syntax accidental?
+Absolutely not.
+I definitely stole a bunch of ideas from Lillipon.
+Another big inspiration for the syntax was music macro language, or MML.
+Which is, you might know this if you had a flip phone and you programmed ringtones into it.
+It's kind of a similar syntax to that.
+Yes?
+I have that sort of working on a branch.
+The current release is still the phase four architecture, actually.
+Yes?
+When you moved to this last architecture, how do you have the closure embedded in all the nodes?
+Yeah, that's a good question.
+The question was, in phase five, since closure has now been pulled out and is not a part
+of the player process or the client, how do I maintain that closure syntax?
+And the fact is, I had to make a breaking change there.
+There's actually still a Lisp in Alda v2, which is implemented in Go, and it's sort of,
+I think of it as like a dumb Lisp.
+You can't really do much with it.
+It doesn't have macros.
+It's basically, right now, it's just a way to invoke functions.
+And everything is built in.
+But in the future, I could see that potentially expanding and sort of bringing that scripting
+layer back in.
+That's a fun thing to play with.
+Yes, in the back.
+Yeah, you talked about using the client to integrate it into a back-end like SuperColider.
+Yeah, the question is, have I thought about integrating the client with different back-ends,
+like SuperColider?
+And that would definitely be a fun thing to play with.
+That's actually one of the motivations of pulling out just the playback bit by itself.
+Because this Kotlin program, it took me maybe a couple weeks to write.
+It was pretty simple, because all the logic is happening in the client.
+So, you know, the interface here is OSC messages.
+So, you know, in the future, I might play around with alternate back-ends, maybe like
+a web audio API back-end would be fun.
+You could open up a browser and use that to play music.
+Yes?
+Yeah, the question is, is there a way or have I thought about ways to write your music in
+Alda and then export sheet music?
+And yes, there is a way.
+It's not totally great right now, but there is an export mechanism, which will, what it
+Actually does is it, so there's an instance of a synthesizer and a
+Sequencer inside of the Alda runtime.
+And as you're playing your music, it's actually loading up the sequencer with
+Music with MIDI data.
+And so we're able to export that as a MIDI file.
+And then from there, a lot of graphical sheet music notation programs can import
+MIDI files.
+So you get kind of a rough estimation of what the sheet music would look like.
+It's not perfect because it can't always infer what you meant, you know,
+Where you want the bar lines to fall or, you know, if you want to use a
+Sharp or a flat to represent the same note.
+So there's still some tweaks to be made, but we've got the beginnings of that.
+Any other questions?
+Yes?
+Is Alda v2 available to use right now?
+Is Alda v2 available to use right now?
+Kind of.
+I'm doing it sort of in the open.
+There's a v2 branch of the Alda lang slash Alda github repo.
+And hopefully the readme is in somewhat decent shape that you could play around
+with it if you wanted to, but it's not readily available to download, exactly.
+Any other questions?
+Well, thanks so much for listening.
+Thank you.

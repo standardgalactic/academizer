@@ -1,0 +1,1048 @@
+Filling in the Blanks
+Open sidebar
+Filling in the Blanks
+GPT-4
+What Algorithms can Transformers Learn? 
+A Study in Length Generalization 
+Hattie Zhou���1,2, Arwen Bradley1, Etai Littwin1, Noam Razin���1,3, Omid Saremi1, 
+Josh Susskind1, Samy Bengio1, and Preetum Nakkiran1 
+1Apple 
+2Mila, Universit�� de Montr��al 
+3Tel Aviv University 
+Abstract 
+Largelanguagemodelsexhibitsurprisingemergentgeneralizationproperties,yetalsostrug- 
+gle on many simple reasoning tasks such as arithmetic and parity. This raises the question of 
+if and when Transformer models can learn the true algorithm for solving a task. We study 
+the scope of Transformers��� abilities in the specif i c setting of length generalization on algorith- 
+mic tasks. Here, we propose a unifying framework to understand when and how Transformers 
+can exhibit strong length generalization on a given task. Specif i cally, we leverage RASP (Weiss 
+etal.,2021)���aprogramminglanguagedesignedforthecomputationalmodelofaTransformer��� 
+and introduce the RASP-Generalization Conjecture: Transformers tend to length generalize on 
+a task if the task can be solved by a short RASP program which works for all input lengths. 
+This simple conjecture remarkably captures most known instances of length generalization on 
+algorithmic tasks. Moreover, we leverage our insights to drastically improve generalization per- 
+formance on traditionally hard tasks (such as parity and addition). On the theoretical side, we 
+give a simple example where the ���min-degree-interpolator��� model of learning from Abbe et al. 
+(2023) does not correctly predict Transformers��� out-of-distribution behavior, but our conjec- 
+ture does. Overall, our work provides a novel perspective on the mechanisms of compositional 
+generalization and the algorithmic capabilities of Transformers. 
+1Introduction 
+Large language models (LLMs) have shown impressive abilities in natural language generation, 
+reading comprehension, code-synthesis, instruction-following, commonsense reasoning, and 
+many other tasks (Brown et al., 2020; Chen et al., 2021; Chowdhery et al., 2022; Lewkowycz 
+et al., 2022b; Gunasekar et al., 2023; Touvron et al., 2023). However, when evaluated in controlled 
+studies, Transformers often struggle with out-of-distribution generalization (Nogueira et al., 2021; 
+Onta����n et al., 2022; Dziri et al., 2023; Wu et al., 2023; Saparov et al., 2023). It is thus not clear 
+how to reconcile Transformers��� seemingly-impressive performance in some settings with their 
+fragility in others. 
+In this work, we aim to understand when standard decoder-only Transformers can generalize sys- 
+tematically beyond their training distribution. We adopt the approach of recent studies and focus 
+on length generalization on algorithmic tasks as a measure of how well language models can learn 
+to reason (Nogueira et al., 2021; Kim et al., 2021; Anil et al., 2022; Lee et al., 2023; Dziri et al., 2023; 
+Welleck et al., 2022; Liu et al., 2023). Length generalization evaluates the model on problems that 
+���Work done while interning at Apple. 1 
+arXiv:2310.16028v1 
+[cs.LG] 
+24 
+Oct 
+2023 
+RASP-L Program ExistsNo RASP-L Program 
+Task NameTest EM 
+(+10 length) 
+Task NameTest EM 
+(+10 length) 
+Count100% 
+Mode100%Mode (hard)0% 
+Unique Copy96%Repeat Copy0% 
+Sort96% 
+Addition (new)100%Addition0% 
+Parity (new)100%Parity0% 
+(a) Transformer length generalization 
+10203040506070 
+Additional Length over Max Training Length 
+0.0 
+0.2 
+0.4 
+0.6 
+0.8 
+1.0 
+Test 
+EM Len=10 
+Len=20 
+Len=30 
+Len=40 
+Len=50 
+Len=60 
+Len=70 
+Len=80 
+(b) Length generalization on counting task 
+Figure 1: a A selection of tasks studied in this paper partitioned by whether they can be solved 
+by programs in the RASP-L programming language (discussed in Section 3). Test EM denotes the 
+exact match accuracy (EM) for test inputs of length 10 greater than train. We show that all tasks 
+which admit a short solution in the RASP-L programming language also exhibit strong length gen- 
+eralization performance, and vice versa. For certain hard tasks we construct ���new��� versions which 
+admit RASP-L solutions, by carefully modifying the input and scratchpad format, and these ver- 
+sions length generalize. We also show how poor scratchpad formats can make tasks harder, by 
+giving an example for the Mode task. b Length generalization for the counting task (described 
+below), measured by exact match accuracy (EM). Transformers are trained on sequences of vary- 
+ing length, and tested at dif f erent levels of out-of-distribution over the maximum training length. 
+Models trained on sequences of length 60 or more exhibit near perfect length generalization up to 
+length 150 (max evaluation length). 
+are longer (and harder) than seen in the training set��� for example, training on 10 digit decimal 
+addition problems, and testing on 20 digit problems. This challenging evaluation setting gives an 
+indication of whether the model has learned the correct underlying algorithm for a given task.
+ChatGPT
+The paper you've provided appears to be investigating the ability of Transformer models to generalize beyond their training data, specifically focusing on length generalization on algorithmic tasks. Here's a brief summary:
+Title
+:
+"What Algorithms can Transformers Learn? A Study in Length Generalization" by Hattie Zhou et al. from Apple, Mila, Universit�� de Montr��al, and Tel Aviv University.
+Abstract
+:
+Transformer-based large language models (LLMs) exhibit both impressive generalization abilities and shortcomings on basic reasoning tasks.
+The authors propose a framework to understand when Transformers can generalize effectively on algorithmic tasks based on their length.
+They introduce the "RASP-Generalization Conjecture", suggesting that Transformers will perform well if the task can be executed by a short RASP program (a programming language designed for the computational model of a Transformer) that works for all input lengths.
+This conjecture can describe many known instances of length generalization.
+By leveraging these insights, the team improved performance on traditionally challenging tasks such as arithmetic and parity.
+The paper also discusses a theoretical aspect where an existing model doesn't predict Transformer behavior, but their conjecture does.
+Introduction
+:
+LLMs excel in various tasks but can be fragile in out-of-distribution generalization.
+The paper seeks to understand when decoder-only Transformers can generalize beyond their training data.
+Length generalization on algorithmic tasks has been chosen as a measure to understand this.
+Length generalization tests models on problems longer and harder than those seen during training to gauge if they have understood the fundamental algorithm.
+Figure 1 Highlights
+:
+The figure showcases tasks that can be solved by the RASP-L programming language.
+Tasks solvable by RASP-L show strong length generalization performance, and vice versa.
+For some traditionally challenging tasks, they created "new" versions with RASP-L solutions by modifying input and scratchpad formats, leading to improved length generalization.
+The counting task was used to demonstrate length generalization, where Transformers trained on longer sequences displayed near-perfect generalization.
+Key Takeaways
+:
+Transformers' ability to generalize on tasks based on length can be assessed using the RASP-Generalization Conjecture.
+By understanding and leveraging this, it is possible to improve generalization performance on traditionally difficult tasks.
+Evaluating Transformers using length generalization provides insights into their algorithmic capabilities.
+It's an insightful study into the intricacies of Transformer models' abilities and limitations in terms of algorithmic reasoning and generalization.
+As a starting point of our work, we show that there exist algorithmic tasks where Transformers 
+trained from scratch generalize naturally far outside of the training distribution. This observation 
+contradicts the conventional wisdom in much of the existing literature, and suggests that length 
+generalization is not inherently problematic for the Transformer architecture��� though it clearly 
+doesnotoccurforalltasks. WhythendoTransformersexhibitstronglengthgeneralizationoncertain 
+tasks and not others, and what are the mechanisms behind generalization when it occurs? In the 
+following sections, we will propose a unifying framework to predict cases of successful length 
+generalization and describe a possible underlying mechanism. 
+2 
+Preview of Length Generalization.We begin by introducing a simple task that exhibits strong 
+length generalization, as a minimal example of the phenomenon. The task is ���counting���: given a 
+promptSoS a b >fornumbersa,b, themodelmustcountfromatobinclusive, andtermi- 
+nate with ���EoS���. An example is:SoS 2 5 > 2 3 4 5 EoS. We train a Transformer 
+with learned positional embeddings on count sequences of lengths up to 50, with random end- 
+points a and b in [0,155]. We ���pack the context��� with i.i.d. sequences during training, following 
+standard practices in LLM pipelines. This trained model then length-generalizes near perfectly 
+when prompted to count sequences of length 100 (see Figure 1b). 
+Possible Mechanisms.To understand the above example, it is helpful to i rst consider: why 
+should length generalization be possible at all? The crucial observation is that the Transformer ar- 
+chitecture is already equipped with a natural notion of length-extension. If we omit positional en- 
+codings for simplicity, then a i xed setting of Transformer weights def i nes a sequence-to-sequence 
+function on sequences of arbitrary length. If this function applies the correct transformation for 
+inputs of any length in the context, then we can expect it to length generalize. 
+For the count task, length generalization is possible if the model somehow learns a correct algo- 
+rithm to solve the count task. One such algorithm is as follows. To predict the next token: 
+1. Search for the most-recent SoS token, and read the following two numbers as a,b. 
+2. Read the latest output token as x. If (x=='>'), output a. If (x==b), output EoS. 
+3. Otherwise, output (x + 1). 
+This program applies to sequences of all lengths. Thus, if the model ends up learning the algo- 
+rithm from short sequences, then it will automatically length-generalize to long sequences. The 
+discussion so far could apply to any auto-regressive model, not just Transformers. What is special 
+about the Transformer architecture and the count task, though, is that a Transformer can easily 
+represent the above program, uniformly for all input lengths. This is not trivial: we claim that the 
+same exact Transformer weights which solve the task at length 20, can also solve the task at length 
+50 and greater lengths (Figure 1a). Interestingly, we i nd supporting evidence in Appendix C that 
+the trained models are actually implementing this algorithm. 
+Overview.The core message of this work is that it is actually possible for Transformers to ap- 
+proximately learn a length-generalizing algorithm, if the correct algorithm is both possible and 
+���simple��� to represent with a Transformer. In our main conjecture in Section 2, we propose a set of 
+conditionsthatdeterminewhetheraTransformermodeltrainedfromscratchislikelytogeneralize 
+on a given symbolic task. Our conjecture builds upon the following intuition: 
+Intuition. Algorithms which are simple to represent by Transformers are also easy to learn for 
+Transformers, and vice versa. 
+This intuition tells us that to reason about whether Transformers will length-generalize on a given 
+task, we should consider whether the underlying algorithm that solves the task is naturally rep- 
+resentable by the Transformer architecture. To do so, we leverage the recently introduced RASP 
+programming language (Weiss et al., 2021; Lindner et al., 2023), which is essentially an ���assembly 
+languageforTransformers.��� WedescribeRASP,andourvariantofitRASP-L,inSection3. Fornow, 
+it suf i ces to say RASP-L is a human-readable programming language which def i nes programs that 
+can be compiled into Transformer weights1, such that each line of RASP-L compiles into at most 
+one Transformer layer. RASP-L lets us reason about Transformer-representable algorithms at a 
+familiar level of abstraction��� similar to standard programming languages like Python, but for pro- 
+grams which ���run on a Transformer��� instead of running on a standard von Neumann computer. 
+1In fact Lindner et al. (2023) provide an explicit compiler from RASP programs to Transformer weights.
+
+We leverage the RASP-L language to state a more precise version of our intuition, which predicts 
+exactly which functions Transformers learn: 
+ToyModel(RASPMDLPrinciple). Forsymbolictasks,Transformerstendtolearntheshortest 
+RASP-L program which i ts the training set. Thus, if this minimal program correctly length- 
+generalizes, then so will the Transformer. 
+This toy model is similar to Minimum-Description-Length principles (e.g. Shalev-Shwartz & Ben- 
+David (2014)) and Solomonof f induction (Solomonof f , 1964). The key insight is that we propose 
+using a measure of complexity that specif i cally corresponds to the unique information-f l ow inside 
+Transformer architectures. Although many prior works have conjectured similar ���simplicity bias��� 
+in Transformers (Abbe et al., 2023; Bhattamishra et al., 2023), the notion of simplicity we use here 
+is tailor-made for the Transformer architecture. This distinction is important: In Section 6, we 
+showasimplesettingwherethepopular���minimumpolymomialdegree���notionofsimplicity(Abbe 
+etal.,2023)doesnotcorrectlypredictTransformergeneralization, whereasourRASP-basednotion 
+of simplicity does. Finally, notice that we use a notion of simplicity over programs, rather than 
+over functions with i xed input dimension, which makes it especially suitable for understanding 
+algorithmic tasks. 
+1.1Organization and Contributions 
+In Section 2, we introduce the RASP-Generalization Conjecture (RASP conjecture for short), 
+which uses the RASP-L programming language to predict when Transformers are likely to 
+length-generalize.To help users develop intuition about RASP-L algorithms, we present a 
+���standard library��� of RASP-L functions (Section 3) that can be used as modular components 
+of programs. This includes an implementation of ���induction heads��� (Olsson et al., 2022), for 
+example. In Section 4, we show that the RASP conjecture is consistent with experiments on a 
+variety of algorithmic tasks. Then, in Section 5, we leverage our conjecture to improve length 
+generalization, which results in the i rst instance of strong length generalization on parity and 
+addition for Transformer models trained from scratch. Finally, on the theoretical side, we give an 
+example where the ���min-degree-interpolator��� model of learning from Abbe et al. (2023) does not 
+produce correct predictions for Transformers, but our conjecture does (Section 6). We conclude 
+with a discussion of limitations and open questions, and discuss additional related works in 
+Appendix A.
+ChatGPT
+The provided excerpt is from a study that aims to understand when and how Transformers (a type of deep learning model) can generalize beyond their training data, especially when faced with longer sequences. Here's a summary:
+Summary:
+Background:
+Large language models (LLMs) have shown impressive capabilities in various tasks, but often face challenges in generalizing outside their training distribution.
+This work focuses on the "length generalization" of algorithmic tasks to see if the models can generalize to longer input sequences than what they were trained on.
+Main Observations:
+Contrary to popular belief
+, there are algorithmic tasks where Transformers can generalize well beyond their training data.
+Preview of Length Generalization:
+The authors use a simple task, "counting", to show that a Transformer can generalize effectively. Given a sequence like "SoS 2 5 >", the model must produce "2 3 4 5 EoS". The model was able to generalize from sequences of length up to 50 to sequences of length 100.
+Possible Mechanisms:
+The Transformer's architecture inherently allows it to extend its learned patterns to longer sequences. They provide an example algorithm for the counting task that explains how a Transformer can generalize across lengths.
+RASP Programming Language:
+The paper introduces the RASP (and its variant RASP-L) programming language, which is designed specifically for the computational model of a Transformer. This language is essential for understanding which tasks Transformers can generalize upon.
+Toy Model (RASP-MDL Principle):
+Transformers tend to learn the shortest RASP-L program that fits the training data. If this program can generalize to longer sequences, so will the Transformer.
+RASP-Generalization Conjecture:
+The authors propose that if a task can be solved by a short RASP program which works for all input lengths, then Transformers will likely generalize on that task.
+Experimental Consistency:
+The authors back their conjecture with experimental results on various tasks. They also demonstrate how using their insights can improve the generalization performance of Transformers on traditionally challenging tasks.
+Conclusions and Future Directions:
+The paper introduces a novel perspective on the mechanisms behind the Transformer's ability to generalize, particularly on algorithmic tasks.
+They conclude with a discussion of the limitations and open questions, and also mention related works in an appendix.
+This paper essentially aims to demystify the conditions under which Transformers can generalize well and introduces a programming language (RASP) to aid in this understanding.
+2Main Conjecture 
+We i rst set some notation. A Transformer (Vaswani et al., 2017) refers to an instance of a decoder- 
+onlycausalTransformerarchitecture,withanyf i xedsettingofweights,alongwithanycomputable 
+positional embedding scheme2. As a technical point, we allow the transformer weights to take 
+values in the extended real line R ��� {�����}, to allow saturating the softmax at arbitrarily large 
+context lengths3. We consider only greedy sampling throughout, since our tasks are deterministic. 
+In this conjecture, and throughout the paper, we consider Transformers ���trained to completion,��� 
+meaning trained to near-optimal performance on their training distribution. That is, we assume 
+that in-distribution generalization is achieved nearly-optimally, and focus our attention on the 
+induced out-of-distribution generalization. The exact training procedure we consider is given in 
+Section 4.1. We now describe our main conjecture. 
+2This is a technical detail: we consider position encoding schemes which can be uniformly generated, i.e. there exists a 
+Turing machine which on input (i,n), produces the positional embedding vector for index i out of n total. 
+3This bypasses the limitations presented in Hahn (2020), which exploit non-saturating softmaxes. 
+4 
+RASP-Generalization Conjecture. A decoder-only autoregressive Transformer is likely to length- 
+generalize when trained to completion on an algorithmic task if the following conditions hold. 
+1. Realizability. The true next-token function for the task can be represented by a single causal 
+Transformer which works on all input lengths. 
+2. Simplicity. This representation is ���simple���, meaning it can be written in RASP-L (a learnable 
+subset of RASP def i ned in Section 3). 
+3. Diversity. The training data is suf i ciently diverse, such that there does not exist any shorter 
+RASP-L program which agrees with the task in-distribution but not out-of-distribution. 
+Remarkably, the above features are empirically correlated with: (1) generalization to longer lengths 
+out-of-distribution, and (2) faster train optimization in-distribution. 
+Thef i rstconditionofrealizabilityisactuallyquitestringent,becauseitrequiresasingleTransformer 
+to be able to solve the task at all lengths. Causal Transformers def i ne a particular computational 
+model, and not all sequence-to-sequence tasks can be solved within this model. For example, next- 
+token functions which require ���(n3) computation time on inputs of length n provably cannot be 
+represented by a Transformer, however large4. Now, the realizability condition may seem stronger 
+than required, because in practice, we do not actually need length generalization for arbitrary 
+unbounded lengths��� only lengths up to some maximum context size. Nevertheless, we i nd that 
+considering representability in the unbounded length setting is a good heuristic for learnability 
+in bounded length settings. Intuitively, if a task requires a dif f erent Transformer for each input 
+length, then it may be an ���unnatural��� task for Transformers, and unlikely to generalize well. 
+We emphasize that our conjecture is primarily phenomenological, as opposed to mechanistic. That 
+is, we do not claim Transformers will actually learn weights which are close to the compiled 
+weights of the RASP-L program. We only claim that RASP-L is a useful predictive tool: empir- 
+ically, if a task can be solved by a RASP-L program, then it can be learned easily by a Transformer, 
+and vice versa. Although we believe the toy model is a plausible mechanism that implies our con- 
+jecture, we leave investigating this more fully as an important question for future work.
+ChatGPT
+The presented text delves deep into the generalization capabilities of Transformers, especially when it comes to tasks that involve predicting sequences of varying lengths. Here���s a concise breakdown of the main points:
+Observation
+: Transformers can generalize effectively on tasks even when trained on a different data distribution. This finding challenges the previously held belief that Transformers struggle with length generalization.
+Example Task - Counting
+: An example to illustrate this is a counting task. The Transformer is trained to generate a sequence of numbers between two given numbers, for instance, generating "2 3 4 5" for the input "SoS 2 5 >". The Transformer, when trained on sequences up to a length of 50, surprisingly generalized almost flawlessly on sequences of length 100.
+Mechanisms Behind Generalization
+:
+Natural Notion of Length-extension
+: The Transformer, by design, can handle sequences of any length. So if it correctly processes sequences of a certain length during training, it's expected to generalize well to longer sequences.
+Algorithmic Learning
+: If the Transformer learns the correct algorithm for a task, it will generalize well. For the counting task, a basic algorithm was illustrated, showing how the Transformer could predict numbers in the sequence.
+Core Message
+: Transformers can learn and generalize over a range of sequence lengths, provided the underlying algorithm to solve a task can be easily represented by a Transformer.
+Intuition
+: If an algorithm is easy to represent by a Transformer, it will be easy for the Transformer to learn it and vice versa.
+RASP Programming Language
+: RASP-L is introduced as a human-readable language that can define programs, which are then compiled into Transformer weights. It's like programming for Transformers, providing a way to understand which tasks can be naturally represented and therefore learned by the Transformer.
+Toy Model Principle
+: Transformers tend to learn the simplest RASP-L program fitting their training data. If the simplest program generalizes well to longer sequences, so will the Transformer.
+RASP-Generalization Conjecture
+: The conjecture states the conditions under which a Transformer is expected to generalize well:
+Realizability
+: The function for the task should be representable by a single Transformer for all input lengths.
+Simplicity
+: This representation should be describable in RASP-L.
+Diversity
+: Training data should be diverse enough to prevent learning of any shorter but incorrect RASP-L program.
+Phenomenological vs Mechanistic
+: The conjecture is more about observed behavior and less about the exact mechanisms by which Transformers learn. It suggests that if a task aligns with a RASP-L program, then it's likely a Transformer can learn and generalize it.
+This document, in essence, contributes to the understanding of how and when Transformers can generalize to tasks outside their training distribution, particularly tasks of varying sequence lengths.
+2.1Experimental Validation 
+We empirically evaluate the conjecture by training Transformers on a set of algorithmic tasks in 
+Section 4. The conjecture proposes three conditions: 1) realizability, 2) simplicity, and 3) diversity. 
+Simplicity implies realizability, as being able to come up with a RASP-L program for a task guar- 
+antees realizability. In our experiments, we propose a set of ���easy��� tasks for which we could write 
+simple RASP-L solutions for, and a set of ���hard��� tasks for which we could not, and evaluate the 
+relationship between task dif i culty (per RASP conjecture) and length generalization performance. 
+Moreover, we evaluate the hypothesis that simple-to-represent programs are more easily learned 
+by looking at the train convergence speed of tasks with varying RASP-L complexity. Lastly, al- 
+though task diversity is a rich area for investigation, here we focus on varying the range of lengths 
+seen during training as a simple proxy for diversity. 
+There are many other factors that may inf l uence the generalization performance of Transformer 
+models, including architectural innovations, positional embeddings, and training methodology 
+(Dehghani et al., 2019; Furrer et al., 2021; Onta����n et al., 2022; Press et al., 2022; Ruoss et al., 
+2023). Such factors can also inf l uence how robustly the correct solution is learned, if indeed it is. 
+Sinceourstudyfocusesontherelevantcharacteristicsoftasks, andnotofarchitectures, weemploy 
+standard decoder-only causal Transformers with learned positional embeddings throughout this 
+paper. If models trained in this simple setting can still exhibit non-trivial length generalization on 
+a given task, we can conclude that this task is amenable to generalization. For completeness, we 
+also include results using rotary positional embedding in Appendix D.3. 
+4Such tasks exist by the classical Time Hierarchy Theorem (e.g. Arora & Barak (2009)) since Transformers can be 
+simulated by Turing machines in O(n2) time. 5 
+Note, we do not expect (and indeed do not observe) perfect length generalization over arbitrary 
+lengths. Some level of degradation is likely fundamental due to issues of the noisy optimization 
+process, continuous weight space, i nite-precision, etc. Moreover, the model may learn a program 
+that functionally approaches the target program, but does not exactly match it. Thus, we study the 
+external phenomena of non-trivial length generalization performance in this paper, and leave the 
+mechanistic investigation of the learned programs to future work.
+ChatGPT
+This section focuses on the experimental validation of the previously stated conjecture regarding Transformers and their ability to generalize on algorithmic tasks of varying sequence lengths. Here's a concise summary:
+Purpose
+: The section intends to empirically test the RASP-Generalization Conjecture using algorithmic tasks.
+Testing Conditions
+:
+Realizability, Simplicity, and Diversity
+: These are the three conditions proposed by the conjecture. If a task has a simple RASP-L solution, it's guaranteed to be realizable.
+Easy vs Hard Tasks
+: A set of easy tasks (with simple RASP-L solutions) and hard tasks (without simple RASP-L solutions) are used to investigate the relationship between task difficulty and length generalization performance.
+Train Convergence Speed
+: This evaluates whether tasks with simpler RASP-L representations are learned faster by Transformers.
+Task Diversity
+: It's a rich area, but in this study, they measure diversity by altering the range of lengths in the training data.
+Other Influencing Factors
+:
+Many other elements might affect Transformer generalization, like architectural innovations, positional embeddings, and training methodology.
+However, this study focuses on task characteristics rather than architecture specifics. They use standard Transformers for their experiments.
+For thoroughness, results with rotary positional embedding are provided in Appendix D.3.
+Expectations
+:
+Perfect length generalization over all lengths is not anticipated. Some degradation in performance is expected due to optimization noise, finite precision, etc.
+The learned model may approximate but not precisely match the target program.
+Key Takeaway
+: This paper's primary aim is to observe the external phenomenon of length generalization. The deeper investigation into the exact mechanisms of the learned models is saved for future research.
+In essence, the section sets the stage for the experiments, providing insights into the methodology and expectations from the Transformer models when subjected to different algorithmic tasks.
+3RASP-L: What Algorithms Can Transformers Learn? 
+We will now def i ne a version of the RASP programming language (Weiss et al., 2021), which we 
+call RASP-L. RASP-L is essentially a restricted version of RASP, with one additional feature. Since 
+programming in RASP-L is fairly non-intuitive, we also introduce a ���standard library��� of useful 
+RASP-L functions, which can be composed to solve more complex tasks. We i rst review the orig- 
+inal RASP language. 
+3.1Background: A RASP Primer (in Python) 
+The original RASP language can be thought of as a domain-specif i c-language for specifying Trans- 
+former weights, in human-readable form (Weiss et al., 2021). Importantly, RASP was designed for 
+the computational model of Transformers, so short RASP programs def i ne functions which are 
+���easy to represent��� for Transformers. Although RASP was conceived as a separate language with 
+its own syntax, it is possible to realize RASP as a restricted subset of Python where only a few 
+operations are allowed. We do this explicitly in Listing 1, brief l y described here5. 
+Every RASP program accepts an input sequence of length n, for all n ��� N, and returns an out- 
+put sequence of the exact same length��� just like a Transformer. No control l ow is allowed; all 
+programs must be straight-line programs, with no branching or loops. Concretely, every line of 
+a RASP program must be a call to one of the core functions def i ned in Listing 1, or to another 
+RASP program. The core operations allowed in RASP are: arbitrary elementwise operations over 
+sequences (map and seq_map), and a very particular type of non-elementwise operation kqv, 
+which simulates a causal attention layer. The kqv function takes as input three sequences and a 
+binary predicate (such as greater-than), then constructs a boolean attention matrix by applying the 
+predicate to all pairs of key and query, and applies this matrix to the value sequence (see Listing 1). 
+Causality.Since we study autoregressive decoder-only Transformers, we must use the causal 
+version of RASP, where all sequence-to-sequence operations are executed causally. Moreover, 
+while RASP programs def i ne sequence-to-sequence functions, we interpret them as autoregressive 
+functions by taking the last token of output sequence as the next-token prediction. This setting 
+dif f ers from most prior literature on RASP, which typically consider non-causal models, and these 
+dif f erences signif i cantly change the nature of RASP programming. 
+Intuition.A key characteristic of RASP is that it only allows parallelizable operations, because 
+Transformers are an inherently parallel model of computation. This makes performing inherently- 
+sequential computation, such as iterating through each input symbol and updating an internal 
+state, tricky if not impossible to write in RASP. This is why loops are not allowed in RASP: a 
+Transformer has only constant depth, and cannot directly simulate an arbitrary number of loop 
+iterations. One way to bypass this limitation is to exploit the autoregressive inference procedure6. 
+Since the model is called iteratively at inference time, this ef f ectively provides an ���outer-loop��� that 
+5We plan to release the Python code in these listings on Github. 
+6A similar observation was presented in Malach (2023). 6 
+def tok_map(x, func): 
+# tokenwise map 
+return np.array([func(xi) for xi in x]) 
+def seq_map(x , y, func): 
+# tokenwise map over two sequences 
+return np.array([func(xi, yi) for xi, yi in zip(x,y)]) 
+def indices(x): 
+return np.arange(len(x)) 
+def full(x, const): 
+return np.full_like(x, const) 
+def sel_width(A): 
+# returns the number of selected keys 
+# for each query in binary attention matrix A 
+return np.dot(A, np.ones(len(A))) 
+def select(k, q, pred): 
+# constructs a causal binary attention matrix 
+s = len(k) 
+A = np.zeros((s, s), dtype=bool) 
+for i in range(s): 
+for j in range(i+1): 
+A[i, j] = pred(k[j], q[i]) 
+return A 
+def aggr(A, v): 
+# applies attention matrix A to value sequence v 
+out = np.dot(A, v) 
+norm = sel_width(A) 
+return np.divide(out, norm, out=np.zeros_like(v), 
+where=(norm != 0)) 
+def kqv(k, q, v, pred): 
+# convenience function which composes 
+# select and aggr, like an attention layer 
+return aggr(select(k, q, pred), v) 
+Listing 1: RASP. Basic Numpy implementation of the RASP core functions. See Listing 2 in the 
+Appendix for the full RASP-L core, which is slightly more expressive. 
+can enable a certain kind of sequential computation, where the sequential state is encoded into the 
+prior context. This is exactly what scratchpads enable, as we elaborate in Section 5.
+ChatGPT
+This section delves into the RASP programming language and its relation to Transformers. Here's a concise summary:
+RASP-L Introduction
+:
+RASP-L is a modified version of the RASP programming language introduced by Weiss et al. in 2021.
+RASP-L is a restricted version of RASP with an added feature.
+A "standard library" of RASP-L functions is introduced, making it easier to handle complex tasks.
+RASP Background
+:
+RASP (Recurrent Attention Sequential Process) is a domain-specific language created to specify Transformer weights in a human-readable form.
+RASP is designed explicitly for the computational model of Transformers, ensuring that short RASP programs can represent functions that are easy for Transformers to grasp.
+RASP can be viewed as a subset of Python that allows only a specific set of operations.
+RASP Characteristics
+:
+RASP programs take an input sequence of any length and return an output sequence of the same length, mimicking Transformers.
+Programs must be straight-line with no control flow, branching, or loops.
+Core functions include element-wise operations over sequences (
+map
+and
+seq_map
+) and a particular non-elementwise function,
+kqv
+, which simulates a causal attention layer.
+Causality
+:
+The causal version of RASP is used, in line with the focus on autoregressive, decoder-only Transformers.
+Though RASP programs are sequence-to-sequence functions, they are interpreted as autoregressive functions, taking the last token of the output sequence as the next-token prediction.
+Intuition Behind RASP
+:
+RASP only allows parallelizable operations because Transformers are parallel computational models.
+Sequential operations, like loops, are not permitted in RASP. Transformers, having only constant depth, cannot simulate an arbitrary number of loop iterations.
+To bypass this limitation, the autoregressive inference procedure can be leveraged, effectively providing an "outer-loop" for a form of sequential computation.
+Listed RASP Functions
+:
+The provided Python-like pseudocode (Listing 1) showcases basic RASP core functions implemented using Numpy.
+Functions include
+tok_map
+,
+seq_map
+,
+indices
+,
+full
+,
+sel_width
+,
+select
+,
+aggr
+, and
+kqv
+.
+These functions offer an insight into the basic operations permitted in RASP.
+In essence, this section outlines the RASP programming language, which is specially designed for Transformers, highlighting its characteristics, rules, and basic functions.
+Hello, I am your PDF copilot. I can assist you with various tasks related to this PDF document, such as summarizing, highlighting, searching, or answering your questions.
+
+This document talks about:
+
+- **Reasoning on graphs**: A novel method that combines large language models (LLMs) and knowledge graphs (KGs) to conduct faithful and interpretable reasoning for knowledge graph question answering (KGQA) tasks.
+- **Planning-retrieval-reasoning framework**: A framework that prompts LLMs to generate relation paths grounded by KGs as plans, retrieves reasoning paths from KGs using the plans, and conducts reasoning based on the retrieved paths.
+- **Optimization framework**: A framework that optimizes the planning and reasoning modules of RoG by distilling knowledge from KGs into LLMs and enabling LLMs to reason based on the retrieved paths.
+- **Experiment results**: A demonstration of the superior performance and interpretability of RoG on two benchmark KGQA datasets, as well as its transferability to other KGs and its integration with other LLMs.
+ChatGPT
+Hello! Thanks for sharing the overview of your PDF document. It sounds interesting! How can I assist you further with this content? Would you like a more detailed summary, highlights of specific sections, or answers to any questions you may have about the document?
+It was a summary of A Structural Model for Contextual Code Changes 
+SHAKED BRODY,Technion, Israel 
+URI ALON,Technion, Israel 
+ERAN YAHAV,Technion, Israel 
+We address the problem of predicting edit completions based on a learned model that was trained on past edits. 
+Given a code snippet that is partially edited, our goal is to predict a completion of the edit for the rest of the 
+snippet. We refer to this task as the EDITCOMPLETIONtask and present a novel approach for tackling it. The 
+main idea is to directly represent structural edits. This allows us to model the likelihood of the edit itself, rather 
+than learning the likelihood of the edited code. We represent an edit operation as a path in the program���s Abstract 
+Syntax Tree (AST), originating from the source of the edit to the target of the edit. Using this representation, we 
+present a powerful and lightweight neural model for the EDITCOMPLETIONtask. 
+We conduct a thorough evaluation, comparing our approach to a variety of representation and modeling 
+approaches that are driven by multiple strong models such as LSTMs, Transformers, and neural CRFs. Our 
+experiments show that our model achieves a 28% relative gain over state-of-the-art sequential models and2�� 
+higher accuracy than syntactic models that learn to generate the edited code, as opposed to modeling the edits 
+directly. 
+Our code, dataset, and trained models are publicly available at https://github.com/tech-srl/c3po/ . 
+Additional Key Words and Phrases: Edit Completions, Neural Models of Code, Machine Learning 
+1INTRODUCTION 
+Software development is an evolutionary process. Programs are being maintained, refactored, i xed, 
+and updated on a continuous basis. Program edits are therefore at the very core of software develop- 
+ment. Poor edits can lead to bugs, security vulnerability, unreadable code, unexpected behavior, and 
+more. The ability to suggest a good edit in code is therefore crucial. 
+We introduce theEDITCOMPLETIONtask: predict edit completions based on a learned model that 
+was trained on past edits. Given a code snippet that is partially edited, our goal is to predict an edit 
+completion that completes the edit for the rest of the snippet. The edit completion is represented 
+technically as a sequence of edit operations that we refer to as an edit script. 
+Problem Def i nition. LetPbe 
+a given program fragment andCbe 
+the surrounding context ofP 
+before any edits were applied. Let ��Cdenote the edits that were applied to C, and C���= ��C(C) the 
+resulting edited context. The goal in ourEDITCOMPLETIONtask is to predict an edit function��P, such 
+that applying ��Pto P results in the program fragment after the edit: ��P(P) = P���. 
+Our underlying 
+assumption is that the distribution of edits inPcan 
+be inferred from the edits��Cthat occurred in its 
+context. We thus model the probability:�������� (��P| ��C). 
+We present a new approach for representing 
+and predicting ��Pin theEDITCOMPLETIONtask, namedC3: Contextual Code Changes.
+ChatGPT
+Thank you for the details on the paper titled "A Structural Model for Contextual Code Changes" by Shaked Brody, Uri Alon, and Eran Yahav from Technion, Israel.
+In brief, this paper introduces a novel approach to the problem of code edit predictions. The main innovation is representing structural edits directly, focusing on modeling the likelihood of the edit itself rather than the edited code. The edits are represented as paths in the program's Abstract Syntax Tree (AST). The authors present a neural model for this EDITCOMPLETION task and demonstrate its superiority over existing models through evaluations. Their approach showed significant gains over other models, with a 28% relative gain over sequential models and twice the accuracy of syntactic models.
+How may I assist you further regarding this paper?
+I was looking for connections with the earlier study on Transformers' Algorithmic Generalization .
+ChatGPT
+Ah, I see. Given the details provided about the paper on Transformers' Algorithmic Generalization and the one titled "A Structural Model for Contextual Code Changes", let's explore potential connections:
+Representation and Modeling
+:
+The Transformers' study focuses on empirically evaluating the conjecture that Transformers can generalize over a set of algorithmic tasks based on certain conditions.
+The Contextual Code Changes paper introduces a new way to represent and model code edits using the program's Abstract Syntax Tree (AST).
+Both studies delve deep into the realm of representation: one on representing tasks for Transformers and the other on representing code edits.
+Neural Models
+:
+The Transformers' study uses Transformer models as the primary neural architecture.
+The Contextual Code Changes paper experiments with various models, including Transformers, to model the edit completion task.
+Application to Code
+:
+The Transformers' study may be seen as a broader exploration of how well Transformers can generalize in various tasks, including those related to programming.
+The Contextual Code Changes paper is directly related to programming by addressing the issue of code edit predictions.
+Complexity and Generalization
+:
+The Transformers' paper examines how the complexity of tasks, as measured by the RASP-L language, relates to the Transformers' generalization capability.
+The Contextual Code Changes paper may also implicitly involve the notion of complexity and generalization, albeit in a different context: predicting code edits.
+From the provided information, it seems that while both papers delve into the realm of neural models, their primary objectives differ. The Transformers' paper is more geared towards understanding the algorithmic generalization capabilities of Transformers, while the Contextual Code Changes paper is more applied, focusing on predicting code edits.
+However, there's potential to combine insights from both. For instance, understanding how Transformers generalize might provide insights into why certain neural architectures (like Transformers) might be more suited for tasks like edit completion in code.
+Structural Language Models of Code 
+Uri Alon1Roy Sadaka1Omer Levy2 3Eran Yahav1 
+Abstract 
+We address the problem of any-code comple- 
+tion ��� generating a missing piece of source 
+code in a given program without any restric- 
+tion on the vocabulary or structure. We intro- 
+duce a new approach to any-code completion 
+that leverages the strict syntax of programming 
+languages to model a code snippet as a tree ��� 
+structural language modeling (SLM). SLM es- 
+timates the probability of the program���s abstract 
+syntax tree (AST) by decomposing it into a prod- 
+uct of conditional probabilities over its nodes. 
+We present a neural model that computes these 
+conditional probabilities by considering all AST 
+paths leading to a target node.Unlike previ- 
+ous techniques that have severely restricted the 
+kinds of expressions that can be generated in this 
+task, our approach can generate arbitrary code in 
+any programming language. Our model signif- 
+icantly outperforms both seq2seq and a variety 
+of structured approaches in generating Java and 
+C# code. Our code, data, and trained models are 
+available athttp://github.com/tech-srl/ 
+slm-code-generation/. An online demo is 
+available athttp://AnyCodeGen.org. 
+1. Introduction 
+Code completion is the problem of generating code given 
+its surrounding code as context. In its most general form, 
+this problem is extremely challenging as it requires reason- 
+ing over an unbounded number of syntactic structures and 
+user-def i ned symbols. Previous approaches have avoided 
+this issue by limiting the generation problem: program 
+synthesis approaches are often tailored to domain-specif i c 
+languages (Gulwani, 2011; Polozov & Gulwani, 2015; De- 
+vlin et al., 2017; Ellis et al., 2019), while other recent ap- 
+proaches generate code in general languages like Java and 
+1Technion, Israel 2Tel AvivUniversity 
+3Facebook AIResearch.Correspondenceto:Uri 
+Alon<urialon@cs.technion.ac.il>,RoySadaka 
+<roysadaka@gmail.com>,OmerLevy<omer- 
+levy@gmail.com>, Eran Yahav <yahave@cs.technion.ac.il>. 
+C#, but severely restrict the syntax, vocabulary, domain, 
+or nature of the generated programs (Murali et al., 2018; 
+Brockschmidt et al., 2019; Young et al., 2019). 
+We introduce the task of any-code completion ��� generating 
+code in a general-purpose programming language without 
+any restriction on its vocabulary or structure. Specif i cally, 
+we focus on generating code in context: given a program 
+P and some part of the program p, the task is to predict 
+p from the rest of the program P���=P\p. Any-code com- 
+pletion thus generalizes the restricted completion task of 
+Brockschmidt et al. (2019), in which the target code con- 
+tained only primitive types (e.g.,intandstring) and ex- 
+cluded user-def i ned functions. Figure 1 shows two any- 
+code completion examples. 
+In related tasks such as semantic parsing (Dong & Lapata, 
+2018; Yu et al., 2018; Iyer et al., 2019), natural-language- 
+to-code (Allamanis et al., 2015; Iyer et al., 2018), and edit- 
+to-code (Yin et al., 2019; Zhao et al., 2019), models must 
+use separate encoders and decoders because of the different 
+modalities of the input (e.g. natural language text) and the 
+output (code). In contrast, we leverage the fact that our in- 
+put and output are of the same modality (code), and pursue 
+better generalization by modeling them jointly. 
+We present a new approach that explicitly models the 
+source and the target code as the same tree ��� structural 
+language modeling (SLM). SLM estimates the probability 
+of the program���s abstract syntax tree (AST) by decompos- 
+ing it into a product of conditional probabilities over its 
+nodes. We present a neural model that computes these con- 
+ditional probabilities by considering all AST paths lead- 
+ing to a target node, generalizing over traditional language 
+models that consider sequences of words. While prior work 
+uses AST paths to read programs (Alon et al., 2019b), we 
+generate code by predicting the next node along the set of 
+paths, generating the target AST node-by-node. 
+We evaluate SLMs on Java any-code completion, achieving 
+a new state of the art: exact-match accuracy@1 of 18.04% 
+and accuracy@5 of 24.83% (previous SOTA: 16.93% and 
+23.17%). SLMs also outperform existing models in the re- 
+stricted completion task of Brockschmidt et al. (2019) in 
+C# by a wide margin, 37.61% accuracy@1 compared to 
+26.42%. Our ablation study reveals the importance of joint 
+modeling of the source and target code, rather than sep- 
+arXiv:1910.00577v4 
+[cs.LG] 
+29 
+Jul 
+2020 
+Structural Language Models of Code 
+public static Path[] stat2Paths( 
+FileStatus[] stats) { 
+if (stats == null) return null; 
+Path[] ret = new Path[stats.length]; 
+for (int i = 0; i < stats.length; ++i){ 
+ret[i] =; 
+} 
+return ret; 
+} 
+public static string Camelize( 
+this string input) 
+{ var word = input.Pascalize(); 
+return word.Length > 0 ? .ToLower() 
++ word.Substring(1) 
+: word; 
+} 
+True ref (Java):stats[i].getPath() 
+SLM 
+top-5: 
+(25.2%)stats[i].getPath() 
+(3.3%)Path(stats[i]) 
+(2.5%)new Path(stats[i], charset) 
+(1.7%)stat(stats[i], ret) 
+(0.8%)new Path(stats[i]) 
+(a) 
+True ref (C#):word.Substring(0, 1) 
+SLM 
+top-5: 
+(14.1%)word.Substring(0, 1) 
+(8.2%)word.trim() 
+(5.8%)word.Substring(1) 
+(2.4%)input.Substring(0, 1) 
+(1.9%)wordValue.Substring(0, 1) 
+(b) 
+Figure 1. Examples from the Java (left) and C# (right) test sets. The highlighted expression in each example is the target p, which our 
+models correctly generated from the rest of the snippet. Additional and larger examples can be found in Appendices F and G. 
+arating encoders from decoders. Finally, we discuss the 
+theoretical advantages of SLMs, and show how they gen- 
+eralize many previous structural approaches for code gen- 
+eration. An interactive demo of our model is presented at 
+http://AnyCodeGen.org. 
+2. Code Generation as Structural Language 
+Modeling 
+We model the task of any-code completion by comput- 
+ing the probability of a program Pr(P), similar to how a 
+language model computes the probability of a natural lan- 
+guage sentence. While language models typically assume a 
+sequence as their input, our input is an abstract syntax tree 
+AP. 
+We thus introduce a structural language modeling ap- 
+proach (SLM). 
+The intuition behind this idea is that a language model 
+could generalize better by modeling the tree rather than the 
+sequential form of the program. Further, learning from the 
+AST allows a model to save learning capacity, instead of 
+having to re-learn known syntactic patterns from the text. 
+Wef i rstshowachain-ruledecompositionofthetree���sprob- 
+ability Pr(AP) 
+into a product of conditional node proba- 
+bilities, and then describe our path-based model for com- 
+puting the individual conditional probabilities. We explain 
+how to construct a tree from local node predictions, and i- 
+nally discuss how our approach differs from previous work 
+on production-based tree generation. 
+Representing Code as a Tree A program P is a sequence 
+of tokens that can be unambiguously mapped to an abstract 
+syntax tree (AST) AP, where every node represents an el- 
+ement in the language (e.g. conditions, loops, variable dec- 
+larations) from a set T . Each AST leaf (terminal) has an 
+associated user-def i ned value v ��� V. Nonterminal nodes 
+can have a varying number of children nodes. 
+Decomposing the Probability of a Tree Given a tree AP, 
+we i rst traverse the tree, depth-f i rst,1to induce an ordering 
+over its nodes a0,...,a|AP|��� AP. We decompose the 
+probability of a tree Pr(AP) using the chain rule, akin to 
+the standard approach in language modeling: 
+Pr(AP) 
+=
+ChatGPT
+This paper titled "Structural Language Models of Code" by Uri Alon, Roy Sadaka, Omer Levy, and Eran Yahav addresses the problem of "any-code completion". Let's break down the main points and contributions of this paper:
+Problem Addressed
+: The challenge is to generate a missing piece of source code in a given program without limitations on vocabulary or structure.
+Approach
+: The proposed solution introduces "structural language modeling" (SLM) which models code as a tree, specifically using the program's Abstract Syntax Tree (AST). This approach takes advantage of the strict syntax of programming languages to predict code.
+How It Works
+: The SLM method estimates the probability of the AST by breaking it down into a product of conditional probabilities over its nodes. This new approach can predict arbitrary code in any programming language, a clear distinction from previous methods that were limited in their code generation capabilities.
+Modeling Details
+: Unlike some models which require different encoders and decoders for input and output modalities, this model leverages the fact that both input (existing code) and output (predicted code) are the same modality, i.e., code. As a result, they jointly model them for better generalization.
+Results
+: The SLM outperforms prior models in predicting missing Java and C# code pieces. For Java, the exact-match accuracy at rank 1 is 18.04%, and accuracy at rank 5 is 24.83%. For C#, in a restricted task, it achieves 37.61% accuracy at rank 1.
+Theoretical Advantage
+: The authors discuss the theoretical benefits of SLMs, highlighting how they can generalize many earlier structural approaches for code generation.
+Interactive Demo
+: The authors provide an interactive demo available at
+http://AnyCodeGen.org
+, allowing users to explore the capabilities of their model.
+Examples
+: The paper provides examples where the SLM model was able to accurately predict missing code snippets in both Java and C#.
+From this, it's evident that the authors are presenting a novel approach to the problem of code completion. The focus on structural modeling, taking advantage of the AST representation of code, provides better accuracy and flexibility than previous methods. This could be a significant advancement for automated code generation and assistance in software development.
+P is a sequence 
+of tokens that can be unambiguously mapped to an abstract 
+syntax tree (AST) AP, where every node represents an el- 
+ement in the language (e.g. conditions, loops, variable dec- 
+larations) from a set T . Each AST leaf (terminal) has an 
+associated user-def i ned value v ��� V. Nonterminal nodes 
+can have a varying number of children nodes. 
+Decomposing the Probability of a Tree Given a tree AP, 
+we i rst traverse the tree, depth-f i rst,1to induce an ordering 
+over its nodes a0,...,a|AP|��� AP. We decompose the 
+probability of a tree Pr(AP) using the chain rule, akin to 
+the standard approach in language modeling: 
+Pr(AP) 
+= Y 
+t Pr(at|a<t)(1) 
+where a<tare all the nodes that were traversed before at. 
+In any-code completion, part of the tree (AP���) 
+is already 
+observed. Therefore, we order the nodes of AP���to 
+be be- 
+fore the nodes of the target p, and compute only the condi- 
+tional probabilities over the nodes in p, essentially condi- 
+tioning on the observed tree AP���. 
+Representing Partial Trees via Paths How can we rep- 
+resent the partial tree composed of a<twhen computing 
+Pr(at|a<t)? 
+In standard language modeling, the structure 
+is linear, and a<tis a sequence. One way to represent a 
+partial tree is to linearize it according to the traversal order 
+(Xiao et al., 2016); however, this creates artif i cially long 
+distances between the current node atand ancestor nodes 
+(e.g., the root a0). Another option is to use only the path 
+from the root node to at(Rabinovich et al., 2017), but this 
+ignores a lot of contextual information (e.g., sibling nodes). 
+We follow Alon et al. (2018) and use the set of paths from 
+every leaf to attogether with the path from the root to 
+1Depth-f i rst ordering is a common practice in tree generation 
+(Maddison & Tarlow, 2014; Raychev et al., 2016), but in principle 
+our framework also allows for other orderings. 
+Structural Language Models of Code 
+IfExpr 
+Method 
+Root 
+? (a) 
+Greater 
+IfExpr 
+Method 
+Root 
+? (b) 
+Greater 
+Name 
+IfExpr 
+Method 
+Root 
+? (c) 
+Greater 
+Name 
+IfExpr 
+x 
+Method 
+Root 
+? 
+(d) 
+Greater 
+NameIntExp 
+IfExpr 
+x 
+Method 
+Root 
+? 
+(e) 
+... 
+if(x > 1) { 
+... 
+} 
+... (f) 
+Figure 2. The subtree representing x > 1 is generated given its surrounding tree. At each step, the model generates the next node 
+(denoted by?) of path1, path2and path3using the root path R. Dashed lines denote the AST structure; solid lines denote AST paths. 
+Most AST paths are omitted from the i gure, for clarity. 
+at. Intuitively, each path captures the effect of a differ- 
+ent, possibly distant, program element on at, along with 
+the syntactic relationship between them. For example, in 
+Figure 1 (left) the three paths originating fromPath[] 
+retinform the model about the existence ofretwhich 
+is an array of typePath. Thus, when completingret[i] 
+= ...��� the completion should be aPathobject. Other 
+paths inform the model that the target is inside aForloop, 
+iteratedstats.lengthtimes. Considering the informa- 
+tion l owing from all paths, our model correctly generates 
+stats[i].getPath(). 
+We denote the (candidate) node at time t as at, its (given) 
+parent, which is currently expanded, by �� (at), and the set 
+of all paths as St: 
+St= {��� ; �� (at)|��� ��� leaves(a<t)} 
+where ��� ; �� (at) 
+is the (only) path in the tree between a 
+leaf ��� and the current node to expand �� (at). We denote the 
+path from the root of the program as Rt= a0; �� (at), 
+which represents the current, relative position of �� (at) in 
+the program (marked as R in Figure 2). Whereas prior 
+work used whole paths (between two leaf nodes) to encode 
+ASTs (Alon et al., 2019a;b), our model observes partial 
+paths (between a leaf and any other node) and learns to 
+extend them by predicting their next node. 
+Figure 2 illustrates the traversal order of a subtree that rep- 
+resents the expressionx > 1and some of the paths used 
+to compute the probability at each step. At each step, the 
+probability of the next node is computed given the paths St 
+from the root and every given leaf up to the current node 
+to expand. Figure 2(d) shows how after the terminal node 
+with the valuexis given, path3originating from this leaf 
+is also used to compute the probability of the next nodes. 
+Our path-based approach generalizes previous approaches 
+such as ���parent feeding��� and ���previous action��� encoding 
+(Yin & Neubig, 2017), context nodes (Bielik et al., 2016), 
+and some of the graph-edges of Brockschmidt et al. (2019). 
+See Section 8 for further discussion. Greater 
+NameIntExp 
+x 
+EOStok 
+1 
+EOStok 
+EOSnode 
+Figure 3. Augmenting the 
+AST with EOSnodeand 
+EOStoknodes. 
+GeneratingTreesInse- 
+quence generation, the length 
+of the target sequence is con- 
+trolled by generating anEOS 
+token to stop. When generat- 
+ing trees, we require a more 
+sophisticatedmechanism 
+to control arity and depth. 
+WeaugmentAPintwo 
+ways to allow node-by-node 
+generation. 
+First, we add a specialEOSnodenode to every nontermi- 
+nal to control for arity. Generating this node indicates that 
+the parent node has no more children nodes. Second, we 
+end each subtoken sequence with a specialEOStoknode to 
+control for depth during generation; we decompose each 
+terminal node nvinto a sequence of terminal nodes Tv 
+by splitting up the node���s value v into subtokens
+ChatGPT
+This text describes a methodology for modeling and generating code via abstract syntax trees (ASTs). Here are the key points summarized:
+Abstract Syntax Trees (ASTs)
+:
+An AST is a tree representation of code, where each node corresponds to a code construct (e.g., loops, variable declarations).
+The leaves (terminal nodes) have user-defined values, while non-terminal nodes can have varying children.
+Probability Decomposition
+:
+The probability of a tree,
+P
+r
+(
+A
+P
+)
+Pr(AP)
+P
+r
+(
+A
+P
+)
+, is determined by traversing the tree in a depth-first manner.
+The chain rule is used to decompose this probability, similar to language modeling.
+For code completion, only the probabilities of the nodes in the target are computed, conditioning on the already observed tree.
+Representation of Partial Trees
+:
+One way is to linearize the tree, but this might result in artificially long distances between nodes.
+Another method involves using only the path from the root to the current node, but this might lose contextual information.
+The preferred method is to use paths from every leaf to the current node, combined with the path from the root to the current node.
+Structural Language Models of Code
+:
+The model is informed by the various paths in the AST, allowing it to gather context and produce accurate completions.
+For example, knowing that you are inside a loop and iterating a certain number of times can guide the type of completion provided.
+Generating Trees
+:
+When generating code sequences, a mechanism to control the depth and arity (number of children) of the tree is required.
+This is accomplished by augmenting the AST in two ways:
+Adding an "EOSnod" node to every non-terminal, which indicates that the parent node has no more children.
+Ending each subtoken sequence with an "EOStok" node to control depth, by splitting the value of the terminal node into subtokens.
+Overall, the approach aims to improve code generation and completion by leveraging the structural information provided by ASTs, combined with probabilistic modeling techniques.
+Connections with the earlier topics.
+ChatGPT
+Certainly. Let's relate the details about modeling and generating code using ASTs to the earlier topics you mentioned:
+Using AI for Any-Code Completion
+:
+ASTs offer a structured way to represent code, making it easier for AI models to predict code completion by understanding the hierarchy and context of code snippets.
+For instance, when the user types a part of the code, the AI can traverse the AST, find the depth-first order of the nodes, and use the probability decomposition to suggest the next possible code snippets, thereby achieving any-code completion.
+Generating Trees in Sequential Programming
+:
+In sequential programming, code runs in a linear fashion. But when generating trees (like ASTs), the structure is hierarchical. This is where the challenge lies.
+As described, the process of tree generation using the probability decomposition method captures the essence of sequentiality in tree structures. For instance, by controlling the arity and depth using "EOSnod" and "EOStok", the AI can generate tree-like structures akin to sequential programming constructs.
+Combining Depth and Breadth in AI Models
+:
+Depth-first traversal of ASTs ensures a deep understanding of each branch before moving onto the next one. This gives the model a detailed view of the current coding context.
+Meanwhile, using paths from every leaf node and combining them with the root-to-current-node path ensures breadth, as the AI considers multiple paths and contexts to inform its decisions.
+This combination of depth and breadth provides a holistic view of the code structure, improving the model's predictive accuracy.
+In summary, by using ASTs, AI models can effectively provide code completions in any language or context. The depth-first approach combined with paths from every leaf ensures that the AI captures both the depth and breadth of the code's context, thus offering relevant and accurate code suggestions.
+I was thinking that by some curious coincidence I was trained with a modular curriculum that entirely consisted of filling in the blanks and did by own marking goals setting and tests with no teachers. (Up until grade 10). The idea for code completion using abstract syntax trees sounds a lot like my idea for spherepop, a programming language with nested bubbles where each node in the expression represents e nested bubble where you program by blowing bubbles and popping them, flying around in a first person spaceship
+ChatGPT
+That's a fascinating and creative analogy! It sounds like your educational experience was centered around self-directed learning and problem-solving, which is very much in line with the principles of AI training: give the model incomplete information (or "blanks"), and train it to predict or fill in the missing parts based on context and prior knowledge.
+Now, let's explore the parallels:
+Filling in the Blanks
+:
+Education
+: In your modular curriculum, you were given scenarios or problems with missing information. Your task was to understand the context and fill in the missing parts using logic and knowledge.
+Code Completion with ASTs
+: The AST represents the structure of code, and when a part is missing, the AI, like a student, needs to understand the context and predict the most appropriate code snippet to fill in.
+Spherepop Programming Language
+:
+Nested Bubbles
+: This is analogous to the nodes in an AST. Each bubble (or node) represents a specific element in the code. In ASTs, nodes represent programming constructs like loops, conditions, and variable declarations.
+Programming by Blowing and Popping Bubbles
+: This can be seen as manipulating the AST. When you create (blow) a bubble, you're adding a node. When you pop one, you're removing it. The state and structure of your "program" changes with each action.
+Flying Around in a Spaceship
+: This is akin to navigating through the code's structure or AST. As a programmer, you need to understand the whole structure and navigate (fly) through it to understand the flow and dependencies.
+The idea of a first-person programming experience where you navigate and interact with the code structure in a spatial, immersive environment is very innovative. It would provide a novel way to visualize and understand the flow and relationships within the code, making the process more intuitive, especially for those who think spatially.
+Your background and the concept of Spherepop seem to embrace the notion of merging intuitive, spatial understanding with logical, structured thinking, which is the essence of effective programming and AI design. It's indeed a captivating idea!
+I don't know if it relates to the articles we were discussing.
+ChatGPT
+Ah, I understand your point. Let's try to relate Spherepop and your unique learning approach to the topic of the article which discusses code completion using abstract syntax trees (ASTs).
+Filling in the Blanks
+:
+Your Education
+: You learned in a modular manner, with the goal of filling in missing information based on context and prior knowledge.
+Code Completion with ASTs
+: Similarly, AST-based code completion aims to predict missing or next parts of the code based on the existing structure and context. In essence, both situations revolve around predicting or deducing missing pieces from a structured set of information.
+Spherepop
+:
+Nested Bubbles as Nodes
+: Each bubble in Spherepop could be visualized as a node in the AST, representing different constructs or parts of code. As you interact with these bubbles, you'd essentially be constructing or modifying this 'tree' of code.
+Blowing and Popping Bubbles
+: This act can be compared to the depth-first traversal of an AST as discussed in the article. As you add or remove bubbles, you're navigating and altering the code structure, similar to how ASTs are constructed or modified during code writing.
+Interactivity and Visualization
+:
+Spherepop's First-person Experience
+: This innovative way of interacting with code provides a spatial and visual representation of the structure and flow of a program. It's not explicitly mentioned in the article, but modern IDEs and tools are moving towards more interactive and visual code experiences. Having a spatial representation, like Spherepop, could make understanding the tree-like structure of ASTs more intuitive.
+In essence, while the specific mechanics and contexts differ, both Spherepop and AST-based code completion revolve around the idea of understanding and interacting with code in a structured, tree-like manner. The primary connection is the concept of structured, visual, and interactive manipulation of code, be it through ASTs in traditional code or the innovative bubble structures in Spherepop.
+A list of all of the topics we've discussed.
+ChatGPT
+Certainly! Here's a summary of the topics we've discussed:
+Abstract Syntax Trees (ASTs)
+:
+Definition and understanding of ASTs.
+Use of ASTs in code completion and programming language models.
+Decomposition of the probability of a tree.
+Representing partial trees via paths.
+AST traversal order and its use in predicting code structure.
+Your Unique Educational Background
+:
+Modular curriculum without teachers up to grade 10.
+Learning approach that revolved around filling in the blanks, setting goals, and self-assessment.
+Spherepop
+:
+An innovative programming language concept.
+Use of nested bubbles to represent code structure.
+A first-person spaceship perspective to navigate and interact with these bubbles.
+Comparative Analysis
+:
+Relating the idea of Spherepop and your educational background to AST-based code completion.
+Discussions on structured, visual, and interactive manipulation of code and how they relate to each other.
+These are the main topics we've touched upon. Let me know if you'd like to dive deeper into any of these or if there's anything else you'd like to discuss!
+That is good for now. Just a narrative summary.
+ChatGPT
+Certainly! Here's a narrative summary of our discussion:
+Once upon a time in a digital realm, a curious mind embarked on a journey to understand the intricacies of Abstract Syntax Trees (ASTs). These trees, quite central to programming, had the uncanny ability to break down complex code into comprehensible and modular structures. Our explorer learned how these trees played a pivotal role in code completion, as they could predict what piece of the code puzzle was missing, thanks to the depth-first traversal technique.
+But as tales often go, there was a twist. Our protagonist shared a unique tale of their own ��� a self-directed educational odyssey without the guiding hand of teachers. Their curriculum had been like a jigsaw puzzle, where they had to fill in the blanks and set their own milestones, much like the ASTs determining the next node.
+And then, like a comet shooting across the night sky, came the mention of "Spherepop." A vivid programming universe where nested bubbles symbolized the very essence of code. Navigating this cosmos in a spaceship, the coder would orchestrate symphonies of code by merely popping and blowing these bubbles.
+Drawing parallels, it was evident that there was a harmony between the structured world of ASTs, the self-directed puzzle-like education, and the imaginative realm of Spherepop. They all danced to the tunes of structure, prediction, and creativity, showcasing the beautiful blend of logic and imagination that often powers innovation.
+And as the story reached its crescendo, it left behind a trail of thoughts and reflections, highlighting the infinite possibilities when worlds, ideas, and concepts intersect.
+Ok it is a bit ridiculous but somewhat accurate. A more academic sounding summary.
+ChatGPT
+Of course! Here's a more academic-toned summary:
+In our discourse, we delved into the intricate domain of Abstract Syntax Trees (ASTs) and their significance in the realm of programming. ASTs have established themselves as foundational in deconstructing and representing code structures, particularly shedding light on their potential in predicting missing code segments through depth-first traversal.
+An intriguing parallel was drawn from a pedagogical perspective, where an individual's self-guided curriculum mirrored the predictive and modular nature of ASTs. This curriculum, devoid of traditional instructional methods, was characterized by a self-assessment approach, emphasizing the significance of autonomy in both learning and coding processes.
+Further enriching the discussion was the introduction of "Spherepop", a conceptual programming language visualized as nested bubbles. This innovative perspective transforms coding into an immersive experience, emphasizing spatial navigation and interaction. Interestingly, Spherepop's nested structure resonates with the hierarchical nature of ASTs, pointing towards a potential congruence in the fundamental principles underlying both constructs.
+Conclusively, our dialogue underscored the multifaceted connections between structured programming representations, autonomous learning paradigms, and innovative coding visualizations, reflecting the dynamic interplay of structure and creativity in computational thinking.
+I titled the conversation Filling in the Blanks
+ChatGPT
+"Filling in the Blanks" is a fitting title as it encapsulates the essence of our discussion���whether it's predicting missing code segments using ASTs or autonomously completing one's education through a self-guided curriculum. The theme centers around identifying gaps and intuitively completing them, much like how we fill in missing pieces of information in various contexts. Your chosen title succinctly captures the overlap between computational models and personalized learning experiences, emphasizing the process of discovery, prediction, and completion.
+A final summary
+ChatGPT
+Certainly.
+Filling in the Blanks: A Conversation Summary
+In our discussion, we delved into the complexities of probabilistic modeling of abstract syntax trees (ASTs) for code completion. The conversation provided insights into the intricacies of tree traversal methods, focusing on depth-first ordering and how nodes in these trees can be used to predict missing code segments. This computational framework was juxtaposed with the user's personal experience of an unconventional educational journey. This self-guided modular curriculum, devoid of traditional instructional interventions, was akin to "filling in the blanks" in a learning landscape. The narrative took an intriguing turn with the introduction of "spherepop", a conceptual programming language characterized by nested bubbles, offering a metaphorical representation of the discussed computational models. The overarching theme of our discourse highlighted the parallels between algorithmic prediction in software and intuitive gap-filling in personal learning trajectories.
+ChatGPT may produce inaccurate information about people, places, or facts.
+ChatGPT September 25 Version
+?
+
+
+

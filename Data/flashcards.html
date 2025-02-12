@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latin Flashcard Quiz</title>
+    <style>
+        @font-face {
+            src: url('fonts/Sga-Regular.woff2') format('woff2'),
+                 url('fonts/Sga-Regular.woff') format('woff'),
+                 url('fonts/Sga-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-family: 'Sga Regular';
+        }
+
+        body {
+            font-family: 'Sga Regular', Arial, sans-serif;
+            color: #00ff00;
+            background: black;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        #game-container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            width: 80%;
+            max-width: 800px;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            box-shadow: 0 0 20px #00ff00;
+            border: 2px solid #00ff00;
+            margin: 20px 0;
+        }
+
+        .question {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .choices {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .choice {
+            padding: 10px;
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+            background-color: black;
+            color: #00ff00;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .choice:hover {
+            background-color: #00ff00;
+            color: black;
+        }
+
+        .scoreboard {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        button {
+            background-color: black;
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s, color 0.3s;
+            font-family: inherit;
+        }
+
+        button:hover {
+            background-color: #00ff00;
+            color: black;
+        }
+
+        .note {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #00ff00;
+        }
+
+        .note a {
+            color: #00ff00;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+    <div id="game-container">
+        <h1>Latin Flashcard Quiz</h1>
+        <div class="question" id="question">Question text here</div>
+        <div class="choices">
+            <div class="choice" onclick="checkAnswer(this)">Choice 1</div>
+            <div class="choice" onclick="checkAnswer(this)">Choice 2</div>
+            <div class="choice" onclick="checkAnswer(this)">Choice 3</div>
+            <div class="choice" onclick="checkAnswer(this)">Choice 4</div>
+        </div>
+        <div class="scoreboard">
+            <h2>Score: <span id="score">0</span></h2>
+            <p>Press Ctrl+Z or use the button below to toggle between SGA and Latin fonts.</p>
+            <button onclick="toggleFont()">Toggle Font</button>
+        </div>
+    </div>
+    <div class="note" style="z-index: 1; position: relative;">
+    This page is open source, edit it <a href="https://github.com/standardgalactic/standardgalactic.github.io/blob/main/flashcards.html" target="_blank" style="z-index: 2; position: relative;">here</a>.
+</div>
+
+
+   
+
+    <script>
+        // Starfield background
+        const starCanvas = document.getElementById('starfield');
+        const starContext = starCanvas.getContext('2d');
+        starCanvas.width = window.innerWidth;
+        starCanvas.height = window.innerHeight;
+
+        let stars = [];
+        const numStars = 1000;
+        const speed = 0.05;
+
+        for (let i = 0; i < numStars; i++) {
+            stars.push({
+                x: Math.random() * starCanvas.width,
+                y: Math.random() * starCanvas.height,
+                z: Math.random() * starCanvas.width
+            });
+        }
+
+        function updateStars() {
+            for (let star of stars) {
+                star.z -= speed;
+                if (star.z <= 0) {
+                    star.x = Math.random() * starCanvas.width;
+                    star.y = Math.random() * starCanvas.height;
+                    star.z = starCanvas.width;
+                }
+            }
+        }
+
+        function drawStars() {
+            starContext.clearRect(0, 0, starCanvas.width, starCanvas.height);
+            for (let star of stars) {
+                const x = (star.x - starCanvas.width / 2) * (starCanvas.width / star.z);
+                const y = (star.y - starCanvas.height / 2) * (starCanvas.width / star.z);
+                const size = (starCanvas.width / star.z) * 0.5;
+                starContext.beginPath();
+                starContext.arc(x + starCanvas.width / 2, y + starCanvas.height / 2, size, 0, Math.PI * 2);
+                starContext.fillStyle = '#ffffff';
+                starContext.fill();
+                starContext.closePath();
+            }
+        }
+
+        function animateStars() {
+            updateStars();
+            drawStars();
+            requestAnimationFrame(animateStars);
+        }
+
+        animateStars();
+
+        // Flashcard quiz logic
+        const flashcards = [
+            { question: "What is the Latin word for 'water'?", choices: ["Aqua", "Ignis", "Terra", "Caelum"], correct: "Aqua" },
+            { question: "What is the Latin word for 'fire'?", choices: ["Ignis", "Aqua", "Caelum", "Terra"], correct: "Ignis" },
+            { question: "What is the Latin word for 'earth'?", choices: ["Caelum", "Aqua", "Ignis", "Terra"], correct: "Terra" },
+            { question: "What is the Latin word for 'sky'?", choices: ["Caelum", "Terra", "Ignis", "Aqua"], correct: "Caelum" },
+            { question: "What is the Latin word for 'enemy'?", choices: ["Inimicus", "Amicus", "Imperator", "Gladius"], correct: "Inimicus" },
+            { question: "What is the Latin word for 'friend'?", choices: ["Amicus", "Inimicus", "Caelum", "Terra"], correct: "Amicus" },
+            { question: "What is the Latin word for 'leader'?", choices: ["Imperator", "Milites", "Gladius", "Inimicus"], correct: "Imperator" },
+            { question: "What is the Latin word for 'soldiers'?", choices: ["Milites", "Imperator", "Gladius", "Amicus"], correct: "Milites" },
+            { question: "What is the Latin word for 'sword'?", choices: ["Gladius", "Sagitta", "Milites", "Ignis"], correct: "Gladius" },
+            { question: "What is the Latin word for 'arrow'?", choices: ["Sagitta", "Gladius", "Caelum", "Terra"], correct: "Sagitta" },
+            { question: "What is the Latin word for 'battle'?", choices: ["Proelium", "Pax", "Milites", "Imperator"], correct: "Proelium" },
+            { question: "What is the Latin word for 'peace'?", choices: ["Pax", "Proelium", "Caelum", "Sagitta"], correct: "Pax" },
+            { question: "What is the Latin word for 'strategy'?", choices: ["Strategia", "Proelium", "Pax", "Milites"], correct: "Strategia" },
+            { question: "What is the Latin word for 'tactics'?", choices: ["Tactica", "Strategia", "Gladius", "Imperator"], correct: "Tactica" },
+            { question: "What is the Latin word for 'victory'?", choices: ["Victoria", "Pax", "Proelium", "Ignis"], correct: "Victoria" },
+            { question: "What is the Latin word for 'enemy forces'?", choices: ["Hostes", "Amici", "Milites", "Imperator"], correct: "Hostes" }
+        ];
+
+        let currentCardIndex = 0;
+        let score = 0;
+        let isUsingCustomFont = true;
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function loadFlashcard() {
+            const card = flashcards[currentCardIndex];
+            document.getElementById("question").textContent = card.question;
+            const choices = document.querySelectorAll(".choice");
+            shuffleArray(card.choices);
+            choices.forEach((choice, index) => {
+                choice.textContent = card.choices[index];
+                choice.style.backgroundColor = "black"; // Reset background color
+                choice.style.color = "#00ff00"; // Reset text color
+            });
+        }
+
+        function checkAnswer(selectedChoice) {
+            const card = flashcards[currentCardIndex];
+            if (selectedChoice.textContent === card.correct) {
+                selectedChoice.style.backgroundColor = "#28a745"; // Green for correct
+                selectedChoice.style.color = "black";
+                score++;
+            } else {
+                selectedChoice.style.backgroundColor = "#dc3545"; // Red for incorrect
+                selectedChoice.style.color = "black";
+            }
+
+            setTimeout(() => {
+                currentCardIndex++;
+                if (currentCardIndex < flashcards.length) {
+                    loadFlashcard();
+                } else {
+                    displayResults(); // Show results when quiz is done
+                    resetQuiz(); // Reset the quiz
+                }
+                document.getElementById('score').innerText = score;
+            }, 1000);
+        }
+
+        function displayResults() {
+            const grade = (score / flashcards.length) * 100;
+            let gradeMessage = "Grade: " + grade.toFixed(2) + "%\n";
+
+            if (grade === 100) {
+                gradeMessage += "Excellent! Perfect score!";
+            } else if (grade >= 80) {
+                gradeMessage += "Great job!";
+            } else if (grade >= 60) {
+                gradeMessage += "Good effort!";
+            } else {
+                gradeMessage += "Keep practicing!";
+            }
+
+            alert(gradeMessage + "\nYour score: " + score + " out of " + flashcards.length);
+        }
+
+        function resetQuiz() {
+            currentCardIndex = 0;
+            score = 0; // Reset score
+            shuffleArray(flashcards); // Shuffle flashcards again
+            flashcards.forEach(card => {
+                shuffleArray(card.choices); // Shuffle choices again
+            });
+            loadFlashcard(); // Load the first flashcard again
+        }
+
+        function toggleFont() {
+            if (isUsingCustomFont) {
+                document.body.style.fontFamily = "sans-serif";
+                isUsingCustomFont = false;
+            } else {
+                document.body.style.fontFamily = "Sga Regular";
+                isUsingCustomFont = true;
+            }
+        }
+
+        document.addEventListener("keydown", function(event) {
+            if (event.ctrlKey && event.key === 'z') {
+                toggleFont();
+            }
+        });
+
+        window.onload = loadFlashcard;
+    </script>
+</body>
+</html>

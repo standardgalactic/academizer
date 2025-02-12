@@ -1,0 +1,343 @@
+Hello and welcome to my talk on Bayesian workflow for the PIMC on
+conference. The case study we'll be using is how we can build Bayesian models
+using PIMC 3 for modeling COVID-19. A few words about me, I'm Thomas Wiki. You can
+email me or follow me on Twitter. I recently with a few friends of mine and
+PIMC core developers launched a consulting business called PIMC Labs
+where we help companies solve advanced political problems using Bayesian
+statistics. If you have such a problem I'd be very happy to hear from you and
+work with you. Before I launched this I was the VP of data science at
+Quantopian Boston based crowdsource hedge fund and before that I did my PhD on
+computational psychiatry at Brown. That is also where I learned about Bayesian
+statistics and got involved with the PIMC 3 project. Now in this presentation
+I want to highlight a few key strengths of Bayesian statistics through an applied
+let's build a model exercise. I hope that the strengths that will shine
+through in this talk include the flexibility you have with these to
+build and quickly iterate statistical models. So we will see how with
+computer code we can just write our models as we sift it and then revise
+them and improve them in an iterative fashion and that I think is a really
+powerful approach in doing statistical modeling. Moreover we have a very
+principled way of dealing with uncertainty and this will become clear. At the
+very core you can think that basically never do we ever have just point
+estimates like a single scale of value for parameter value but rather we will
+always deal with probability distributions and these probability
+distributions represent our uncertainty or a range of parameter values that will
+be de-implausible. Moreover we don't just want to model the most likely outcome
+we want to model a distribution of all possible outcomes so that is just a
+different way of saying the uncertainty. The other really powerful concept
+something that I think is really important is that it allows an expert
+to inform the model. So we compare this to for example machine learning where
+you just give it a whole bunch of data and you hope that the model picks out
+the right patterns in the data. Well in most applied cases you do have a lot of
+information about the structure and the likely parameter values before even
+running any model right. Often data scientists or domain experts have worked
+with this data many times before so they sort of know what they want and here we
+can now in Bayesian modeling use that information to build a custom model that
+is hand-tailed to the specific problem so it maps the data generating process or
+the structure of the data and moreover we can then define priors that define
+certain likely parameter values before having seen any data about what we think
+the world is going to look like and in the case of COVID-19 as we will see we
+already have a whole bunch of prior information just from published studies
+for example. So of course we want to use that to inform a model. So here we learn
+how we go from data to a model idea then how do we even find priors for our model
+then how we fit and evaluate a model then we will identify some shortcomings of
+that model and iteratively prove upon it then we will see how can forecast in
+the future something that is especially interesting for time-series models like
+here and then we want to take a closer look at generative modeling in the
+second piece. Now first we're going to import a whole bunch of modules. Load
+COVID data is a custom one that I will include in the code as well so basically
+that just fetches the data from the WHO and here you can see I'm just getting
+the data frame and it looks like this so for every country for every day we have
+different types of infections or different types of cases here we're just
+going to deal with confirmed cases which means you got a positive test result
+back and then here's the number of cases confirmed. These other ones over here
+we're not going to pay attention to but actually one thing that is going to be
+critical though is that we only look at countries once they cross 100 cases so
+all the data that you're going to see we're going to just ignore everything
+that happened before country had 100 cases the reason being that we assume
+that well the data was pretty noisy early on and also it gets around the
+problem that well if a country didn't have any cases for a long period of time
+where do we do the cutoff so that just gets rid of a whole bunch of data
+problems and it will become later important later in the modeling too so
+keep that in mind and then we also can just offset so rather than dealing with
+dates we can just use how many days since you crossed 100 cases we will deal with.
+Diving next into the Bayesian workflow we want to build a model of the spread
+characteristics how can we model that in general and as you'll see I will start
+out extremely simply in fact so simple that it's going to be a terrible model
+but you will we will see why that is a terrible model and then approve upon it
+so that will be the key of this lecture today.
+Now one way to do the Bayesian workflow that I like is to first plot the data
+that is always a good idea to start with and then we want to build a model of the data.
+Once we have that model before running it on any data right we just want to check well does it
+produce the type of data patterns that are no to expect and towards that goal we can run what
+is called prior predictive check we then want to fit the model
+to get our posterior and then make sure that we actually
+ran the sample successfully and assess conversions of our sampler then we want to run a posterior
+predictive check to see whether the data that the model is generating matches the data that we
+observed and then finally probably we will identify some shortcomings with our model and
+we want to prove upon it so this is basically the loop that we will keep going over here today.
+The country that I chose for this is Germany and here I'm just taking the first 30 days of
+the German number of confirmed cases since they crossed 100 cases and this is what
+it looks like so you can see here early march is where Germany crossed 100 cases and then
+it rises very steeply very quickly that is the nature of an epidemic you have explosive growth
+and now I invite you to think about this for a second and just say okay well if I came to you
+now and say well model this data how would you do that? Well one idea would be that looks like an
+exponential right and certainly Saspin also talked about the literature bunch that early on in the
+process the spread of the disease follows an exponential distribution the question is how
+steep but nonetheless because it's an epidemic and one person affects two two and in fact four
+or however many people get this exponential growth and that is exactly why these why we are having
+such problems with this pandemic because of the explosive growth and why you want to be very early
+in your lockdowns so let's build a model for that in pymc3
+this is what that code looks like the first thing that we want to do is
+so I'm just going to rename some variables so t is going to be the number of days from
+where we crossed 100 cases so just 0 1 2 3 4 5 and then confirmed is going to be the
+number of confirmed cases now you probably are already familiar with pymc3 to some extent
+but just very briefly every model will have this width context and what that does is it instantiates
+a model and binds it to this variable and then says well everything that happens undented underneath
+here will be tied to this model object so it's purely for bookkeeping and for keeping the model
+concise what gets interesting is in the part below our model has two parameters an intercept
+and a slope so basically the exponential is like a linear regression but in lock space so we will
+still have the same parameters and then we will just exponentiate
+the parameters the at every parameter already set in baseless districts has a prior so we will
+assign these prior distributions which are my belief about this parameter value about the
+intercept without having seen any data here we will choose a normal distribution and say that
+this is called a so the first argument will always have to be the name we give it a new
+parameter which is going to be the mean of that normal and a sigma parameter
+so here I'm choosing a normal distribution center on zero with a very wide standard with a very
+wide instantiation and then the next for the slope parameter we also choose a normal distribution
+with a name and here I'm actually now using the fact that I know a little bit about this disease
+so it was said that the reproduction rate is is 133 percent so basically every three days
+the the amount of cases doubles is what that says and then we just plug that into
+so but we still want to estimate this so we're just going to center around that
+with a pretty wide standard deviation nonetheless so we allow the model to adjust that parameter
+what we're just going to say well before you even start like it will be somewhere in that range
+in that ballpark and then we just put those together to get our exponential function so
+you can just look on Wikipedia and get the formula for that so a times one plus b so that gets it's
+133 and then this is exponentiating with the time dimension so that's just linear regression in
+exponentiated now here we have the error term for our likelihood function and here I'm going to use
+epsilon a half normal so we know that the variance standard deviation can only be positive
+that's what we choose a half normal distribution which is a normal distribution
+that is chopped off at zero and only as positive probability mass and again I'm choosing very
+wide distributions here the last thing we need is we need to tie these parameters now together
+with the data and we do this just like before we again instantiate a distribution here I'm going to
+say okay the number of cases is going to be normally distributed with a certain mean new
+which is going to be the growth parameter and a
+again standard deviation parameter epsilon so this is going to be the error
+and this is going to be the output of that exponential and now I have to link those together
+with the data and we're doing that with the observed keyword argument where we pass in the
+numpy array for the number of cases so this ties everything together when I execute this nothing
+happens well something happens but it's not going to estimate the model it's just going to construct
+the model so far but before we now push further I want to invite you to think about well is this
+a good model maybe you have some doubts about the exponential but let's say okay the exponential
+isn't the problem are there any other problems with this could I have done a better job for example
+with the choice of the priors so hopefully you have some ideas of how to already do this but
+nonetheless we will go through the exercise with this type of model and just see what happens
+if we now generate new data from the prior predictive so the way this works is we just pick
+the value for a and b from these distributions so we just sample from those two normal distributions
+we apply the math and then we generate from this normal distribution using the growth
+exponential that we sampled using these parameters then we generate one line from that
+and then we do the same thing again we again sample a and b and we just do that over and over again
+so that is essentially just a prior predictive check and in 5g3 you can conveniently just call
+sample prior predictive which does all that for you and now here we're plotting it and this is what
+that looks like so again we have other number of days since we passed down the cases and then the
+number of positive cases now again I invite you to think about whether this looks sensible or not
+and hopefully it's fairly obvious that this is not sensible at all for several reasons well
+the most obvious one is that well the number of cases can't be negative right we can't have minus
+50 covid infected that it's centered at zero it's floored at zero and moreover also the other
+problem we see is that the slopes go down so we know already that we are in an epidemic
+so we know that they can only go up right assuming this model so we're trying to model the early
+onset of the disease and it's just not reasonable that I'm expecting negative slopes which is what's
+causing this and then another most subtle problem is that because here we're just modeling the cumulative
+cases we know that actually that it can't go down okay this is a terrible model we already see that
+but nonetheless I thought it was instructive to show what happens if you actually try to fit this
+terrible model now so here we call in PM sample with sample quarks is something I could find up here
+this just says okay I want to run four chains on all my four cores and then this is a keyword
+argument for sample that will become the default soon but now we have to supply it which just returns
+a new more powerful trace object or inference data object that we can better deal with
+okay so now we call sample and already so it starts the sample and then it complains with this
+remote trace back and if you have done any modeling whatsoever you will probably have
+known and cursed this message because it's quite annoying and it happens quite frequently
+but let's look at what happens so the error that we're getting is okay it's a value error that
+says the mass matrix contains zero on the diagonal and then says also the derivative of the random
+variable epsilon log zero and the river of a is zero well this is something that I think we need to
+improve but because if you don't really know it's going to be very difficult for you to debug
+well the first thing to note is well obviously it didn't work so we need to revise our model
+and the mass matrix essentially is estimated during the tuning phase and it suggests how we want to
+which direction we want to move most quickly in with this Hamiltonian Monte Carlo sampler
+but there is a problem if we can only estimate this mass matrix from previous samples and if
+those previous samples are no good then we can not estimate this mass matrix correctly
+so one trick that you can do to maybe try and see at least what is happening here
+is to run the sampler but without any tuning right because the tuning is where things break
+and then I want to sample 500 without any tuning so this will not break right because with
+it only breaks during tuning and I still want to look what the trace looks like
+now I'm plotting this using RVs plot trace and you can see that actually here we have the
+posterior and here we have the chains so every sample for intercept and b and epsilon is exactly
+the same and we have two chains here but so the value never changes and that is a problem obviously
+and that also says why we can't estimate this so we want to estimate the variance of this but
+the variance of the parameter value all the same is going to be zero and that's how we get the
+diagonal zero on the diagonal of the mass matrix just very high level that's not really all that
+critical but you can see okay so this doesn't the samples but it doesn't ever accept a problem
+now it's tempting to say well these samples are really brittle hopefully we will get better
+samples that will just work more robustly but that is actually false so these samples are trying to
+sell you something different they're not telling you that they they that they're not effective
+enough they're telling you that your model is crap so this is known as the folk theorem of
+statistical computing we have trouble sampling most likely have a bad model and I have yet
+to see a case with that is not true it can sometimes be quite difficult to do that but
+once you get the model correctly it will sample very well very fast and efficiently even in high
+dimensions I've seen models with 40 000 dimensions sample in an hour so but but yeah it can be tricky
+to get there now hopefully you already have thought about some problems of this right we talked
+about some of those so one is the cases can't be negative cases cannot start at zero right we also
+know that I didn't mention this before but due to the nature that I pre-processed my data I know
+that cases can only start at above 100 and they cannot go down now let's incorporate that knowledge
+into a better model this is exactly the same model but I just tweaked the priors I said that the
+intercept where we start with the zero cases where we start at day zero is going to be centered at
+100 it's actually not always going to be exactly 100 right because it could cross from 80 to 120
+so then it would be 120 case on that case so that's why I still have some sigma around that
+and actually you could still find a better priory here that sort of says 100 is a lower bound
+and I only allow it to go higher than that so you could do that but for now let's just go with the
+simpler version and the other thing I'm doing here is I'm constraining the prior of sigma to be
+more narrow around 0.3 because I don't want values that go negative or so many values where it goes
+negative and then lastly rather than the normal distribution which has probably mass below zero
+I'm using the negative binomial and that is distribution commonly used for counts we're
+dealing with here and it's similar to the Poisson distribution which is the more classic one but
+it allows a little bit more flexibility because it also allows for a parameter that relates to the
+variance and this is called the alpha parameter and we give it a prior which is gamma distribution
+the choice of this isn't really all that important but it's a reasonable choice in this case
+so now let's again sample from the prior predictive and see what we get
+well this looks way better right so it's all going up it's not starting at zero
+and we don't get any negative values pretty cool
+now again I'm not saying that this is a good model but it's good enough for now where we want to fit it
+and just see how well does it explain the data again we call the sample function samples very
+quickly and now we're going to look at the trace and you can see okay well this looks quite good
+so we have four chains so we get four lines here for every parameter and you can see okay well
+they all match so all the posterior chains that we ran converge to the same posterior distribution
+that's nice and we also see that here this looks just like the caterpillar that you're always looking
+for so pretty cool and the other thing I want to note is also so this basically didn't complain
+about anything so usually when there is a problem we tell you about it and here already here we see
+okay nothing seems to have gone wrong this just further confirms that this seems to look pretty good
+and then also we can just plot the summary of this where we get the means the standard deviation
+and something that you should always look at is the r hat value which should be very close to one
+and this just says okay well all of these different chains converge to the same distribution
+another thing you can do is plot the energy distribution which is more technically
+and related to the harmonitone Monte Carlo sample how it's proposing different energy levels so you
+want the marginal energy to match the transition and energy transitions and so these distributions
+should be close to each other it's not where like one distribution is much wider than the other
+so this is a better way to assess model convergence in high-dimensional models because you're not
+it's going to be very messy once you have many plots here's not really that important but I just
+wanted to point that out and that's something to look into if that doesn't make sense it's a very
+powerful way to assess model convergence so with these methods now I'm personally convinced that
+okay well this went well I have no reason for concern that this didn't converge to the correct
+posterior so I'm going to push forward and gonna run a posterior predictor check
+now that is just like a prior predictive check but rather than just sampling values from the prior
+and generating data now we're just picking values from the posterior and generating data
+and that will give me a sense of what the model thinks
+the data looks like after having seen the data again you have this convenient function here
+called sample posterior predictive and we just pass it the posterior and then we can plot this
+so now I switch to the lock space just because it's easier to see here so now in lock space an
+exponential becomes linear so that's why the red line which is our data that we observed at the top
+that is what the model saw is yeah looks sort of like a line and then what the model predicts is
+seems to do a fairly good job it has of course uncertainty around that there is error around
+this but overall it matches this slope here kind of well over here we might be a little bit
+concerned that now at the top we start to sort of break the model maybe that is an issue
+you can also look differently and plot the residuals and this basically again confirms
+that okay well early on it seems to be a pretty good fit but then as we go further into the future
+we see that this does actually converge diverge and the error is sort of there seems to be a
+systematic bias in the model so next what I want to do is evaluate the data on evaluate the model
+on data that has not seen before and we use that so basically we want to forecast and one
+nice way to do this is to use the pm.data container and what that does is it basically acts just like
+an umpire array you can use this object the resulting object just like an umpire array
+but you can change the values later because what we want to do is we want to fit the model on just
+the first 30 days and then we want to evaluate the model using a posterior predictive check
+on data that is 30 plus more days
+and here you can see I also now change the model to include a bound
+do this because we said okay well there is gonna be at least 100 cases right there can't be
+less than 100 cases so here I can use bound to say okay I want to create a new
+just probabilistic division that is a normal distribution that has values only higher than
+100 I can also do that for the slope where I say okay it should be more than um zero cases
+and then this new probabilistic division I can just use like I used the normal before
+so that's just a quick trick here that I added to
+make the model a little bit more realistic but it actually doesn't really change the
+prediction so anything so that's not the thing that we're looking for here
+so now we sample and then after we sampled we have the posterior for the first 30 days now we want to
+simulate those 30 days plus 30 days into the future so we can update our data containers
+and now pass in the date range from zero days to 60 days and then the confirmed cases we actually
+also need to update so remember that we're here just generating data so at this point after we
+fit the data with the model we actually don't need the data anymore but nonetheless we need to
+make the dimensions in the model work out so we can't have we can't just set this to a different
+dimension of 60 values and then basically the model will break if it encounters that here you
+pass in a vector of length 60 and trying to map that link that together with data of length 30 so
+we have to update this data as well but it doesn't matter with what it just has to have the same shape
+and then again we sample from the posterior predictive
+and pass in the posterior now again I'm plotting this on the
+on lock scale and here you can see what already we sort of saw happen is that the model because
+it's exponential right it doesn't know anything about other than that it just keeps going to go up
+like crazy and this is an unrealistic assumption obviously right because
+the absolute upper limit is the number of people in Germany more cannot be affected so definitely
+there is an upper limit but the exponential function doesn't know that and can't model that
+but in reality we also know that actually well it's not that we're just going to let this thing
+run rampant but people react to this so they change their behavior and it will level off at
+some point and this is what we see in the data once we go out further and now there is this strong
+mismatch to the model so here we confirm okay well it might be a somewhat okay model very early on
+for the just the first couple of days but then actually it breaks which was good we want this to
+break otherwise we'd be in even more trouble so how can we improve the model well one very
+simple thing is to model this with a logistic function rather than exponential what is nice
+about this is is actually it is very similar to an exponential early on but then it has a level
+off effect and so you can see that here there's a carrying capacity which bounds distribution
+at the top and is yeah it's going to model this effect that at at some point there won't be more
+people infected now this should look well kind of familiar so again we have our data objects
+our data containers where we pass in the data for Germany now we're going to use
+the full data we again have this bounded distribution for our normal so the intercept
+is going to be larger than 100 you also have a slope for this logistic function and now we
+have a third parameter called the carrying capacity so how many cases do we are we going to have
+where's the leveling off effect going to happen and here I'm just saying okay well it's going to be
+at least a thousand people but it could be also up to 80 million which is roughly the
+general population it's more than that but that's good enough for now and then here I'm just transforming
+the carrying capacity to a parameter that is more natural for the logistic function
+so this is what the logistic function looks like so I'm just following the math and then
+I plug that into the negative binomial which looks just like before
+so now simulating from the prior predictive and again plotting this in log space we see well
+okay great so we get what we're looking for early on as exponential and then it levels off at 80
+million or below that now we're going to sample this and then generate positive predictive samples
+from the using the sample posterior predictive function and now we just keep that base in workflow
+live right so the first thing is we we built the model again then we sample from the prior
+predictive we sample now we have the samples now we value it with our fit is correct and again just
+from first glance this looks pretty good um you want to look at these other things too that we
+looked at above but those are fine too and now we're going to look at the posterior predictive
+and see okay well this seems to do a much better job right so it doesn't just keep
+shooting up but it levels off and it matches the data pretty well there's a lot of uncertainty
+around this here um and this is like a skew effect from the way that the logistic sort of blows up
+in this manner and we have little knowledge of how this will level off
+again i'm just talking about the residual um because that's not too much to see but
+yeah you can just see that this looks better and it has that leveling off
+now one thing that you want to do is you want to
+compare the models right so we already did that in a way right so we have the posterior
+predictive and that is a great way to compare models with um so just for systematic biases
+that we can do that but we can also do something that is a little bit more principled um using
+what is called just the field of model comparisons so that i'm just sampling the
+exponential model on the full data that we used for the logistic model and then i just call
+rvs.compare i give it the name of the model and then the traces for those models so we only
+to pass on the trace and then it uses a technique called leave one out cross validation
+which is actually not the classic leave one out cross validation where you keep rerunning the
+model just keeping one data set one data point out that you then predict but rather you are
+just approximating what you would get if you were to do that so there's some really cool papers
+that show that you can just approximate this quantity without having to rerun the model
+many times and i'm not going to go into everything here but you can just see okay well the rank
+of this logistic model is zero and so it's it's better than the exponential which we already
+knew but it's nice to see that confirmed here and also one thing that's interesting is this
+weight column here we essentially we could say well if we wanted to build the best classifier
+possible we might want to average across different models and this tells us how would we weight
+those different models to get the best accuracy possible and here we can see well we would actually
+discard the exponential model and only use the output from the logistic which makes sense because
+the exponential model is just so terrible now i want to set up the the next section and look at
+another country like the yes so here we can see okay again we have that exponential early on and
+then it actually does not seem to just level off like germany did but rather it slows down and
+then it keeps going faster again so let's nonetheless fit this the logistic model and see what that
+does trace looks fine let's look at the posterior predictive and well okay so now we see actually
+this is not a great fit and well what is the main limitation of this model the main limitation is
+that we assume that time is stationary that there is no change in the slope or the spread
+characteristics we just have one global parameter that describes the thing the pandemic but it doesn't
+show that well we have lockdowns we have people doing social distancing people started wearing
+masks like all these effects affect us but our model does not take these time varying things into
+account and in the second half of the video that is the type of model that i want to talk about and
+show how we can build a model that incorporates all that and it's going to be very much more plausible
+for how this disease progressed so thank you so much for watching this part and stay tuned for the
+second one

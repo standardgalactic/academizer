@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Radio Visualizer</title>
+    <style>
+        @font-face {
+            src: url('fonts/Sga-Regular.woff2') format('woff2'),
+                 url('fonts/Sga-Regular.woff') format('woff'),
+                 url('fonts/Sga-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-family: 'Sga Regular';
+        }
+
+        body {
+            margin: 0;
+            background: black;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            touch-action: none; /* Prevent default zoom or selection */
+        }
+
+        #visualizer {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: 'Sga Regular', Arial, sans-serif;
+            font-size: 10vw;
+            transition: background-color 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div id="visualizer">A</div>
+
+    <script>
+        const colors = [
+            '#FF0000', '#FF7F00', '#FFFF00', '#7FFF00', '#00FF00', '#00FF7F', '#00FFFF', '#007FFF', '#0000FF',
+            '#7F00FF', '#FF00FF', '#FF007F', '#FF3333', '#FF7733', '#FFFF33', '#77FF33', '#33FF77', '#33FFFF',
+            '#3377FF', '#3333FF', '#7733FF', '#FF33FF', '#FF3377', '#FF5555', '#FF9955', '#000000'
+        ];
+
+        const tones = [
+            261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 698.46, 783.99,
+            880.00, 987.77, 1046.50, 1174.66, 1318.51, 1396.91, 1567.98, 1760.00, 1975.53, 2093.00, 2349.32, 2637.02, 2793.83, 3000.00
+        ];
+
+        const punctuationTones = {
+            ',': 400,
+            '.': 500,
+            '?': 600,
+            '!': 700,
+            ';': 800,
+            ':': 900
+        };
+
+        const visualizer = document.getElementById('visualizer');
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playTone(frequency) {
+            const oscillator = audioContext.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.connect(audioContext.destination);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        function randomVisualizer() {
+            const index = Math.floor(Math.random() * 26); // Random index for A-Z
+            const key = String.fromCharCode(65 + index); // Convert index to letter
+            visualizer.textContent = key;
+            visualizer.style.backgroundColor = colors[index];
+            playTone(tones[index]);
+        }
+
+        // Adjust for mobile: detect tap and prevent zoom/select
+        document.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent default touch behavior like zoom
+            randomVisualizer();
+        });
+
+        document.addEventListener('keydown', (event) => {
+            const key = event.key;
+            if (/[a-zA-Z]/.test(key)) {
+                const index = key.toUpperCase().charCodeAt(0) - 65; // A-Z maps to 0-25
+                visualizer.textContent = key.toUpperCase();
+                visualizer.style.backgroundColor = colors[index];
+                playTone(tones[index]);
+            } else if (punctuationTones[key]) {
+                visualizer.textContent = key;
+                visualizer.style.backgroundColor = '#FFFFFF'; // White background for punctuation
+                playTone(punctuationTones[key]);
+            }
+        });
+    </script>
+</body>
+</html>

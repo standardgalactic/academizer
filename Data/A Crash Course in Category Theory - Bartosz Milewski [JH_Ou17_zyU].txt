@@ -1,0 +1,994 @@
+So many people are interested in category theory.
+This is a new thing.
+A few years ago, nobody wanted to listen about category theory, and now it seems like it's
+a very hot topic, lots of talks.
+And people are mentioning categorical terms in all the talks, I listened to several talks
+and there was like functors, monads, applicatives, all this beautiful stuff from category theory.
+And also a lot of people, when they talk about data structures, they say, okay, things like
+algebraic data structures, some types, product types, and so on, all this stuff has roots
+in category theory.
+So I want to talk about these things as well today.
+This is just an intro to category theory, so I won't cover a lot.
+Here's the plan for the talk.
+I'll talk a little bit about categorical semantics, about semantics of programming languages in
+very generic terms, and of course I'll talk about composability, because composability
+is what category theory is about.
+Then I'll talk a little bit about algebraic data types.
+I feel quite a bit about algebraic data types, come to think of it, because it's like a very
+important part.
+Then I'll talk about function types, because we're at a functional conference, functional
+programming conference, right?
+So function types and currying, and finally I want to end up with a Yoneda lemma, which
+is like the central theorem in category theory.
+So let me start immediately, because we don't have that much time.
+So I want to motivate you a little bit, right?
+And I have lots of motivations why category theory is important, and so on.
+But I think the real reason why I got into category theory is because it's fun.
+It's interesting, and it's mind-expanding.
+So if you are looking for reasons to study category theory, maybe you should just like
+enjoy it.
+I know that category theory is a branch of mathematics, and a lot of people have some
+preconceptions about what mathematics is, and a lot of people don't like mathematics,
+because they were, starting with primary school, we are taught not to like mathematics.
+And here I give an example of the things that we teach our kids in schools.
+This is like multiplying two numbers.
+This is a horrible thing.
+This is like mind-breaking for humans.
+There is this huge discrepancy between, or impedance mismatches, like between human
+mind and computers.
+And there are two ways of bridging this gap.
+One is we insist on being humans and just ask the computers to come up to our level.
+The other is to lower ourselves to the level of computers, and I think this is wrong.
+So this is an example of multiplication, right?
+We teach our kids to do this, and it has all the elements at which computers are very good
+and humans are very bad.
+The only thing that's important here is that there is an algorithm behind it, right?
+But we don't even tell the kids that there is an algorithm.
+We just tell them, here are instructions.
+Perform these instructions one after another, okay?
+And this is the moment where we are teaching kids imperative programming, and they are spoiled
+for life.
+And then we have to take years and years to un-teach them.
+Functional programming is like the declarative way of saying things.
+That's much more human.
+But we are so used to this kind of thinking, the imperative thinking from the very beginning
+that it's very hard to break these things.
+So here I can match things that we are good at versus what the computers are good at.
+Computers are very kind of local thinking, right?
+They look at the next instruction.
+They are not, they don't have this global perspective that humans have, right?
+When we start programming, right, we think about the problem that we are trying to solve.
+We have this global view, like where does this problem fit into the, you know, bigger
+picture of, we want our company to make money, for instance, you know, goals that we have,
+and so on.
+So we have this global view, and then we kind of descend to the nitty-gritty eventually,
+right?
+Computers are just nitty-gritty from the very beginning and all the time, right?
+They look at the particular instruction.
+Computers are progress-oriented.
+They just want to make progress.
+They just want to go from one instruction to the next instruction, one line of code
+to another line of code, and so on.
+They are not interested in what's happening.
+It's just locally and making progress.
+That's important.
+Whereas we are goal-oriented.
+We know why we are doing this, right?
+We have a goal.
+We want to calculate some value, or we want to draw something.
+We want to animate some pictures, you know, all this stuff.
+That's our goal.
+Making progress for the sake of progress makes no sense for us, right?
+For a computer, there is no goal.
+It's just making progress.
+Computers are very detail-oriented.
+Because we operate with ideas.
+We have these abstractions.
+We have ideas.
+We try to convey these ideas to the computer so that it can be executed in some way.
+Computers have vast memory, right?
+They have memory in the computer.
+They can access disks.
+They can go on the Internet, servers, farms, and so on.
+There's vast amounts of memory.
+We humans have tiny memory, right?
+Especially the working memory.
+I mean, we remember stuff from our childhood and so on.
+But the working memory is tiny.
+We can only keep in our working memory like seven things at a time, right?
+Computers are pretty reliable.
+I wanted to write reliable, but then I thought, okay, yeah, right.
+Computers are made by humans, therefore, they cannot be 100% reliable.
+But when you are writing a program and it doesn't work, your first thought is not, oh,
+there must be something wrong with the chip, right?
+Or the compiler has a bug.
+The first thought is, I made a mistake, right?
+Only once in a long, long time it happens that the compiler is wrong and very rarely
+that the actual CPU is wrong, right?
+But we humans are extremely error-prone, right?
+And we should admit it.
+And we shouldn't punish our kids for making errors when they are doing calculations like
+these.
+This is normal for us to make errors, okay?
+Let's accept it.
+Computers don't make these errors, and computers should do these things.
+We have calculators.
+We can calculate all this stuff, right?
+We don't need that.
+And finally, the language.
+There's this language barrier, okay?
+And I think, of course, computers understand machine language, right?
+And we used to program in machine language in the very, very beginning, you know, switches,
+zeros, ones, and so on.
+Very quickly, we learned we humans are not very good.
+Computers don't mind, okay, zeros, ones, great.
+But we humans do mind.
+It's very difficult for us to program using zeros and ones.
+So we come up with higher and higher level languages to program computers.
+And ultimately, and that's my main point, is that ultimately the language that's most
+human to talk about ideas is the language of mathematics.
+And the reasons why we are not constantly using mathematics when we are talking about
+programming is because of that, because of this multiplication that they forced on us,
+you know, that they taught us mathematics in the wrong way.
+And category theory is a branch of mathematics that doesn't look like this.
+It looks much nicer, you know.
+It doesn't talk about numbers and doesn't talk about making stupid mistakes and algorithms
+and so on.
+It talks about ideas.
+And that's much more human-like than dealing with numbers and bits.
+So I think the reason it's sometimes easier for us to think like a machine, for programmers
+to think like a machine than use mathematics is because of this unfortunate bias.
+So when we talk to computers, right, we use computer languages.
+And the important thing is when we program, we have to understand the meaning of the program
+that we are writing, right, that's called semantics.
+So you're programming a language and the language has to have some kind of semantics.
+What does it mean to say for n equals 1 and less than n plus plus and so on, right?
+What's the semantics of this?
+So there are several approaches to defining semantics of languages.
+One is this operational semantics when we say, you know, if you are in this state and
+you do this, then the next state will be this.
+And then if you apply this, then the next state will be this, okay?
+I think this kind of operational semantics is very computer-oriented, not human-oriented,
+right?
+So the other approach is denotational semantics.
+In denotational semantics, we say this program has meaning because it can be translated into
+another language that we humans understand much better.
+And the perfect language for this is the language of mathematics.
+So in most cases, the notational semantics means your program actually has a meaning,
+it's a piece of mathematics, like a proof, like a theorem, you know, like an operation
+in mathematics or declaration, definition, you know, this, right?
+And when we are using operational semantics and we are writing a program, how do we understand
+what this program does?
+Actually we are running this, like, imaginary machine in our minds and we are going, like,
+this statement will do this, then this statement will do this, will change these variables,
+so I have to keep in mind which variables are, right?
+I mean, this is, this is, some people are very good at this and some people are very
+bad at this.
+I am bad at this, okay?
+And I've seen people who, who, like, think more like machines and, and they can do very
+quick programming, you know, and say, they, but I think ultimately, you know, none of
+us is as good as a computer, at that kind of game, right?
+We shouldn't try to beat the computer at their games, we should try to, the computer is to
+beat us at our games, let's see them compete with us, right?
+Not the other way around.
+And math is this ancient language, thousands of years, right?
+And it was developed long, long before we had computers, it was developed by humans,
+for humans to communicate about ideas, right?
+That's very important.
+So, you know, we cannot dismiss math so easily as a, as a language.
+So let's talk about functional programming.
+Functional programming, and, and I, I want to, like, start explaining a little bit of
+this mathematical semantics, right?
+So in, in pro, in functional programming, we deal with types and functions, right?
+And like the simplest mathematical model for a type is that a type is a set of values.
+So set theory, okay?
+So that's a branch of mathematics that talks about sets, okay?
+Fine.
+Functions in this model correspond to functions between sets.
+So it's like, you know, give me this element of a set, I'll give you that element of a
+set.
+In this, in this kind of theoretical mathematical view, really, we are not talking about how
+the function is evaluated.
+This is what computers do, they evaluate this function.
+But we first concentrate on the definition of a function, like what is actually happening
+if I give you this argument, what will you return, right?
+In mathematics, we don't really deal with time, like how long will it take to calculate
+this value?
+It doesn't matter.
+First we have to start by understanding this value corresponds to this value.
+So function is just a mapping of values to values, between different types in general,
+right?
+But this is really, no, no mathematicians, that's a funny thing, mathematicians also
+consider set theory as sort of an assembly language of mathematics.
+Mathematics also has these levels of abstraction, right?
+Building higher and higher levels of abstraction.
+And set theory turns out to be this really low level assembly language of mathematics.
+And mathematicians recently started, tried to avoid using set theory so much as they
+used to, like there are new branches of, of mathematics like homotopy type theory and
+category theory that try to avoid using the assembly language.
+So even they are going a little bit higher.
+So I think we could also go a little bit higher and, and think of program semantics in, in
+terms of category theory rather than sets.
+And sets form a category that's fine, you know, and sort of like a lot of our intuitions
+about category comes from set theory.
+So for, for most purposes, like we, we think about an example in set theory and we sort
+of try to recast it into categorical terms for, for programming, okay?
+So in a categorical view, there are, category theory simplifies these things tremendously
+because it, it says there are only two things, objects and morphisms or arrows between objects.
+That's it.
+And, and it doesn't even specify what these objects are, what these arrows are.
+And the mapping between category theory and programming is just this, functions that we
+use in, in programming.
+So here function meaning what, what we program, right, in, in a language.
+These are the arrows between objects and the objects are, are types.
+So I can have integer type, you know, tree type, list type, whatever type you, you, you
+are using.
+Okay, these are your objects.
+But the important difference between the set theoretical view and, and categorical view
+is that it's, it's a change of perspective.
+In set theoretical view, you define properties of sets by talking about elements of sets.
+Okay?
+In categorical view, you shrink the whole set to a point.
+You say, I don't, I cannot look at the structure of the set.
+It's forbidden.
+So it's like, we know for, in, in functional programming, there are certain things that
+are forbidden, right?
+Like you are not supposed to modify a variable, right?
+And that forces us to change perspective, right?
+We come up with these persistent data structures and so on, right?
+Because we are forbidden to do certain things.
+So if you switch this perspective that you are forbidden to talk about elements of sets
+or, or talking about values, you know, then suddenly you have to like rethink everything
+and say, so, so how do I describe different kinds of sets?
+You describe them by their interaction with other sets, which in category theory means
+arrows.
+So you can describe properties of, of objects by talking about arrows, the arrows that are
+incoming into these objects and the arrows that are outgoing from these objects, okay?
+And that's a very interesting way of looking at things.
+So it's like, tell me who your friends are and I'll tell you who you are, right?
+Exactly this way.
+So instead of interviewing you, I'm just interviewing your friends and I can learn
+much more about you, right?
+But in principle, we just, we just want to be able to express the same things we thought
+we can express using elements of sets as we can do with arrows, okay?
+So this is like a very quick recap of the definition of a category.
+You've heard it several times and Daniela talked about what the category is.
+So objects and arrows and in parentheses, I, I say what, what, what, what's your model
+for this?
+Like, oh, let's think about types and functions in programming, right?
+But in category, categories are all kinds of different categories, right?
+But that's the one important for us.
+I'll talk about another category that's not exactly types and functions later, the
+functor category.
+The most important thing about arrows is they, they compose.
+This is why category theory is all about composition.
+There's nothing more in category theory, but this composition, if, if two arrows match
+end to end from A to B and B to C, then you can go from A to C. That's, that's it, right?
+And, and, and we want these properties.
+We want the associativity of composition.
+So the composition here is, is this little circle that, that's how mathematicians know
+they did it.
+In Haskell, it's a dot and I guess in Scala, it's compose, right?
+And there has to be an identity.
+Every object has to have an arrow that goes from the object back to itself.
+It's sort of, you can say this is an arrow that does do, does nothing, but you cannot
+say it does nothing because there is, an arrow doesn't do anything to an object.
+These objects don't have structure.
+They, they just, they are just these points, right?
+So doing nothing that doesn't even make sense, but you can say that if you compose it with
+something else, you know, then it does nothing to composition.
+So you compose ID with F, you get back F.
+You compose F with ID, you get back F.
+So composing with ID doesn't change anything.
+Okay.
+So now let's get to work, okay?
+We want to define some very simple things that we know from set theory or from type
+theory from programming some data types, okay, using purely categorical language.
+So the first data type is void.
+This is not a type that you would use normally every day.
+It corresponds to an empty set.
+So what kind of, what kind of type it is?
+There's not much that you can do with it, right?
+But it's interesting as, as like a boundary case, right?
+So from point of view set theory, we are describing an empty set, no elements, okay?
+But in category theory, since we cannot talk about the elements, we, we don't know what
+does it, what it means no elements, right?
+We, we don't know what elements are.
+So we have to define it using arrows.
+Defining something using arrows in category theory means saying something universal, meaning
+you have to tell me about the relationship of this object with the rest of the universe,
+with every other object in the category.
+Mathematicians are not afraid of, of infinities, you know, it's like you have infinitely many
+types, possible types, right?
+We are talking not only about the types that you use from day to day in, in programming,
+we are talking about all possible types that you can invent and describe, right?
+Lists, cues, trees, whatever, right?
+All these types.
+So there is this universal property, and in category theory, the object that has this
+property is called the initial object in a category.
+Not every category has an initial object.
+Category of sets has an initial object, which is an empty set, okay?
+And the, the universal property of this object is that it has an arrow going to every single
+other object in the category.
+Moreover, there is only one such arrow for every object.
+So like you pick one object, this one, okay?
+There has to be a single arrow going from my initial object to this object.
+Not two arrows, not three arrows, not zero arrows, one, okay?
+And this is a translation to Scala that was done by, by a friend of mine, because I, I
+wrote it in a Haskell and it translated.
+So, so, when we are defining data types in, in these categorical terms, it's usually definition
+consists of two parts, because we have to say about the arrows that are coming into
+the object and something about the arrows that are outgoing from this object.
+So the arrows that are coming to an object, we call them constructors, right?
+Because it's like, you take some type or a bunch of types and you construct my object,
+right?
+So these arrows are functions, right?
+So you have a function that takes some, a bunch of, of objects and produces my object.
+That's a constructor.
+So incoming arrows are constructors and in mathematics it's called introduction rule.
+Introduction rule corresponds to what we say a constructor, right?
+So the, there is no possibility of constructing an empty set.
+What does it mean?
+What does it mean to construct an empty set?
+It means to write a function that would return an element of an empty set, okay?
+In set theoretical, there's no way you can write a function that would return an element
+of an empty set, because an empty set has no elements, right?
+So there is no introduction for type void.
+The other, the outgoing, outgoing arrows, okay?
+This is called the elimination, okay?
+So like, if, if you give me an object of type void, what can I do with it?
+Eliminate the object, well, in a sense by transforming it into something else, right?
+So I need to know what kind of arrows are outgoing from this object.
+And for the initial object, you know, all we know is that there is a single arrow to
+any other object.
+So this is what you would say in, in Scala.
+There is a unique function for every type A, there's a function called absurd.
+So it's a polymorphic function, right?
+Because it works for any type.
+It's a polymorphic function, absurd, that takes a void and produces an A.
+How does it do it?
+Well, don't ask me how it does it.
+Just give me an element of void and I'll give you an element of A, okay?
+So, so that's a, that's a kind of tricky thing, yes?
+So the question, what do you think about including self then?
+So if a void doesn't have a structure, including self?
+Oh, oh, including self, it means every object in a category theory has to have the identity
+arrow, including this one.
+So it has an identity arrow.
+An identity arrow is an example of a function that takes a void and returns a void, okay?
+Well, so this is like, yeah, I mean, if you give me a void, I'll return you a void and
+I can even implement this function.
+Here, here's an element of void, I'm returning it back to you.
+Yes?
+If it doesn't have inbound arrows.
+I didn't say it doesn't have inbound arrows.
+Okay.
+I didn't say that.
+I said, it has a unique outgoing arrow.
+Didn't say anything about inbound arrows.
+If you make an absolute, is it the same thing for a method that don't take an animal that
+doesn't move?
+Well, well, it's, I mean, from, from the point of view of mathematics, right?
+Like, if you, if you, if you try to do it in set theory, okay?
+So is, how many functions are there from an empty set to another set?
+There's only one, okay?
+It does, doesn't matter what it does, right?
+Because you can never call it, okay?
+I mean, it's a typical mathematical thinking, but, but, but, but, but, but, but, but there
+is, there's an interesting thing about this because there is, there's a one-to-one correspondence
+between category theory and logic and type theory.
+So in, so logically this, this, this corresponds to the statement that from falsehood, void
+corresponds to falsehood in, in, in logic, okay?
+So from, from falsehood you can derive anything, right?
+So this is why it's, this function is called absurd.
+Okay, next one, next one is a little bit more useful.
+It's called unit, okay?
+This, the type is called unit.
+In set theory, this corresponds to a singleton set, a set that has only one element, okay?
+So, so this is type unit, also in Scala, right?
+There's, there is a type unit and, and has a single element.
+I don't know.
+Is that what you call this element?
+Yeah?
+Okay.
+Okay.
+Just, just like in, in Haskell.
+In Haskell, this type also is called bracket, bracket, right?
+So this is like a, the opposite of, of the initial objects.
+It's called a terminal object.
+And by opposite, I mean it's dual.
+So actually in category theory, you have these duality, like whatever definition you come up with,
+you can just invert all the arrows and you get something else for free.
+So here we are just inverting the arrows and we're saying, okay, the universal property of a terminal object
+is that there is a unique arrow from any type to it, okay?
+From any object, from any type.
+So now this guy will have an introduction rule, right?
+Which says that for any type A, you can produce a unit.
+How is this function implemented?
+It just ignores the input, right?
+And just returns this unit because it can always produce the unit.
+The, the, the, the element of it, of the singleton set called the unit, right?
+So this is very easy to implement.
+It's like, we cannot implement all these functions, right?
+That's, that's great.
+The elimination rule.
+And here, here we can clearly see that, you know, I, I'm talking about incoming arrows.
+It doesn't mean I'm, that there are no outgoing arrows.
+In fact, there are lots of outgoing errors, arrows from, from it.
+The elimination rule is that if you have a unit, you can, you can have a function to any other type.
+And in fact, you have, you have many functions, depending on the type.
+What does a function from a unit to a type do?
+It picks one element from this type, right?
+So if, if you give me a unit, I can define a function to integer that returns 7.
+I can define another function from a unit to integer that returns 42.
+And so on, right?
+So this is actually a pretty useful thing because, because we are not supposed to talk about elements.
+But if we want to pick an element from, from a type, we can always cheat.
+We can say, okay, I cannot pick an element.
+But I can say that there is a morphism or arrow from unit to this, okay?
+So instead of picking element, you pick a morphism.
+Amorphism is the same as arrow, okay?
+Okay, now for something really interesting, product.
+Okay, so product in set theory, this is just Cartesian product or a set of pairs.
+So you have two types, right?
+And you produce a pair type from these two types, right?
+So the universal construction for this thing is, is, is kind of interesting.
+Because like, what is the property in terms of arrows of a product?
+The only thing we can say that, that there, there, there have to be two arrows from a product.
+One going to the type A and one going to type B.
+If you have a product of A and B, right?
+These are called projections, right?
+Like if you have a pair of integer and bull, then you can project an integer.
+And I think this, this, this function called underscore one in, in Scala, yeah?
+Okay, good translation.
+And there's underscore two.
+So, so, so we know, but, but, but what else can we say about a product that would identify it
+from many, many other possible objects in the universe, right?
+Well, so we say, okay, well, let's try some other object.
+Let's say C, okay?
+Suppose that C has these two projections also.
+So we know that the candidate for a product has to have these two projections, right?
+And the only thing we know about these projections is that there are arrows.
+So there is an arrow F to A and there's an arrow G to B, okay?
+So out of all these candidates, we can pick the best one.
+So look at all possible candidates, all possible types that have a projection on A and B.
+Pick the best one.
+How do we pick the best one?
+Okay, the best one is the one that for any other type, there's a unique arrow going to this type, okay?
+So like, for instance, you come up with a, with a candidate that say a triple A, B, and C, okay?
+And I say, well, the pair A, B is better than triple A, B, C.
+Why? Because there is a unique function H that just picks the pair from the triple, right?
+Just discard C and picks A, B.
+And this function has this property that we can express in terms of composability that this arrow,
+composed with this arrow, gives me this arrow.
+And this arrow, composed with this arrow, gives me this arrow.
+So if I go through H and then project the first component, it's the same as going through F.
+So this is a universal property.
+From all the objects, I pick the best one that has this property that any other is decomposable into it, okay?
+And this might seem like really a crazy way of defining things because, like, how would you write a program to do this?
+Well, let me, let me go write a big loop in which I go over all possible types in my type system, right?
+It's crazy, right? There are infinitely many of them.
+And then for each of these types, see if I have arrows going to A and B, right?
+And then from all these, see if I have a unique arrow going to A, B.
+And if this is true, then I had my product.
+If I, if it's not true, then I try a different candidate and so on forever, you know?
+But there is no time in mathematics.
+Yeah, I think I'm not even going to get through half of my presentation.
+Okay, so, so here, here it is written, you know, F is from C to A, G is from C to B.
+And H can be defined, you know, like as programmers, we can define this H, you know, F acting on C paired with G acting on C.
+That's, that's the solution of this problem, right?
+And of course I have to say, what is the introduction and what is the elimination?
+The introduction, you have to have, in order to produce a pair, you have to have A,
+and you have to have an element of A and you have to have an element of B.
+You need both of them to create a pair, right?
+So that, that's the constructor of a pair, very simple.
+The elimination rule is these two arrows from A to B.
+So if you give me a pair, what can I do with a pair?
+Well, I can project it, I can, I can extract the first part of the second part.
+That's all I can do.
+And then I can do with this stuff more, you know, more interesting things.
+But I always start by projecting.
+And this defines all the product types.
+This is why they are called product types.
+Because they come from a product.
+Things like pairs, tuples, records, and so on, right?
+And of course there is a dual to it, a sum type.
+Okay, now you will understand why these things are called sum types.
+They are called also a coproduct.
+In categories here they are called a coproduct because they are dual to a product.
+And it's just the same picture, but I took the upside down and reversed all the arrows.
+Okay, so a sum type, an example is either A and B.
+Okay, that's like the simplest sum type of two types.
+Instead of having this projection, it has injections left and right.
+So left takes A and produces either A and B.
+Right, it doesn't need a B.
+It's an app that has an A.
+Or if you have B, you can produce either an A, B, and you don't need A.
+Right, so there are two ways of constructing it.
+Now again, universal construction says either A and B is like the best of these guys that have these two injections.
+Anything else that has these two injections will factorize through some unique H.
+Okay, so here's the factorization, like how can you define H, you know, from the type either A, B,
+if you have these two injections F and G.
+So F and G here are these two injections, right?
+And here I'm defining H from either A, B to my type C, right?
+And I just do case analysis.
+If it's left, then FA, if it's right, then GB.
+And I got it.
+Right?
+And introduction, I can introduce the type either A and B if I have A or if I have B.
+There are two ways of introducing it.
+The elimination is just by pattern matching, left, right.
+And this is, in programming, it's usually called tagged unions, right?
+In Scala, you have different name for it.
+But you use the term some types, right?
+So this is where they come from.
+They come from some types, okay?
+Monoidal category.
+Wonderful thing, huh?
+Very simple.
+So actually, I told you already everything about this monoidal category.
+I told you it's a category in which you have both products.
+For every two elements, you can create a product.
+And for every two elements, you can create a sum type, okay?
+So why is it called monoidal?
+Okay, let me explain why it's called monoidal.
+Because this product kind of looks like multiplication.
+And monoid is something that has this multiplication, essentially, or addition, you know?
+It's like a simple arithmetic, you know?
+So it has this operation that operates on two things and produces one thing, right?
+So this is a monoid in types.
+So given two types, I can multiply them by creating a product type, right?
+A pair type.
+So that's my multiplication.
+Now, in order for this to be a monoid, it has to be associative.
+So like if I have three types, right?
+I can pair them differently.
+I can pair B with C and then pair it with A.
+Or I can pair A and B and then pair it with C.
+This is not exactly the same type.
+Like the type checker would reject this in a program.
+However, these two types are isomorphic.
+Meaning there is a function that takes this type to this type
+and there is an inverse function that takes this type to this type.
+It just rearranges stuff.
+That's very simple.
+So up to isomorphism, this is associative.
+And the other thing that the monoid has to have is this has to have this unit.
+Something that if you multiply by unit, you don't change anything, right?
+And the unit in case of these types is the unit type, actually.
+So this is why it's called unit type.
+Because if you take a pair of unit and A, it is equivalent to A.
+You're not adding any more information to A by pairing it with a unit.
+It's like a redundant thing.
+Also up to isomorphism.
+So this is why it's called a monoid.
+So we have a monoidal category at our disposal.
+And also the either, the coproduct, the sum types also form a separate monoid.
+Here's the associativity for either.
+And here's the unit.
+The unit for either.
+And this is where void comes back, right?
+This type void is a unit.
+Because if you take either void or A, it definitely contains A.
+Why do I know this?
+Because try to create, you know, from void.
+Void has no element, so it will never be called.
+So this one injection just doesn't exist.
+The injection that would inject a void to it sometime.
+So it always has to have an A.
+The only way you can construct it is by providing an A.
+And you can extract this A.
+So it's isomorphic.
+So this is why we have this beautiful algebra of types.
+We have a monoid with respect to product.
+We have a monoid with respect to sum.
+They actually interact together very nicely.
+So we have like a, you know, bicartesian monoidal category.
+Something like this beautiful name that mathematicians give it.
+But this is really what we need for programming.
+We need a monoidal category because we have to have sum types
+and we have to have product types, right?
+We also have to have function types.
+And that would be like the second part of my talk.
+And I think I'm just going to stop here because...
+The next talk is on height.
+So if you want to...
+If the crowd is okay, of course.
+Is there enough tape?
+Is there enough tape for the type?
+So how about if we make like a one minute break
+so that people who don't want to listen can leave
+and they will not be watching, okay?
+Okay, so here's the way we can use this algebra of types
+to create essentially from this point on,
+we can create all types with just these tools.
+Okay, this will be kind of awkward.
+For instance, the type Boolean, right?
+It's nice to have a Boolean type.
+A Boolean type is just either unit or unit.
+It means you can create it as a left thing or a right thing
+and it has no other information other than whether it's left or right.
+And we call the left thing true, for instance,
+and the right thing false.
+That's it, the sum type.
+It can either be true or false, right?
+So here's the sealed, straight, Boole.
+Okay, so this is how you do sum types in Scala, right?
+Type natural.
+That's like you would have to do infinitely many.
+But type natural number is either one or two
+or three or four and so on.
+So it is a sum type.
+So essentially having sum types,
+and if you apply it infinitely many times,
+you know, you'll get natural numbers.
+Okay, this is a very awkward definition.
+There are better definitions than that, right?
+But just to show you the idea, right?
+The option type, right?
+The maybe type, the option type.
+A little bit more interesting.
+It's a sum type.
+It's either of unit and A.
+So it is a polymorphic type, parameterized type,
+by sum type A, right?
+So you can either construct by providing unit,
+which you can always do.
+And that's the nothing part in Haskell.
+What do you call it in Scala?
+None.
+None, none.
+Okay, so none, that corresponds to none.
+And this corresponds to what you call sum.
+Okay, none, sum.
+Nothing just in Haskell.
+Same thing, right?
+Then you can go into recursive types.
+You know, you can define a list.
+List is a sum of two things.
+Unit here, that signifies empty list.
+You can construct an empty list, right?
+Always, right?
+And contains no information.
+So you can construct it from unit.
+Unit you always have at your disposal
+because the units are just like everywhere.
+You just pull them from the air
+and you create a list using unit,
+and that's an empty list.
+Or you can create it from a product here, right?
+Of A, which will serve as the head of the list.
+And the whole other list,
+which is the tail of the list, right?
+So here we have a sum and a product together
+and it's recursive, right?
+And this is how you could express it, okay?
+So this is like the skeleton of a whole type system.
+Everything else is just syntactic sugar on top of this.
+That's very interesting to know, right?
+Okay, so now you've heard the word functor
+so many times today, right?
+And yesterday.
+Okay, so let me just introduce the functor categorically.
+So in general, the functor is a mapping between categories.
+So mathematicians are always interested in
+how things that have a certain structure relate
+to another thing that has a similar structure, right?
+And a functor, in this case, takes one category
+and embeds its structure into another category.
+So it's a mapping from category to category.
+So if it's mapping a category,
+and the category is nothing else but objects and arrows,
+so naturally it has to map objects and arrows.
+So it maps objects to objects and arrows to arrows, right?
+And because it has to preserve the structure,
+what does it mean structure?
+It means that if you have an object A and an object B,
+okay, so A goes into F A, that's an object F A,
+this is an object F B, right?
+If there is an arrow between A and B,
+then this arrow has to be mapped into another arrow, right?
+It cannot be an arbitrary arrow anywhere else, right?
+It better be an arrow that connects F of A to F of B, right?
+Because if these things are connected in this category,
+they must be connected in this category as well, okay?
+A functor may do things like collapse two objects into one.
+It can collapse multiple arrows into one and so on.
+But as long as you have a connection in one category,
+it will preserve this connection.
+And it will also preserve the unit arrows
+and it will preserve the composition of arrows, okay?
+So how does this translate into programming?
+Well, so first of all, in mathematics,
+the most general functor goes from one category to another category.
+In programming, most of the functors will go from the same category
+to the same category.
+They are called endo functors.
+Endo means inside, like endoscopy, you know.
+Yeah, so we have a functor that goes within the category.
+So it takes a type A and maps it into a type list of A, okay?
+So it takes a type integer, maps it into a list of integer.
+It's mapping between types.
+This is a very important thing.
+Many people get confused because of this.
+It's not mapping of elements of these sets.
+It just maps the whole set into the whole set.
+It's like, say, here's an integer set or integer type,
+maps it into a list of integer type.
+Type to type, like a parametric type, right?
+A type constructor, right?
+Okay, so type constructor.
+So the type constructor part of it is that this F with a bracket in Scala, right?
+So that's a type constructor.
+It takes a type and produces a type F of A.
+It takes A and produces F of A.
+So this is the part of acting on objects, the blue arrows.
+And we have to separately define how it acts on arrows.
+So it takes an arrow F.
+That's this arrow F.
+This arrow goes from A to B, right?
+From A to B, okay?
+And maps it into an arrow that takes F of A, this guy,
+and returns F of B, this guy, okay?
+So, like, if you draw a picture, this is really very simple, right?
+So it takes this arrow and maps it into this arrow.
+And you have to provide this function.
+Like, for every functor, you have to provide, like,
+part of the definition of a functor is how does it act on arrows, right?
+And maybe, you know, there are sometimes factors that have different actions on arrows,
+the same action on an object, but differ by acting on arrows, okay?
+So I guess this is...
+Okay, I think you guys call it map, not F map.
+Haskell calls it F map.
+For historical reasons, right?
+Really, no, not...
+So this is how it acts on lists, right?
+But you've seen this before.
+So why am I talking about functors?
+And now I have to introduce adjunctions between functors.
+I have to introduce adjunctions between functors
+because there is one extremely important example of an adjunction
+that's very useful in programming, especially functional programming.
+And...
+So little motivation, right?
+You know what types are.
+So I told you about all these types.
+They are objects.
+Separately, I said we have arrows.
+They correspond to functions.
+Okay?
+But you know that, like when I say F from A to B,
+I mean a type of a function, right?
+A type of a function.
+But we said types are objects.
+And this is an arrow, right?
+So how is this connected?
+So you have to have an object inside the category of types
+that corresponds to the set of arrows between objects A and B.
+So for every pair of objects A and B,
+there is a set of arrows between them.
+But there has to be also an object, separate objects,
+that represents the set of arrows, right?
+And that's called the type of function, function type.
+Not every category will have this,
+but the category that we are interested in,
+in which we can program,
+must have this object for every pair of A and B.
+Okay?
+And in order...
+This object can be introduced by another universal construction.
+I'll show you in a moment.
+But the easiest way of introducing it is through a junction of two functors.
+In particular, two endo functors that we are interested in.
+So an adjunction is not one functor, but a pair of functor.
+One functor adjoins to the other functor.
+Okay?
+So one functor goes from one category,
+from this category to this category,
+and there's another functor going this way.
+Okay?
+So, like, if you have two functors going in the opposite directions,
+you might say, okay, like, if one is the inverse of another,
+that means that these two categories look the same, right?
+There is, like, isomorphism of categories.
+But it's much more interesting if these are not inverses of each other,
+but they act in a very interesting way on arrows.
+Okay?
+So we say that the functor f is left adjoined to the functor u.
+If you draw the set of arrows from fA to B
+and the set of arrows from A to UB, they are isomorphic.
+Having isomorphic set of arrows tells us about how these two objects are related, right?
+They are related in a particular way.
+If they have the same set of arrows going between them, right?
+It means that their relationship is very similar.
+And you can think of this as, like, you are preparing an argument for a function, you know,
+using functor f.
+And here you are modifying the output of a function by applying functor u.
+So if you prepare arguments to functions or you modify the output of functions,
+you get this isomorphism between these two, okay?
+And when you hear this first time, it's really, like, kind of weird.
+Like, why is this so interesting?
+So I'll give you one example.
+There are many, many interesting examples.
+I'll give you one example that, like, pops out immediately.
+So let's pick the functor f acting on A.
+It pairs it with C, okay?
+So I take the type A and I pair it with C.
+I get a pair type.
+So that's one functor.
+The other functor is acting on B, it creates a type of function from C to B, okay?
+Nothing yet, right?
+It's like, oh, okay.
+All right, all right.
+Now let me write this isomorphism between these.
+So, like, if I prepare my argument by pairing it with C, okay,
+and I have a function on arrow from A, C to B,
+this is equivalent isomorphic to all these functions that take A without any preparation,
+but modify the argument B by putting this as an output of a function that takes C, okay?
+Now, if you look at it, this is called curring, right?
+Curring, a function that takes a pair is equivalent to a function that takes one element
+and returns another function that takes the second one, okay?
+So this is how curring arises from an adjunction, right?
+This is this adjunction.
+Oh, this is a general adjunction, right?
+This is this particular adjunction.
+And in category theory, this function type, this C to B,
+because you can take this as a definition of the function object,
+because this is a type of functions from C to B.
+You can say this, if you have in your category pairing or product,
+then you may, if you have this adjunction,
+you will be able to define what it means to have a function type, right?
+And the category in which this is defined is called closed.
+So taking together, we have a Cartesian closed category.
+Cartesian, because it has a Cartesian product,
+closed because it has a function type.
+And we are operating a Cartesian closed category when we are doing programming, right?
+So next time somebody tells you about Cartesian closed categories,
+you know, oh, yeah, this is what we use in our everyday programming.
+This is what, yeah, this is our bread and butter.
+In mathematics, this is called an exponential, A to B.
+Function type from B to A is called A to the power of B.
+And it actually, I'm not going to go into it,
+but actually, like if you look at it as an exponential
+and combine it with multiplication being product type, some type,
+using either, and exponential,
+you can, like, write all these identities from high school,
+like A plus B to the power of C is A to the power of B plus, and so on.
+All these identities actually work on types, which is, on one level,
+it's a weird thing, right?
+On another level, you see the repetition of the same patterns in mathematics all the time.
+And that's an interesting thing to think about, you know, free time.
+So I'll show you just this diagram.
+Function types can be defined using universal construction, right?
+This is like the diagram that, it's a little more complicated
+than defining a product, but it can be done, okay?
+And of course we can say what's the introduction and elimination.
+The introduction of function is called lambda, okay?
+So if you have an object of type A and you have an expression of type B,
+then lambda x E of x is of the type A to B, okay?
+And elimination is called eval.
+So you eliminate a function by providing an argument and getting the result.
+Okay, so I'll have to speed up now.
+Natural transformations are extremely important.
+We know them as polymorphic functions, okay?
+In category theory, they are just mappings between functors.
+So if you have two functors, f and g,
+you pick an object A and you map it to f A and you can map it to g A.
+And natural transformation is when you pick these arrows,
+for every f A, g A, you pick one arrow.
+So you pick a function that depends on A, right?
+You keep changing A, you get different functions.
+So it's a polymorphic function.
+It's a polymorphic function whose argument is a factorial
+and whose result is factorial.
+So here's an example of something like this.
+You take a list and you produce an option, right?
+Did I rewrite it?
+No, this is, yeah.
+Okay, non-sum.
+Okay, yeah, yeah.
+It returns an option, right?
+Why is it important to have natural transformations?
+Because now I can say, and this is like a typical thing in category theory,
+okay, I have functors and I have natural transformations
+which transform one function to another, okay?
+Are these arrows between functors?
+Maybe I have a category, right?
+Like what if functors are objects
+and natural transformations would be arrows between these objects?
+Okay.
+What do I have to show?
+I have to show, if I want to have a category,
+I would have to show that there is a composition
+and of course there is a composition of these arrows
+because if I have another functor h, you know,
+I'll just compose these two and I get a third one, right?
+There is an identity and of course there is associativity, right?
+Associativity and identity.
+So that works fine, right?
+So I can construct something called a functor category
+in which objects are functors
+and arrows are natural transformations.
+So this is an example of a category that's not slightly different
+than what we were talking about before, right?
+But it is a very important category, a functor category.
+Now in our case, we talk about endofunctors
+and then the functors also, being functors, form a category, right?
+So they form a category.
+It's called, that's how mathematicians write it.
+It's a category of functors from C to C, okay?
+So the final minute?
+The onata embedding, okay?
+The onata embedding.
+So this is the kind of thinking that can break your brain a little bit, right?
+But it shows you the power of categories here.
+Because there is this notion that we have replaced contents of objects.
+We replace it with arrows.
+Like we say, we can say, everything we can say about the object
+can be said using arrows, right?
+Objects shrunk to a point and everything, all its properties, are expressed using arrows.
+So the next step would be to say, well, instead of talking about an object,
+why don't I talk about all the arrows that are, let's say, impinging on this object, okay?
+Like if I take the totality of arrows in my category that end in this object,
+do they contain exactly the same information as the object itself?
+It's like, right?
+Can I replace this object by just talking about the totality of arrows that come to this object?
+And the answer is yes.
+And it's called the onata embedding, okay?
+So let me go through, like, steps, right?
+So first of all, how do I even define the totality of arrows coming to an object?
+Well, I'll start with a, so I'm talking about object A.
+That's my object, okay?
+Let me pick another object, X, and have a totality of arrows from X to A to begin with.
+I have to start somewhere, right?
+So let me take these arrows.
+What do they, they form a set, they form a set of arrows, set of arrows from X to A, okay?
+But this is just one X.
+If I want to talk about totality of arrows that go to A,
+I have to vary X.
+I have to, like, go to every possible X in my category, right?
+So if I start varying X, then I get different sets here.
+So this is for X, you know, I pick Y, there will be from Y to A, and so on.
+So I end up with something that is like a mapping of X, when I vary X, to sets.
+Sets are objects in the category of set, okay?
+So I have a mapping that goes from X to X to A for a fixed A.
+And this mapping, I define this mapping for objects, for X's, right?
+This mapping can be extended also to arrows, which means that it's really a functor.
+This is a functor, if you vary X, it's called a contraviant functor,
+because it acts weirdly on arrows, like the opposite of the arrows.
+But it's a functor, and it's a functor from this category C to the category set, okay?
+So now, for every object A, I get a functor from C to set, okay?
+Keep this in mind.
+From every A, I have a functor from C to set.
+It just takes an X and puts it into XA.
+So now if I start varying A on top of this, okay?
+Then I have a mapping that takes an A and creates a functor from C to set, okay?
+So this is the functor category from C to set.
+Here's my X, here's my A. I'm varying A to B, okay?
+So for every object A, I have a functor, right, that takes these arrows and puts it here, right?
+So I have a mapping that embeds an object from category C into the functor category.
+And now if I have a mapping of objects from one category C to another category,
+which is a functor category, is this mapping a functor?
+Turns out this mapping is a functor too, okay?
+And moreover, it's action on arrows.
+So here's an arrow from A to B.
+It's action of arrows.
+Well, so it's action on arrows would have to be a natural transformation
+because arrows in this category are natural transformations.
+So there's a mapping from these arrows to these arrows.
+These are just functions. These are natural transformations, right?
+So this is a function from A to B.
+It's mapped into this natural transformation from this functor to this functor, okay?
+When I vary X, this is a functor, okay?
+And the Yoneda lemma says this mapping goes both ways.
+It's actually an isomorphism, which means that this whole category C can be embedded in the category of functors,
+which is called a fully faithful embedding,
+meaning it takes all arrows and nothing more and maps them to all two arrows here.
+So if you map A to this functor, B to this functor, all arrows from A to B
+go into natural transformations from this functor to this functor,
+and nothing more is there.
+So like you can take all natural transformations, they will correspond to arrows here, right?
+So you have like a perfect picture of this whole category embedded in this category of functors.
+Okay, and I think this is a good point to end.
+Thank you.
+Thank you.

@@ -1,0 +1,1189 @@
+Inferring System Capabilities
+Open sidebar
+Inferring System Capabilities
+GPT-4
+Summarize: Inferring Capabilities from Task Performance with Bayesian Triangulation 
+John Burden1, *, Konstantinos Voudouris1, Ryan Burnell1,2, Danaja Rutar1, 
+Lucy Cheke1, Jos�� e Hern�� andez-Orallo1,3 
+1 University of Cambridge 
+2 The Alan Turing Institute 
+3 Universitat Polit` ecnica de Val` encia 
+*jjb205@cam.ac.uk 
+Abstract 
+As machine learning models become more general, we need 
+to characterise them in richer, more meaningful ways. We de- 
+scribe a method to infer the cognitive prof i le of a system from 
+diverse experimental data. To do so, we introduce measure- 
+ment layouts that model how task-instance features interact 
+withsystemcapabilitiestoaffectperformance.Thesefeatures 
+must be triangulated in complex ways to be able to infer ca- 
+pabilities from non-populational data ��� a challenge for tradi- 
+tional psychometric and inferential tools. Using the Bayesian 
+probabilistic programming library PyMC, we infer different 
+cognitive prof i les for agents in two scenarios: 68 actual con- 
+testants in the AnimalAI Olympics and 30 synthetic agents 
+for O-PIAAGETS, an object permanence battery. We show- 
+case the potential for capability-oriented evaluation. 
+1Introduction 
+What does success or failure tell us about a system���s capabil- 
+ities? In isolation, performance results are hard to interpret: 
+most interesting tasks require several different abilities to 
+be successfully combined. instances. For example, an agent 
+exploring a 3D environment to i nd a reward needs to un- 
+derstand that the reward still exists when occluded (object 
+permanence). It must then remember where it is, and suc- 
+cessfully navigate to it. If the agent fails, we cannot know 
+the cause: lack of object permanence, limited memory or 
+navigation skills. This leads to poor predictability about the 
+performance of the agent for new tasks, in or out of the train- 
+ing distribution. 
+However, suppose we also knew that the agent performs 
+well on tasks that involve complex navigation, and the same 
+for tasks involving memory. We could now infer that the sys- 
+tem���sfailureislikelyafailureofobjectpermanencebytrian- 
+gulation, a robust inferential method in formal epistemology 
+(Heesen, Bright, and Zucker 2019) and causal (Bayesian) 
+reasoning. 
+This bottom-up inference is illustrated in green and red 
+in Fig. 2. We can use this information to draw conclusions 
+about where the system is safe to deploy, and to direct efforts 
+to improve it. We can also predict behaviour in new scenar- 
+ios: for example, the agent will likely fail at a new task with 
+high object permanence demands, as illustrated in blue in 
+Fig. 2. 
+Figure 1: This task instance requires the agent to: (a) un- 
+derstand that the reward still exists when occluded (object 
+permanence), (b) remember which of the three walls it is oc- 
+cluded behind while it navigates towards it (memory), and 
+(c) reach it over ramps and around the wall (navigation). 
+Figure 2: Triangulation in the measurement layouts using re- 
+sults from task instances like this one. Bottom-up inference 
+from three tasks (in green and red for success and failure 
+respectively) leading to the cognitive prof i le. Top-down in- 
+ference (in blue) predicting failure for the fourth task. 
+arXiv:2309.11975v1 
+[cs.AI] 
+21 
+Sep 
+2023 
+This example demonstrates that we can leverage the fact 
+that different tasks���and their constituent instances���have 
+different demands to help us extract conclusions about sys- 
+tem capabilities from patterns of task performance. How- 
+ever, these conclusions require an analytical approach that 
+facilitates complex inferences. If we were to examine each 
+task or instance in isolation or to simply aggregate per- 
+formance across all tasks, this triangulation of abilities 
+would not be possible. To address this, we propose a novel 
+Bayesian approach to evaluation that enables simultaneous 
+inferences about multiple abilities from patterns of task per- 
+formance. This approach has a series of principles facilitat- 
+ing a capability-oriented approach to the evaluation of ma- 
+chine learning models:
+1 / 1
+ChatGPT
+Inferring Capabilities from Task Performance with Bayesian Triangulation
+Authors:
+John Burden, Konstantinos Voudouris, Ryan Burnell, Danaja Rutar, Lucy Cheke, Jos�� Hern��ndez-Orallo
+Affiliations:
+University of Cambridge, The Alan Turing Institute, Universitat Polit��cnica de Val��ncia
+Summary:
+Objective:
+As machine learning models become more advanced and general, there's a need to better understand and characterize them. The authors introduce a method to deduce a system's cognitive profile based on diverse experimental data.
+Challenge:
+When analyzing performance on a task, it's tough to pinpoint exactly which capabilities are present or lacking in a system. For instance, if an AI agent in a 3D environment fails to find a reward, it's unclear if the failure is due to not understanding the reward's persistence, bad memory, or poor navigation skills.
+Solution:
+The authors propose using "triangulation", an inferential method, to better understand system capabilities. For example, if an agent is known to excel in navigation and memory tasks but fails in scenarios testing "object permanence", we can deduce the system likely lacks understanding in that area.
+Implementation:
+Using the Bayesian probabilistic programming library PyMC, they examined cognitive profiles of agents in two scenarios: 68 actual participants in the AnimalAI Olympics and 30 synthetic agents for O-PIAAGETS (an object permanence battery). This method allows for a more focused and capability-oriented evaluation of machine learning models, rather than just looking at aggregate performance.
+Importance:
+This approach helps in determining where a system can be safely deployed, guiding improvements, and predicting its behavior in new scenarios based on its cognitive profile. The capability-oriented approach provides richer insights than traditional evaluations.
+1 / 1
+1. We do not simply break out performance by ���cate- 
+gories���. Related work employs a ���taxonomy of tasks��� (see 
+e.g., Table 1 in (Liang et al. 2022)), each placed into one 
+or more categories. This limits the inferential capacity and 
+predictability of these category aggregates for new tasks. In- 
+stead, we evaluate based on instance demands. 
+2. Unlike psychometric approaches such as factor anal- 
+ysis (FA), structural equation modelling (SEM) or item re- 
+sponse theory (IRT), we do not rely on populational data 
+(Gustafsson and Undheim 1996). Instead, we infer the cog- 
+nitive prof i le of a single subject from their performance 
+data alone. 
+3. We do not ���reify��� extracted latent variables as capabili- 
+ties, which has been done hierarchically elsewhere, (e.g., the 
+Cattell-Horn-Carroll model (Keith and Reynolds 2010)). 
+Instead, we identify general linking functions that help 
+derive the requisite capabilities from the demands of the 
+tasks. 
+4. Probabilistic models currently used in cognitive mod- 
+elling (Lee 2011) are often simple at the level of the individ- 
+ual and cannot convey the required probabilistic expressions 
+connecting individual performance, capabilities and task 
+features. Instead, complex interactions allow for Bayesian 
+triangulation which we use for informative evaluation. In 
+this paper we i nd an operational solution to these inferential 
+challenges in the form of Measurement Layouts: specialised 
+and semantically-rich hierarchical Bayesian networks. Us- 
+ingtheinferencepoweroftheNoU-TurnSampler(Hoffman 
+and Gelman 2014) in PyMC (Salvatier, Wiecki, and Fonnes- 
+beck 2016), a probabilistic programming engine, we can tri- 
+angulatefromperformanceandthetask���scognitivedemands 
+to the capability and bias levels for each subject (their cogni- 
+tive prof i le). Then, performance can be inferred downstream 
+for new tasks. 
+We derive the cognitive prof i les in two scenarios: the con- 
+testants in the AnimalAI Olympics (Crosby et al. 2020) and 
+several synthetic agents for O-PIAAGETS (Voudouris et al. 
+2022), an object permanence battery. We show how systems 
+with similar overall performance can have very different ca- 
+pability levels and biases.
+1 / 1
+ChatGPT
+Key Points from the Article:
+Performance Evaluation:
+Rather than breaking performance down by mere 'categories', the authors emphasize evaluating based on the specific demands of each instance. They note that simply categorizing tasks restricts the capacity to infer capabilities and predict performance on new tasks.
+Unique Approach:
+Contrary to conventional psychometric methods like factor analysis (FA), structural equation modelling (SEM), or item response theory (IRT) which depend on populational data, this method infers the cognitive profile of an individual based solely on their unique performance data.
+Latent Variables:
+The authors do not turn extracted latent variables directly into capabilities, a method seen in hierarchical models such as the Cattell-Horn-Carroll model. Instead, they identify linking functions that determine the needed capabilities based on task demands.
+Bayesian Triangulation:
+Traditional probabilistic models in cognitive modeling are often too simple to adequately represent the connections between performance, capabilities, and task features. The authors introduce a more sophisticated approach using Bayesian triangulation. They utilize "Measurement Layouts" ��� specialized hierarchical Bayesian networks ��� and employ the power of the No U-Turn Sampler in PyMC, a probabilistic programming engine. This allows them to connect performance and the cognitive demands of tasks, leading to insights into each subject's cognitive profile. Based on this, they can predict performance on new tasks.
+Practical Implementation:
+The authors put their method to the test in two scenarios: evaluating contestants in the AnimalAI Olympics and analyzing several synthetic agents for O-PIAAGETS, a tool for assessing object permanence. Their findings reveal that even systems with comparable overall performance might have varied capability levels and biases.
+1 / 1
+2Background 
+AI systems are often evaluated on one or more standard 
+benchmarks. Because of the remarkably broad capabilities 
+of modern systems, benchmarks are becoming larger and 
+more diverse. For instance, BIG-bench (Srivastava et al. 
+2022) contains over 200 tasks for evaluating language mod- 
+els. Aggregating many tasks into a single score does not al- 
+low for nuanced conclusions about where or why a system 
+fails (Burnell et al. 2023), and has little value for predicting 
+system performance a specif i c unseen task. 
+Analysing 200 tasks separately would lead to an unwieldy 
+and hard to interpret set of results. One option is the cat- 
+egorisation of tasks across several dimensions, providing a 
+moderate level of insight into where a model succeeds or 
+fails (Osband et al. 2019; Ilievski et al. 2021; Crosby et al. 
+2020; Liang et al. 2022). However, conclusions are highly 
+dependent on how instances are assigned to categories, and 
+predictive value is limited inside and across categories. 
+An widely-used approach that does not require any tax- 
+onomy of capabilities is to extract and reify them from the 
+data. Given experimental data for many tasks and subjects, 
+we can use Factor Analysis (FA) to infer those factors that 
+best explain the observed variance in the population. Some 
+structure can be inferred from FA, as in the classical hi- 
+erarchical models (Cattell-Horn-Carroll model (Keith and 
+Reynolds 2010)), but today it is common to use more power- 
+ful techniques such as Structural Equation Modelling (SEM) 
+(Ullman and Bentler 2012). However, SEM assumes linear 
+relationships between variables and that dependent variables 
+have normally distributed sample means. These assumptions 
+are unlikely in the real world. Further, SEM is a populational 
+technique requiring a large sample of individuals in order to 
+conf i rm structural relationships. 
+A more granular approach is to identify the diff i culty of 
+each task instance and the ability of each system based on 
+the relationship between task diff i culty and the system���s per- 
+formance. This idea is the cornerstone of Item Response 
+Theory (IRT) (Embretson and Reise 2000; De Ayala 2009). 
+When several abilities exist, we must rely on multidi- 
+mensional IRT(Reckase 2009) However, IRT is also popu- 
+lational, and derives abilities and diff i culties relative to pop- 
+ulation averages, therefore the parameters of the same item 
+can change if we add new items, or the abilities of a system 
+may change if we add more systems. This poses a problem 
+for AI evaluation, where the population of individual sys- 
+tems is constantly changing and advancing. 
+Still, with FA, SEM, IRT or other techniques, patterns of 
+performance are mapped to capabilities, making up a multi- 
+dimensionalcharacterisationofthesubjectthatissometimes 
+called a cognitive prof i le (Letteri 1980). Cognitive prof i les 
+make it possible to identify differences that might go un- 
+noticed in aggregated scores, make predictions about fu- 
+ture performance, and gain insights into the relationships 
+between different abilities (e.g., def i cits in mental rotation 
+are one cause of poor spatial navigation). 
+Most psychological assessment is populational. Excep- 
+tions can mostly be found in developmental psychology and 
+animal cognition (Moran et al. 2017; Bergman and Ander- 
+sson 2015; Shaw and Schmelz 2017). The scarcity of sub- 
+jects and the diff i culty of experiments results in an emphasis 
+on carefully designed tasks that ensure a systematic cover- 
+age of the relevant features and possible distractors. On the 
+other hand, if the cognitive mechanisms for solving the task 
+are accurate and enough variation is introduced, as in the 
+example of Fig. 2, the results can be suff i cient to estimate 
+the capabilities of a single individual, independently of the 
+other evaluated individuals. This is the type of approach that 
+we need to evaluate ML models and AI systems. 
+Fortunately, there is recent movement towards producing 
+training and test variations, augmented examples or corrup- 
+tions to test systems, through adversarial learning (Zellers 
+et al. 2018; Nie et al. 2019; Rozen et al. 2019; Kiela 
+et al. 2021), procedural content generation (Risi and To- 
+gelius 2020) and other domain-specif i c techniques (Sug- 
+awara, Stenetorp, and Aizawa 2020). These variations have 
+also been inspired by software testing, such as (Marijan and 
+Gotlieb 2020) and (Ribeiro et al. 2020). Some of this ef- 
+fort results in annotated datasets, especially for reinforce- 
+ment learning ��� from the inspiration behind the AnimalAI 
+Olympics (Crosby et al. 2020) to the fully-systematic O- 
+PIAAGETS (Voudouris et al. 2022). However, the next step 
+of using these annotated data for capability-oriented evalua- 
+tion has not been taken yet. 
+Not using populational data has to be compensated by 
+a larger number of varied instances. When many dimen- 
+sions of variation are introduced, the inference problem be- 
+comes complex. Traditional Bayesian Networks (BN) (Ben- 
+Gal 2008) can be used for arbitrarily sophisticated probabil- 
+ity distributions. For complex networks, though, perform- 
+ing the inference calculation is computationally intractable 
+(Cooper 1990). Approximation techniques for Bayesian in- 
+ference (BI) have been introduced, including the Markov 
+Chain Monte Carlo family (Andrieu et al. 2003), allowing 
+for the inference of latent values in more complex BNs, par- 
+ticularly those with multiple levels of dependency and com- 
+plex relations between variables. Taking advantage of these 
+recent advances in Bayesian approximation, evaluation pro- 
+cedures, and computing power allows us to extend the bene- 
+i ts of capability-oriented evaluation to machine learning for 
+thef i rsttime,enablingmorerobust,thorough,andprincipled 
+evaluations of ML systems.
+1 / 1
+ChatGPT
+Background Summary:
+AI Benchmarks:
+AI systems are generally evaluated using specific benchmarks. Due to the expansive capabilities of contemporary AI systems, these benchmarks have grown larger and diverse. For instance, the BIG-bench contains over 200 tasks to assess language models. Yet, simply aggregating results from multiple tasks can obscure detailed insights about a system's specific strengths and weaknesses.
+Task Analysis:
+While analyzing every task separately could yield an overwhelming set of results, grouping tasks into categories provides a moderate level of insight. The drawback is that conclusions depend heavily on the categorization method, limiting predictive value both within and across categories.
+Capability Extraction from Data:
+Widely-used methods avoid task taxonomies by directly inferring capabilities from data. Techniques like Factor Analysis (FA) and Structural Equation Modelling (SEM) are employed, though they come with certain assumptions that may not reflect real-world situations. For instance, SEM assumes linear relationships between variables, which might not always be the case.
+Item Response Theory (IRT):
+IRT is a detailed method focusing on the relationship between a system's performance and task difficulty. While this technique can provide insights, it is based on population averages, which can be problematic in the fast-evolving AI landscape where the "population" of AI systems is constantly shifting.
+Cognitive Profiles:
+Techniques like FA, SEM, and IRT map performance patterns to capabilities, leading to a multi-dimensional characterization of the system, often termed as a "cognitive profile". These profiles allow for more nuanced insights than aggregate scores and can highlight specific strengths, weaknesses, and potential areas for growth.
+Non-Populational Assessment:
+While many psychological assessments are population-based, there are exceptions, especially in developmental psychology and animal cognition. These methods often rely on carefully crafted tasks, emphasizing individual performance rather than comparative population averages. This type of evaluation is seen as essential for AI and ML models.
+Recent Techniques:
+There's a shift towards creating more varied training and testing instances using techniques like adversarial learning, procedural content generation, and others inspired by software testing. These lead to annotated datasets, but using them for capability-focused evaluation hasn't been broadly adopted yet.
+Bayesian Inference:
+Traditional Bayesian Networks can model complex probability distributions but can become computationally intractable for intricate networks. Newer Bayesian approximation methods, including the Markov Chain Monte Carlo family, have allowed for inference in more complex networks. Leveraging these advances permits a more rigorous and principled evaluation of ML systems, focusing on their unique capabilities.
+1 / 1
+4.2Inference and Analysis 
+Using the measurement layout and the 69 instances, we can 
+use PyMC to infer a very simple cognitive prof i le for each of 
+the 68 entrants of the competition. We run the NUTS infer- 
+ence algorithm with two sampling chains of size 1000 each, 
+i nding no inference divergences. 
+Fig. 4 (right) summarises the inferred capabilities and 
+noise levels. We see the two main capabilities are correlated 
+for this population, going from low performance in the bot- 
+tom left area (e.g., ���ice-play��� with 4% accuracy) to high per- 
+formance in the top right area (e.g., ���Trrrr��� with 99% accu- 
+racy). In these extremes, capabilities are nonexistent (close 
+to 0) or saturated (to the maximum 5.3 and 1.9 respectively), 
+as expected. But in the middle range, there are agents that 
+have noticeable differences between their capabilities (e.g., 
+���cocel���). Some have strong biases, such as ���Thursday��� and 
+���KoozytHiperdyne��� with left-right bias values of 1.14 and 
+���0.78 respectively (not shown on the plot). This can have 
+an effect on navigation ability but not on visual ability. 
+The standard deviations of the abilities, shown as error 
+bars, and the level of noise are useful to explain situations 
+bothwhenbehaviourisconformantornotwiththetaskchar- 
+acteristics. For instance, ���Juohmaru���, with 54% accuracy, is 
+a very conformant agent: performance decreases as rewards 
+get smaller and further away, and when they are initially lo- 
+cated behind from the agent. We see that navigation ability is 
+2.50��1.08 and visual ability is 0.92��0.44, with a medium 
+level of noise 0.26 �� 0.17. But ���sparklemotion���, with 36% 
+accuracy, is very non-conformant, with abilities 0.40��0.38 
+and 0.59 �� 0.45, and higher noise 0.31 �� 0.13. Appendix C 
+contains full characteristic grids of these two agents in Fig. 8 
+(demonstrating the conformant / non-conformant behaviour) 
+and all inferred results in Fig. 9. 
+Note that we have inferred two different capabilities for 
+each agent as well reliability measure of these estimates: 
+how well they can predict performance (depending on the 
+qualityoftheestimates,biasesandremainingnoise)foreach 
+particular instance given its meta-features. We do this with- 
+out having different sub-batteries for each capability. 
+Our model can also predict performance on unseen tasks 
+instances. To evaluate this, we randomly held out 20% of the 
+task instances from the backwards inference stage and eval- 
+uated the predicted probabilities of success on them. Due 
+to the small size of the dataset, we repeated this process 15 
+times and took the mean Brier score for each agent. Fig. 6a 
+summarises these scores, which are lower than predictions 
+based on aggregate performance for agents with success 
+rates in the range [0.2,0.7], exactly where there is variability 
+to explain. Full results and discussion in Appendix E. 
+5Cognitive Prof i les for Object Permanence 
+Our analysis of the AAI Olympics used a relatively simple 
+scenario as a proof of concept. But one limitation of this 
+analysis is that we do not know the ���ground truth��� of the 
+agents��� abilities, so it is diff i cult to determine precisely how 
+effective our approach was. It also remains unclear how well 
+our approach works in complex scenarios with many abili- 
+ties and metafeatures. Therefore, we next sought to demon- 
+strate the scalability of our approach by analysing data from 
+a more complex scenario���a rich test battery for evaluating 
+ObjectPermanence.Toensurethatweknewthegroundtruth 
+abilities of the agents, we created a synthetic dataset by sim- 
+ulating the performance of 30 hypothetical agents based on 
+specif i ed cognitive prof i les 1. This scenario tests whether our 
+methodscanrecovercomplexcognitiveprof i lesfromperfor- 
+mance data of agents for which we know the ground truth. 
+To do so, the authors of this paper were divided into two 
+teams, Team A and Team B. Team A generated the synthetic 
+dataset, while Team B def i ned the measurement layout and 
+attempted to recover the cognitive prof i les of the synthetic 
+agents. Both teams were familiar with O-PIAAGETS and 
+the general abilities, bias and elements that are combined in 
+the battery. This two team approach allowed us to generate 
+synthetic agents while keeping Team B blind to their pro- 
+i les, removing the potential for bias and making the mod- 
+elling effort more akin to a real-world scenario. 
+5.1The Testbed and Synthetic Agents 
+We applied our measurement methodology to the Object- 
+Permanence In Animal-AI: Generalisable Test Suites (O- 
+PIAAGETS, (Voudouris et al. 2022)). Object Permanence 
+(OP) is the understanding that objects continue to exist when 
+1because of the complexity of the abilities that affect perfor- 
+mance on this testbed, it would be extremely diff i cult to create a 
+varied population of real agents with specif i c levels of
+1 / 1
+ChatGPT
+abilities.
+OP is a crucial cognitive skill that has been studied extensively in developmental psychology, particularly in infants and animals. It involves understanding that objects remain in existence even when they are out of sight. This understanding is fundamental for tasks that require reasoning about hidden objects, tracking them, or predicting their future locations.
+The O-PIAAGETS test suite provides a comprehensive framework for evaluating OP in AI systems. Its diverse range of tasks examines various facets of object permanence, from simple scenarios like tracking a hidden object under a cup to more complex situations that might involve multiple hiding spots, movement patterns, or deceptive cues.
+Team A's role was to generate synthetic agents that would participate in the O-PIAAGETS tasks. These agents were designed to have specific cognitive profiles, meaning they had predetermined strengths and weaknesses in their object permanence abilities. For instance, an agent might be very good at tracking objects hidden under moving cups but might struggle if the hiding spots are swapped or if there are decoy objects involved. The key here is that Team A knows exactly the strengths and limitations of each agent because they were deliberately programmed that way.
+Team B's challenge, on the other hand, was to use the performance data of these agents on the O-PIAAGETS tasks to infer their cognitive profiles. Without knowing the ground truth (i.e., the real abilities of the agents), they would employ various statistical and machine learning techniques to make educated guesses about each agent's object permanence skills. By doing so, they aim to determine how well they can reverse-engineer the abilities of AI systems based purely on their performance on benchmark tasks.
+The two-team approach is interesting because it mirrors real-world situations where researchers or developers might have a system (created by another team) and they need to evaluate its capabilities without having access to its internal workings or design specifications. It ensures a level of blindness in the evaluation, making the findings more robust and unbiased.
+In conclusion, the exploration of cognitive profiles in AI systems, particularly in the context of object permanence, offers an innovative approach to understanding and evaluating AI capabilities. By dissecting performance data and reverse-engineering abilities, we can gain a deeper insight into how AI systems think, reason, and process information. This, in turn, can help in refining and improving AI models for future applications.
+1 / 1
+6Discussion 
+Increasinglymoremachinelearningsystemsare 
+(pre-)trained once and deployed for a range of tasks, 
+Task-oriented evaluation based on aggregated performance 
+cannot robustly evaluate these systems across the many 
+situations in which they might be deployed, nor predict 
+behaviour for new tasks and changing distributions. How- 
+ever, we can often identify abstract capabilities that are 
+not directly measurable, such as ���object permanence��� 
+in agents or ���handling negation��� in language models. In 
+the behavioural sciences this is a common approach, but 
+many techniques are populational. Triangulation for single 
+individuals by contrasting against the task demands is 
+common in animal cognition research, but it is unusual 
+to see complex inferences from thousands of items, as 
+is common in machine learning. In this paper we have 
+integrated several elements to make this inferential exercise 
+possible and shown it can identify the capabilities and 
+biases of each model���its cognitive prof i le���independently. 
+This unleashes a new way of evaluating general-purpose 
+systems, by identifying areas of weakness or reasons for task 
+failure. This is especially useful for hierarchical capabilities 
+with multiple levels of dependency. We can speed up the de- 
+bugging process by isolating skill-gaps or biases responsible 
+for failure, and improve conf i dence in predictions of perfor- 
+mance on new tasks. Instead of hoping that the average per- 
+formance will hold on new tasks, our approach enables the 
+use of task demands and the inferred cognitive prof i le to de- 
+termine whether system deployment is safe and worthwhile. 
+There are several limitations of this work. If many param- 
+eters must be inferred simultaneously then many evaluation 
+instances are needed. We advocate incremental approaches, 
+where each capability is inferred with subsets of tasks before 
+moving to tasks with more complex dependencies. Nonethe- 
+less, we have shown that even a posteriori, as in the AAIO, 
+inferences can be achieved simultaneously. Here we covered 
+only the domain of agentic systems, but the same ideas can 
+be extrapolated to language, vision and other domains. Ul- 
+timately, the biggest challenge for the construction of mea- 
+surement layouts is the need for detailed domain knowledge 
+and robust evaluation batteries. Both can be costly, but are 
+urgently needed to improve AI evaluation. Currently, eval- 
+uation is focused on advancing SOTA performance on an 
+increasingly small selection of benchmarks that often lack 
+construct validity and are limited in scope (Koch et al. 2021; 
+Raji et al. 2021). 
+Our approach also highlights the need for a clear distinc- 
+tion between training datasets, which can be massive, unan- 
+notated, and built in an adversarial way (Kiela et al. 2021) 
+(Jia and Liang 2017; Zellers et al. 2019), and evaluation bat- 
+teries, which should be devised carefully with systematic 
+variation across the elements that might affect performance. 
+Our vision is that, from well-constructed batteries such as 
+O-PIAAGETS, building measurement layouts and triangu- 
+lating with them should become routine.
+1 / 1
+ChatGPT
+6.1 Summary of Discussion
+The paper emphasizes the changing nature of machine learning systems, where models are now being trained once and then deployed for various tasks. Traditional methods of evaluation, which focus solely on aggregate performance, may not be adequate in understanding how these models will perform across diverse situations and tasks. The authors advocate for assessing abstract capabilities, such as "object permanence" in agents or "handling negation" in language models. This type of evaluation is prevalent in behavioral sciences, especially when analyzing animal cognition. Still, it hasn't been widely adopted in the realm of machine learning, where complex inferences from vast data points are more common.
+The proposed approach offers a way to determine the capabilities and biases of each AI model individually, creating a detailed "cognitive profile." This method promises to transform the evaluation of general-purpose systems. Instead of relying solely on average performance, developers and researchers can identify weaknesses, biases, and reasons for specific task failures. By understanding a model's cognitive profile, predictions about its behavior on new tasks become more accurate. This aids in making informed decisions about the deployment of these systems in real-world scenarios.
+However, the approach isn't without its challenges. The paper acknowledges that when trying to infer multiple parameters, a substantial amount of evaluation data is necessary. The authors recommend a step-by-step process where each capability is analyzed with specific task subsets before moving to more complex tasks. The paper also notes that while this study focuses on agent-based systems, the principles can be applied across different domains, including language and vision. The primary hurdle is the need for profound domain knowledge and robust evaluation methods. The authors argue that AI evaluation requires a shift from its current focus on achieving the best performance on a narrow set of benchmarks to a more comprehensive, construct-valid, and broader approach.
+Another essential distinction made in the paper is between training datasets and evaluation batteries. Training datasets can be vast and can be built in various ways, including adversarial methods. In contrast, evaluation batteries need to be meticulously crafted, ensuring that they measure what they are intended to measure systematically. The authors are optimistic that their proposed methods, especially when applied to well-constructed evaluation systems like O-PIAAGETS, will become the norm in evaluating AI systems.
+1 / 1
+Give the bare miminum to explain this approach.
+1 / 1
+ChatGPT
+The paper discusses a novel approach for evaluating machine learning systems. Instead of merely assessing a system's overall performance, the authors advocate for determining its specific "cognitive profile." This involves:
+Identifying abstract capabilities of the model, like "object permanence" in agents or "handling negation" in language models.
+Using detailed evaluation methods to infer these capabilities individually.
+Using these inferences to predict the system's behavior on new tasks.
+The goal is to uncover a system's strengths, weaknesses, and biases, allowing for a more comprehensive understanding of its performance and better predictions for its deployment in varied scenarios.
+1 / 1
+A more detailed explanation particularly on the role of Bayesian triangulation.
+1 / 1
+ChatGPT
+Certainly, let's delve deeper into the discussed approach with a particular emphasis on the role of Bayesian triangulation.
+Approach Overview
+:
+Abstract Capabilities
+: The authors propose to evaluate machine learning systems based on their abstract capabilities. These are general attributes or skills that a system might have, akin to cognitive functions in animals or humans, like understanding object permanence or handling linguistic negations.
+Evaluation Batteries
+: Instead of one-off tests or simple benchmarks, they use systematic evaluation methods known as "evaluation batteries." These batteries are designed with a series of tasks that systematically vary in complexity and requirements.
+Inference of Capabilities
+: Using the results from these evaluation batteries, the capabilities of each system (or agent) are inferred. This is where Bayesian triangulation comes into play.
+Bayesian Triangulation
+:
+At its core, triangulation is about drawing conclusions (inferences) based on data coming from multiple sources. In the context of this paper, it involves contrasting the observed performance of an agent on multiple tasks against its expected performance based on its presumed abstract capabilities.
+Bayesian methods offer a probabilistic framework for making these inferences. Using Bayesian inference, one can update their beliefs (in this case, about an agent's capabilities) based on observed data (performance on tasks).
+For instance, using the PyMC tool (a Bayesian statistical model), the authors inferred the "cognitive profile" of agents. They ran the NUTS (No-U-Turn Sampler, a type of Markov chain Monte Carlo method) inference algorithm to sample from the posterior distribution of the agent's capabilities. This gives an idea of the most likely capabilities of the agent given the observed data, as well as the uncertainty associated with these inferences.
+The "triangulation" here essentially refers to the alignment between the agent's demonstrated performance, the predicted performance based on its inferred capabilities, and the task's inherent demands or characteristics.
+Benefits of This Approach
+:
+Detailed Insights
+: Instead of a single performance metric, we get a profile of the agent's strengths, weaknesses, and biases. This is much more informative and can help in diagnosing specific areas of improvement.
+Predicting Future Performance
+: With a detailed cognitive profile, it becomes easier to predict how the system might perform on new or unseen tasks. If a new task heavily relies on a capability that the agent is weak in, we can predict it might struggle.
+Safety and Deployment
+: Knowing an agent's cognitive profile can help in determining if deploying it in a particular scenario is safe or beneficial.
+In essence, the Bayesian triangulation approach allows for a more nuanced and detailed evaluation of machine learning systems, paving the way for more predictable and safer deployments.
+1 / 1
+Appendices 
+Here we include some supplementary material to the paper. 
+First we include more details about PyMC, the Bayesian in- 
+ference engine we are using and the decisions made for the 
+estimation algorithm, and then we give more details and re- 
+sults for the two scenarios; i rst, the Animal AI Olympics 
+and second, O-PIAAGETS. 
+APyMC 
+PyMC (Salvatier, Wiecki, and Fonnesbeck 2016) is a prob- 
+abilistic programming language for building Bayesian mod- 
+els and i tting them with Markov Chain Monte Carlo 
+(MCMC) methods (Andrieu et al. 2003). Complex Bayesian 
+models often require solving intractable integrals for infer- 
+ence such as the normalisation constant in Bayes��� theorem, 
+p(��|x) = p(��)p(x|��) 
+R 
+p(�����)p(x|�����)d����� 
+among others. Monte Carlo (MC) Integration provides a 
+method to approximate these intractable integrals using ran- 
+dom sampling. 
+In order to evaluate I = Z 
+��� 
+f(x)dx 
+we can rewrite it as an expectation 
+I = Z 
+��� 
+f(x)p(x) 
+p(x) dx = E ?f(x) 
+p(x) ? 
+for any density function p such that p(x) > 0. 
+MC Integration takesa random sampleX = {xi}N i=1��� ��� 
+with distribution p(x) and uses the Law of Large Numbers 
+to approximate the integral as: 
+I ��� 
+1 
+N 
+N X 
+i=1 
+f(xi) 
+p(xi) 
+MC Integration is reliant on being able to sample eff i ciently 
+from ��� according to p(x). MCMC algorithms aim to do 
+this, scaling to complex, hierarchical models by building a 
+Markov Chain with equilibrium distributions approximating 
+the desired probability density function p. Sampling from 
+the Markov Chain can then be used as a stand-in for sam- 
+pling p(x). The prototypical example of an MCMC algo- 
+rithm is the Metropolis Hastings algorithm (Hastings 1970). 
+Hamiltonian Monte Carlo methods (Betancourt and Giro- 
+lami 2013) improve on typical MCMC algorithms by replac- 
+ing the random-walk element exploring the Markov Chain 
+state-space with Hamiltonian Mechanics. 
+PyMC requires all expressions to be differentiable, which 
+means that functions such as maximum and minimum are 
+implemented as generalised means, and logical operators are 
+implemented with products and sums. 
+A.1Measurement Layouts in PyMC 
+In our work, we utilise the No U-Turn Sampler (Hoffman 
+and Gelman 2014) built into PyMC, an extension to Hamil- 
+tonian MC methods which eliminates the need to set partic- 
+ular hyper-parameters. 
+With the NUTS sampler we use 2 sampling chains, tuned 
+for 1000 samples that are discarded in order to optimise the 
+step-size within NUTS, and then draw 1000 samples to esti- 
+mate the posterior. 
+We def i ne the model once for each scenario and then we 
+estimate the parameters of the cognitive prof i le and some 
+other INON elements for each system being evaluated inde- 
+pendently. 
+As mentioned in the introduction, data and code will be- 
+come available upon publication.
+1 / 1
+ChatGPT
+Certainly, let's break down this appendix section about PyMC and its application in the study:
+PyMC Overview
+:
+What is PyMC?
+: PyMC is a probabilistic programming language designed for constructing Bayesian models and fitting them using Markov Chain Monte Carlo (MCMC) methods.
+Why is it Important?
+: Bayesian models often involve complex mathematical integrals that are hard or impossible to compute directly. These integrals are crucial for making inferences in Bayesian settings, such as updating beliefs about a model's parameters given new data.
+How Does PyMC Help?
+: PyMC facilitates the approximation of these complex integrals using random sampling, a method known as Monte Carlo (MC) Integration. This is accomplished using MCMC algorithms, which sample from a probability distribution by building a Markov Chain whose equilibrium distribution approximates the desired distribution.
+Monte Carlo Integration
+:
+The idea behind MC Integration is to approximate a difficult integral by taking a random sample and averaging the values of the function being integrated over this sample. This method is rooted in the Law of Large Numbers.
+The crux is that if you can't compute the integral directly, you can approximate it by averaging over many random samples.
+Markov Chain Monte Carlo (MCMC)
+:
+MCMC is an extension to the Monte Carlo method. While MC methods aim to sample directly from a target distribution, MCMC methods use a Markov Chain to generate samples that, over time, have the desired distribution.
+The Metropolis Hastings algorithm is a foundational MCMC method, but there are more advanced methods like the Hamiltonian Monte Carlo which use concepts from physics to explore the state-space more efficiently.
+PyMC Specifics
+:
+Differentiability Requirement
+: PyMC demands all expressions to be differentiable. As a result, functions like maximum or minimum are expressed using general means, and logical operations are implemented via products and sums.
+No U-Turn Sampler (NUTS)
+: In this study, the authors used the NUTS sampler, an advanced Hamiltonian MC method. NUTS is efficient as it doesn't require certain hyper-parameters to be set manually. For their models, they utilized 2 sampling chains, first tuning with 1000 samples (which were discarded) to optimize the step-size and then drawing 1000 samples to estimate the model's posterior distribution.
+Application
+: They defined a model for each scenario and then estimated the cognitive profile parameters for each system they evaluated. This suggests they were trying to infer how different AI or machine learning systems performed on tasks, given the data they observed.
+Conclusion
+:
+In essence, PyMC provides a robust framework for Bayesian modeling and inference, allowing researchers to understand complex systems like the AI agents they studied. By sampling from posterior distributions, they can gain insights into the capabilities and limitations of these agents. The appendix provides details on the methodology, ensuring that their work is reproducible once the data and code are published.
+2 / 2
+A few relevant example in Jupyter Python
+1 / 1
+ChatGPT
+Certainly! Here's an example of how you might use PyMC3 in a Jupyter notebook to estimate the parameters of a simple Bayesian model.
+Setup
+:
+python
+Copy code
+!pip install pymc3
+import
+pymc3
+as
+pm
+import
+numpy
+as
+np
+import
+matplotlib.pyplot
+as
+plt
+Model
+:
+Suppose we're trying to estimate the mean and standard deviation of a Gaussian distribution given some observed data.
+Generating Data
+:
+python
+Copy code
+# Simulate data from a normal distribution with mean=4 and sd=2
+np.random.seed(
+123
+)
+data = np.random.normal(
+4
+,
+2
+,
+100
+)
+plt.hist(data, bins=
+20
+, alpha=
+0.5
+)
+plt.xlabel(
+'Value'
+)
+plt.ylabel(
+'Frequency'
+)
+plt.title(
+'Simulated Data'
+)
+plt.show()
+Building a Bayesian Model
+:
+python
+Copy code
+with
+pm.Model()
+as
+model:
+# Prior distributions for the mean and standard deviation
+mu = pm.Normal(
+'mu'
+, mu=
+0
+, sd=
+10
+)
+    sigma = pm.HalfNormal(
+'sigma'
+, sd=
+10
+)
+# Likelihood (sampling distribution) of observations
+Y_obs = pm.Normal(
+'Y_obs'
+, mu=mu, sd=sigma, observed=data)
+# Drawing samples using the No-U-Turn Sampler (NUTS)
+trace = pm.sample(
+2000
+, tune=
+1000
+, chains=
+2
+)
+Results
+:
+python
+Copy code
+# Summary of the posterior distribution
+pm.summary(trace).
+round
+(
+2
+)
+This will show a summary of the posterior distributions for
+mu
+and
+sigma
+including the mean, standard deviation, and credible intervals.
+python
+Copy code
+# Visualizing the posterior distributions
+pm.traceplot(trace)
+plt.show()
+This will plot the traces for
+mu
+and
+sigma
+to diagnose the convergence of the MCMC algorithm.
+This is a simple Bayesian model estimated using PyMC3. The real power of PyMC3 (and Bayesian modeling in general) comes in when you have more complex models, hierarchical structures, or when you incorporate prior information in a systematic way.
+1 / 1
+An example where Infer System Capabilities Bayesianly evaluating the capabilities of various intelligent agents
+1 / 1
+ChatGPT
+Alright, let's create a hypothetical example that uses Bayesian modeling to infer the capabilities of various intelligent agents based on task performance. We'll use PyMC3 for the Bayesian modeling.
+Scenario
+:
+Suppose we have three different agents: A, B, and C. We've tested these agents on a series of tasks and recorded the number of tasks they've successfully completed. Our goal is to infer the underlying capability of each agent based on these results.
+Setup
+:
+python
+Copy code
+!pip install pymc3
+import
+pymc3
+as
+pm
+import
+numpy
+as
+np
+Data
+:
+Let's assume each agent was tested on 50 tasks.
+python
+Copy code
+# Number of tasks each agent successfully completed
+successes = {
+'A'
+:
+45
+,
+'B'
+:
+40
+,
+'C'
+:
+35
+}
+# Total tasks
+n_tasks =
+50
+Bayesian Model
+:
+We'll model the agents' capabilities as a probability of success on any given task. We'll use a beta-binomial model where the beta distribution is a conjugate prior for the binomial distribution.
+python
+Copy code
+with
+pm.Model()
+as
+model:
+# Priors for each agent's capability
+p_A = pm.Beta(
+'p_A'
+, alpha=
+2
+, beta=
+2
+)
+    p_B = pm.Beta(
+'p_B'
+, alpha=
+2
+, beta=
+2
+)
+    p_C = pm.Beta(
+'p_C'
+, alpha=
+2
+, beta=
+2
+)
+# Likelihoods based on the number of successes
+obs_A = pm.Binomial(
+'obs_A'
+, n=n_tasks, p=p_A, observed=successes[
+'A'
+])
+    obs_B = pm.Binomial(
+'obs_B'
+, n=n_tasks, p=p_B, observed=successes[
+'B'
+])
+    obs_C = pm.Binomial(
+'obs_C'
+, n=n_tasks, p=p_C, observed=successes[
+'C'
+])
+# Sampling from the posterior using NUTS
+trace = pm.sample(
+2000
+, tune=
+1000
+, chains=
+2
+)
+Results
+:
+python
+Copy code
+# Summary of the posterior distributions
+pm.summary(trace).
+round
+(
+2
+)
+This will provide posterior estimates for the capabilities (probability of success) of agents A, B, and C. You can also use
+pm.traceplot(trace)
+to visualize these distributions.
+Interpretation
+:
+By examining the posterior distributions, we can infer the likely capabilities of each agent. A wider distribution would suggest more uncertainty about an agent's capability, while a narrower distribution suggests more certainty.
+Remember, this is a simple model and might not represent complex task dependencies or agent biases. In practice, you might want to incorporate more sophisticated models or additional data sources to make robust inferences about agent capabilities.
+1 / 1
+What about incorporating an example showing the Bayesian triangulation?
+1 / 1
+ChatGPT
+Certainly. Bayesian triangulation is a more advanced topic, and its essence lies in comparing multiple sources of evidence (or "measurements") to infer a more accurate and credible estimation of the underlying truth.
+To illustrate Bayesian triangulation using PyMC3, let's extend our previous example:
+Scenario
+:
+In addition to the number of tasks completed by agents A, B, and C, let's assume we have a second source of evidence: peer evaluations. Other agents rate each of the three agents on a scale of 0 to 1, where 1 means "highly capable".
+Data
+:
+python
+Copy code
+# Peer evaluations (mean score out of 1)
+peer_evaluations = {
+'A'
+:
+0.9
+,
+'B'
+:
+0.8
+,
+'C'
+:
+0.7
+}
+Bayesian Triangulation Model
+:
+Here, we'll combine evidence from both task completions and peer evaluations to infer agent capabilities.
+python
+Copy code
+with
+pm.Model()
+as
+triangulation_model:
+# Priors for each agent's capability based on task completions
+p_task_A = pm.Beta(
+'p_task_A'
+, alpha=
+2
+, beta=
+2
+)
+    p_task_B = pm.Beta(
+'p_task_B'
+, alpha=
+2
+, beta=
+2
+)
+    p_task_C = pm.Beta(
+'p_task_C'
+, alpha=
+2
+, beta=
+2
+)
+# Likelihoods for task completions
+obs_task_A = pm.Binomial(
+'obs_task_A'
+, n=n_tasks, p=p_task_A, observed=successes[
+'A'
+])
+    obs_task_B = pm.Binomial(
+'obs_task_B'
+, n=n_tasks, p=p_task_B, observed=successes[
+'B'
+])
+    obs_task_C = pm.Binomial(
+'obs_task_C'
+, n=n_tasks, p=p_task_C, observed=successes[
+'C'
+])
+# Priors for each agent's capability based on peer evaluations
+p_peer_A = pm.Beta(
+'p_peer_A'
+, alpha=
+2
+, beta=
+2
+)
+    p_peer_B = pm.Beta(
+'p_peer_B'
+, alpha=
+2
+, beta=
+2
+)
+    p_peer_C = pm.Beta(
+'p_peer_C'
+, alpha=
+2
+, beta=
+2
+)
+# Likelihoods for peer evaluations (modeled as normally distributed around the mean peer score)
+obs_peer_A = pm.Normal(
+'obs_peer_A'
+, mu=p_peer_A, sigma=
+0.05
+, observed=peer_evaluations[
+'A'
+])
+    obs_peer_B = pm.Normal(
+'obs_peer_B'
+, mu=p_peer_B, sigma=
+0.05
+, observed=peer_evaluations[
+'B'
+])
+    obs_peer_C = pm.Normal(
+'obs_peer_C'
+, mu=p_peer_C, sigma=
+0.05
+, observed=peer_evaluations[
+'C'
+])
+# Triangulated estimate (average of both sources of evidence)
+p_A = pm.Deterministic(
+'p_A'
+, (p_task_A + p_peer_A) /
+2
+)
+    p_B = pm.Deterministic(
+'p_B'
+, (p_task_B + p_peer_B) /
+2
+)
+    p_C = pm.Deterministic(
+'p_C'
+, (p_task_C + p_peer_C) /
+2
+)
+# Sampling from the posterior using NUTS
+trace = pm.sample(
+2000
+, tune=
+1000
+, chains=
+2
+)
+Results
+:
+python
+Copy code
+# Summary of the posterior distributions for the triangulated estimates
+pm.summary(trace, var_names=[
+'p_A'
+,
+'p_B'
+,
+'p_C'
+]).
+round
+(
+2
+)
+Interpretation
+:
+With Bayesian triangulation, we're combining multiple sources of evidence to make our inferences about the agents' capabilities more robust. The posterior estimates now consider both the tasks completed and the peer evaluations, potentially giving a more holistic view of each agent's capabilities.
+Again, this example is simplified. In practice, you might need to adjust the model to better capture the intricacies of the real-world data and dependencies between various sources of evidence.
+1 / 1
+Jan 4, 2019
+
+Here is something I've been thinking about for a few years that really helps me focus on getting the most out of my mind...
+
+Psychological flow is that narrow mental state between boredom and overload, similar to the the Vygotskian zone of proximal development: transient hypofrontality.
+1 / 1
+ChatGPT
+It sounds like you're touching upon a fascinating intersection of cognitive psychology and optimal performance. Let's delve into what you've mentioned:
+Psychological Flow
+: Coined by Mihaly Csikszentmihalyi, the flow state describes a particular mental state of complete absorption where an individual is so engrossed in an activity that they lose track of time. It's often referred to as being "in the zone." This state is marked by high levels of concentration, full involvement, and enjoyment in the process of the activity. It's considered optimal for performance and can lead to enhanced learning and satisfaction.
+Vygotskian Zone of Proximal Development (ZPD)
+: Lev Vygotsky, a Soviet psychologist, introduced the concept of the ZPD, which is the difference between what a learner can do without help and what they can achieve with guidance. In this zone, learning is maximized, as tasks are neither too easy (leading to boredom) nor too hard (leading to frustration). Instead, tasks are just challenging enough to stimulate growth and development.
+Transient Hypofrontality
+: This term refers to a temporary reduction of activity in the prefrontal cortex. During activities like meditation, deep concentration, or intense physical activities (like long-distance running), the prefrontal cortex���which is associated with higher cognitive functions such as self-reflection, moral reasoning, and rational thinking���might show decreased activity. This can lead to a feeling of decreased self-awareness, time distortion, and a sensation of unity.
+When you combine these concepts, you're exploring how to harness the brain's potential and achieve optimal performance. By aiming to operate within the ZPD, you're looking to challenge yourself just enough to induce flow. And by recognizing the benefits of transient hypofrontality, you're acknowledging the power of moments when our prefrontal cortex is less active, allowing other parts of our mind to take the lead.
+If you've been pondering these ideas, it suggests you're looking for strategies to optimize learning, productivity, and overall cognitive well-being. Engaging in activities that challenge you appropriately, seeking moments of deep concentration, and occasionally stepping back to let your mind wander or focus on the present can all be valuable tools in achieving this.
+1 / 1
+Simple Practice
+
+Haplopraxis is a game that combines elements from various games and inspirations including Stars!, Descent, Minesweeper, Bubble Pop, the "flying through space" screensaver, Commander Keen, MS Typing Tutor, Age of Empires, Waterworks Leaky Pipe game, and the concept of logical gate circuits.
+
+The game features an element of space exploration, where players visit planets and pop bubbles associated with vocabulary words.
+
+It includes a typing tutor aspect, thus serving as an educational game to help players improve their typing skills.
+
+Haplopraxis aims to simulate the evolution of the universe using Ising synchs.
+
+The game employs a Vygtoskian ladder of proximal graduations, adjusting its gameplay based on the skill level of the player. For infants, it simplifies into a bubble pop game; for elementary schoolers, it becomes a typing tutor; if no viewer is detected, it defaults to a screen saver tutorial.
+
+The game features a guidebot, which automatically plays through the tutorial, demonstrating possible gameplay and controls, and revealing Easter eggs.
+
+There is a global reset function, triggered by pressing the 'g' key, which returns all players to the start of the game, making them lose all progress. However, a setting called autoblink can protect players from a global reset, allowing them to keep their points.
+
+The game incorporates a strategy of finding the most nested bubble (innermost scope), and players are encouraged to blink when passing through the boundary of a bubble to avoid popping it.
+1 / 1
+ChatGPT
+Haplopraxis: A Multidimensional Gaming Experience
+Overview
+:
+Haplopraxis is a unique, immersive game drawing elements from a myriad of classic games. It aims to offer a multi-faceted experience, seamlessly blending education, strategy, and entertainment.
+Game Features
+:
+Space Exploration
+: Venture into the universe, visit celestial bodies, and engage with bubbles containing vocabulary words. Just like in the "flying through space" screensaver and Stars!, the universe is vast and waiting to be explored.
+Educational Typing Tutor
+: Hone your typing skills as the game challenges you with vocabulary words, reminiscent of MS Typing Tutor. This feature makes it ideal for students and individuals looking to enhance their typing proficiency.
+Vygotskian Ladder of Proximal Graduations
+: In line with Lev Vygotsky's educational theory, the game adjusts its complexity based on the player's skill level:
+Infants
+: A basic bubble-popping game.
+Elementary Students
+: A typing tutor.
+No Viewer Detected
+: A screensaver tutorial.
+Universe Simulation
+: The game simulates the evolution of the universe using Ising synchs, an advanced concept adding depth to gameplay.
+Guidebot
+: For beginners or those looking for a quick run-through, the guidebot will demonstrate the game's dynamics, controls, and even unveil hidden Easter eggs.
+Global Reset & Autoblink
+: By pressing the 'g' key, players can initiate a global reset, transporting all players to the game's start. However, if you have the autoblink setting on, you're safeguarded from this reset and can retain your accumulated points.
+Strategic Bubble Popping
+: The game encourages players to locate the most nested bubble (or the innermost scope). To successfully navigate through bubbles without popping them, players must blink while crossing a bubble's boundary.
+Inspiration
+:
+Haplopraxis proudly incorporates elements from diverse gaming realms:
+Space navigation from
+Stars!
+and
+Descent
+.
+Strategic thinking from
+Minesweeper
+.
+Bubble interaction inspired by
+Bubble Pop
+.
+The "flying through space" feel from popular screensavers.
+The adventurous spirit of
+Commander Keen
+.
+The educational aspect of
+MS Typing Tutor
+.
+The expansive universe reminiscent of
+Age of Empires
+.
+Logical puzzles akin to
+Waterworks Leaky Pipe
+game and logical gate circuits.
+Conclusion
+:
+Haplopraxis isn't just a game; it's an experience. Dive into the universe, enhance your typing skills, embark on strategic quests, and enjoy the game's adaptive nature that evolves with your skillset. Whether you're a novice or a seasoned gamer, Haplopraxis promises a captivating journey.
+1 / 1
+I was thinking that trying to infer the skill level of the player  was similar to evaluating the capabilities of agents.
+1 / 1
+ChatGPT
+Absolutely, the concept of dynamically gauging a player's skill level in a game like Haplopraxis can indeed be analogous to evaluating the capabilities of agents in machine learning. Let's explore this parallel further:
+1. Adaptability
+:
+Haplopraxis
+: The game adjusts its complexity based on the perceived skill level of the player, providing a tailored experience.
+Evaluating Agents
+: Machine learning models, particularly reinforcement learning agents, adapt to their environments. An agent's performance is assessed across varied scenarios to infer its capabilities.
+2. Continuous Feedback Loop
+:
+Haplopraxis
+: As players interact with the game, their actions provide real-time feedback. This feedback allows the game to infer the player's proficiency and adjust accordingly.
+Evaluating Agents
+: Agents are continuously evaluated based on their actions in a given environment. Their performance metrics provide a feedback loop, allowing for adjustment and fine-tuning of the model.
+3. Thresholds & Benchmarks
+:
+Haplopraxis
+: Specific benchmarks, like speed of typing or successful navigation through nested bubbles, can signify different skill levels, leading the game to transition between its modes.
+Evaluating Agents
+: Agents are often tested against certain benchmarks or thresholds to categorize their proficiency or capability in handling specific tasks.
+4. Bayesian Triangulation
+:
+Haplopraxis
+: If implemented, a Bayesian approach could continuously update the probability distribution of a player's skill level based on their in-game actions and outcomes.
+Evaluating Agents
+: Bayesian triangulation integrates different sources of evidence to make more accurate inferences about an agent's capabilities, updating beliefs based on new data.
+5. Goal-Oriented Evaluation
+:
+Haplopraxis
+: The primary objective is to keep the player engaged, learning, and challenged. Evaluating their skill level and adjusting the game dynamics ensures they remain in the Vygotskian zone of proximal development, avoiding boredom or overload.
+Evaluating Agents
+: The evaluation of agents is goal-oriented, assessing how well they perform specific tasks or achieve desired outcomes. Adjustments to their training or parameters are made to align them closer to these objectives.
+In essence, the dynamic evaluation and adjustment mechanisms in Haplopraxis mirror the methodologies used to assess machine learning agents. Both aim to ensure optimal performance and adaptability in their respective domains.
+1 / 1
+If you just hit random keys it changes to bubble pop (spherepop), assuming you are a cat or a toddler.
+1 / 1
+ChatGPT
+That's a clever design choice! By detecting random or erratic keypress patterns, Haplopraxis defaults to a simpler game mode, Spherepop, which might be more engaging for entities that can't follow the game's regular logic, like cats or toddlers. This feature emphasizes adaptability and user-centric design:
+Adaptive Difficulty
+: Recognizing random inputs can serve as a signal that the user is either not engaged with the current gameplay or is unable to comprehend it. By switching to a simpler game mode, Haplopraxis ensures that the user remains engaged.
+Inclusive Design
+: By catering to a wide range of users ��� from skilled gamers to infants and even pets ��� the game showcases inclusivity. This ensures that almost anyone (or any cat) interacting with the game has a meaningful experience.
+User Retention
+: By quickly adapting to the player's (or cat's) skill level, the game reduces the chances of the user becoming frustrated or bored, leading to longer play sessions and increased user retention.
+Behavioral Feedback Loop
+: The game's ability to detect random inputs and adjust its mode serves as a behavioral feedback mechanism. This dynamic adjustment can also be seen as a rudimentary form of behavior recognition, akin to how certain algorithms adjust content based on user interactions.
+This feature further strengthens the parallel between Haplopraxis's adaptive design and the evaluation of machine learning agents. Just as Haplopraxis adjusts gameplay based on user behavior, machine learning models adapt based on feedback from their environment to optimize performance.
+1 / 1
+A list of all of the topics we've discussed.
+1 / 1
+ChatGPT
+Of course! Here's a list of the main topics we've covered in our discussion:
+Machine Learning Systems
+: Pre-training and deploying for multiple tasks.
+Task-Oriented Evaluation
+: Challenges and limitations in robust evaluation.
+Behavioral Sciences
+: Using abstract capabilities like 'object permanence' and 'handling negation' to evaluate agents and language models.
+Triangulation in Animal Cognition
+: Contrasting capabilities with task demands.
+Bayesian Triangulation
+: The process of evaluating capabilities and biases of a model based on Bayesian methods.
+PyMC
+: An introduction to the Bayesian inference engine used for probabilistic programming.
+Markov Chain Monte Carlo (MCMC) Methods
+: Explanation and relevance in Bayesian modeling.
+Psychological Flow
+: Mention of the mental state and its relevance to the Vygotskian zone of proximal development.
+Haplopraxis
+: Description of the game and its various elements, inspiration, and adaptive features.
+Evaluating Player Skill Levels
+: Drawing a parallel between the game's ability to infer a player's skill level and evaluating capabilities of intelligent agents.
+Adaptive Gameplay in Haplopraxis
+: Spherepop as a response to random key inputs.
+Would you like more details or a recap on any specific topic from the list?
+1 / 1
+That seems like a good number of topics because there are eleven letters in Haplopraxis
+1 / 1
+ChatGPT
+Indeed, that's an interesting observation! The number of topics discussed matching the number of letters in "Haplopraxis" is a fun coincidence. If you have any other questions or if you'd like to delve deeper into any of these topics, let me know!
+1 / 1
+How about summarizing them as an acrostic poem, spelling out the title?
+1 / 1
+ChatGPT
+Sure! Let's use "Haplopraxis" as an acrostic to summarize our discussion:
+H
+ybrid methods, where AI blends tech and biology.
+A
+gents, intelligent, evaluated thoroughly.
+P
+sychological flow, a state of mind so key.
+L
+ogical gate circuits, systems interplay.
+O
+verview of a game, blending genres in a fray.
+P
+lanets to explore, with vocab bubbles to pop.
+R
+esetting globally, a function players can stop.
+A
+daptive challenges, for each player's own stage.
+X
+erox-like mimicking, where AI learns a new page.
+I
+nferring skill levels, from typing to mere play.
+S
+pherepop for random, when toddlers come to sway.
+I hope you like it!
+1 / 1
+It is pretty good. A final summary.
+1 / 1
+ChatGPT
+Of course! Here's a succinct summary of our discussion:
+We explored the intricate challenges and approaches to evaluating machine learning systems, emphasizing the importance of robust and task-oriented evaluations. We delved deep into Bayesian triangulation and its relevance in assessing capabilities. Psychological concepts like transient hypofrontality and the Vygotskian zone of proximal development were touched upon. The conversation transitioned to "Haplopraxis," a hypothetical game combining various inspirations, designed to adapt based on player skill, from toddlers to adults. This adaptability was likened to evaluating the capabilities of intelligent agents. The discourse culminated in a creative acrostic poem encapsulating our dialogue's breadth.
+1 / 1
+I decided to label the conversation Inferring System Capabilities.
+1 / 1
+ChatGPT
+That's a fitting title! "Inferring System Capabilities" aptly captures the essence of the discussion, especially considering the parallels drawn between evaluating machine learning systems and understanding a player's skill level in "Haplopraxis". This title effectively highlights the overarching theme of our conversation.
+1 / 1
+One more summary.
+1 / 1
+ChatGPT
+Certainly!
+Inferring System Capabilities:
+We delved into the intricacies of machine learning systems, particularly their evaluation across diverse tasks. We compared these evaluations to the adaptive nature of the game "Haplopraxis", which modifies its gameplay based on the player's skill level. Drawing from psychological principles like the Vygotskian zone of proximal development, we discussed the importance of the "just right" challenge level. The game's transition to simpler modes when random keys are pressed (like in bubble pop) serves as an analogy for adaptive systems understanding user capabilities. Through various game elements and Bayesian triangulation, we touched upon the concept of assessing and adapting to capabilities, whether it's a player in a game or an agent in a machine learning model.
+1 / 1
+ChatGPT may produce inaccurate information about people, places, or facts.
+ChatGPT August 3 Version
+?
+ChatGPT
+

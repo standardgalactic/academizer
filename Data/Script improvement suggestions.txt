@@ -1,0 +1,2493 @@
+Script improvement suggestions
+Historial del chat
+ChatGPT
+ChatGPT
+Sora
+Nuspeak Translator
+Jain Hive Tree
+Zettel Assistant
+Explorar GPT
+Proyectos
+Terminal Simulator
+Hoy
+CXD and AI Trust
+Script improvement suggestions
+Timeline Website Design
+Ayer
+Survival Guide
+������������ ���������� �� ��������
+7 d��as anteriores
+Oblicosm and Intersubjectivity Collapse
+Technosocietal Constructs
+Pastwatch Observer
+Critical Resistance
+Psychocinema and So Big
+Linux command for typing
+Simulate Typing with pv
+Script Improvement Advice
+Stone Piano Theory
+Massed-Spaced Learning in Cells
+Dynamic Mesh Network Design
+Psychocinema and Psychoanalysis
+Extra-Sensory Phenomenology
+Find font with logico
+Clear image cache Chrome
+30 d��as anteriores
+Mereology and Conceivability
+Anarchic Delusions
+Simulaci��n terminal de hackeo
+Check LFS Tracking Files
+Extra-Sensory Phenomenology
+Kawangware slum overview
+Okwagala omwaka omuggya
+Clickable Image Markdown
+Ver planes
+Acceso ilimitado, caracter��sticas de Team y m��s
+Nathaniel Guimond
+Abrir barra lateral
+ChatGPT
+o1
+ChatGPT
+o1
+Compartir
+Dijiste:
+Could I get this script improved? #!/bin/bash
+
+# Define progress and summary files
+progress_file="progress.log"
+summary_file="detailed-summary.txt"
+main_dir=$(pwd)
+
+# Function to check if a file is already processed
+is_processed() {
+    grep -Fxq "$1" "$main_dir/$progress_file"
+}
+
+# Create progress and summary files if they don't exist
+touch "$main_dir/$progress_file"
+touch "$main_dir/$summary_file"
+
+# Start logging script progress
+echo "Script started at $(date)" >> "$main_dir/$progress_file"
+echo "Summaries will be saved to $summary_file" >> "$main_dir/$progress_file"
+
+# Function to process text files in a directory
+process_files() {
+    local dir=$1
+    echo "Processing directory: $dir"
+    
+    # Iterate over each .txt file in the specified directory
+    for file in "$dir"/*.txt; do
+        # Skip if no .txt files are found
+        if [ ! -e "$file" ]; then
+            continue
+        fi
+
+        # Process the file if it's a regular file
+        if [ -f "$file" ]; then
+            local file_name=$(basename "$file")  # Get the file name only
+            
+            # Process only if not processed before
+            if ! is_processed "$file_name"; then
+                echo "Processing $file_name"
+                echo "Processing $file_name" >> "$main_dir/$progress_file"
+
+                # Create a temporary directory for the file's chunks
+                sanitized_name=$(basename "$file" | tr -d '[:space:]')
+                temp_dir=$(mktemp -d "$dir/tmp_${sanitized_name}_XXXXXX")
+                echo "Temporary directory created: $temp_dir" >> "$main_dir/$progress_file"
+
+                # Split the file into chunks of 200 lines each
+                split -l 200 "$file" "$temp_dir/chunk_"
+                echo "File split into chunks: $(find "$temp_dir" -type f)" >> "$main_dir/$progress_file"
+
+                # Summarize each chunk and append to the summary file
+                for chunk_file in "$temp_dir"/chunk_*; do
+                    [ -f "$chunk_file" ] || continue
+                    echo "Summarizing chunk: $(basename "$chunk_file")"
+                    ollama run vanilj/phi-4 "Summarize:" < "$chunk_file" | tee -a "$main_dir/$summary_file"
+                    echo "" >> "$main_dir/$summary_file"
+                done
+
+                # Remove the temporary directory
+                rm -rf "$temp_dir"
+                echo "Temporary directory $temp_dir removed" >> "$main_dir/$progress_file"
+
+                # Mark the file as processed
+                echo "$file_name" >> "$main_dir/$progress_file"
+            fi
+        fi
+    done
+}
+
+# Recursively process subdirectories
+process_subdirectories() {
+    local parent_dir=$1
+    
+    # Iterate over all subdirectories
+    for dir in "$parent_dir"/*/; do
+        if [ -d "$dir" ]; then
+            process_files "$dir"  # Process files in the subdirectory
+            process_subdirectories "$dir"  # Recursive call for nested subdirectories
+        fi
+    done
+}
+
+# Main execution
+process_files "$main_dir"  # Process files in the main directory
+process_subdirectories "$main_dir"  # Process files in subdirectories
+
+# Mark script completion
+echo "Script completed at $(date)" >> "$main_dir/$progress_file"
+ChatGPT
+Thought about script improvement for 14 seconds
+Below is an example of an ���improved��� script. The improvements focus on:
+Robustness
+:
+Using
+set -Eeuo pipefail
+to catch errors and undefined variables early.
+Checking for required commands (e.g.
+ollama
+) before proceeding.
+Properly handling filenames (e.g., using the full path in
+progress.log
+so files with the same name in different directories are treated uniquely).
+Maintainability
+:
+Introducing clear variables (e.g.
+CHUNK_LINES
+and
+MODEL_COMMAND
+) for easy updates.
+Adding optional usage instructions.
+Logging with timestamps.
+More verbose commentary to guide future modifications.
+Safety & Clarity
+:
+Avoiding repeated
+grep
+collisions by storing the entire path to processed files.
+Making it clear when no
+.txt
+files are found in a directory.
+Ensuring temporary directories and files are cleaned up even on errors (via
+trap
+).
+Feel free to tweak variable values, logging paths, or the summary prompt to meet your needs.
+bash
+Copiar c��digo
+#!/usr/bin/env bash
+set
+-Eeuo pipefail
+###############################################################################
+#  Usage:
+#    1) Make this script executable: chmod +x script.sh
+#    2) Run it from the directory you want to process: ./script.sh
+#
+#  Description:
+#    This script recursively processes all .txt files in the current directory
+#    and its subdirectories, splitting each file into chunks of a specified
+#    number of lines, running a summarization command, and appending the
+#    summaries to a summary file. It keeps track of processed files to prevent
+#    re-processing on subsequent runs.
+###############################################################################
+############################
+# Configuration Variables  #
+############################
+# Number of lines per chunk.
+CHUNK_LINES=200
+# The command/model used for summarization.
+# Adjust the model name, prompt, or the entire command as needed.
+MODEL_COMMAND=(
+"ollama"
+"run"
+"vanilj/phi-4"
+"Summarize:"
+)
+# Log/summary filenames (placed in the main directory).
+PROGRESS_FILE=
+"progress.log"
+SUMMARY_FILE=
+"detailed-summary.txt"
+#######################
+#  Preparatory Checks #
+#######################
+# Check if the required commands are available.
+# (Add more checks if you rely on other commands.)
+if
+!
+command
+-v
+"
+${MODEL_COMMAND[0]}
+"
+>/dev/null 2>&1;
+then
+echo
+"Error: '
+${MODEL_COMMAND[0]}
+' is not installed or not in PATH."
+exit
+1
+fi
+#########################
+#  Script Initialization#
+#########################
+# Store the absolute path to the directory from which the script is run.
+# If you'd rather store the script's own directory, you can use:
+#   main_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+main_dir=
+"
+$(pwd)
+"
+# Create the progress and summary files if they don���t exist.
+touch
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+touch
+"
+$main_dir
+/
+$SUMMARY_FILE
+"
+# Helper function: print message with timestamp to STDOUT and optionally to file
+log
+() {
+local
+message=
+"[
+${USER:-$(whoami)}
+@
+$(hostname)
+] [
+$(date '+%Y-%m-%d %H:%M:%S')
+] $*"
+echo
+"
+$message
+"
+echo
+"
+$message
+"
+>>
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+}
+log
+"Script started."
+log
+"Summaries will be saved to
+$SUMMARY_FILE
+."
+#########################
+#   Utility Functions   #
+#########################
+# Return 0 (true) if the file has already been processed, non-zero otherwise
+is_processed
+() {
+local
+file_path=
+"
+$1
+"
+grep -Fxq
+"
+$file_path
+"
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+}
+# Mark the file as processed by writing its full path to the progress file
+mark_processed
+() {
+local
+file_path=
+"
+$1
+"
+echo
+"
+$file_path
+"
+>>
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+}
+# Remove temporary directories on script exit or error
+cleanup_tempdirs
+() {
+if
+[[ -n
+"
+${TEMP_DIRS_CREATED:-}
+"
+]];
+then
+for
+tmpd
+in
+$TEMP_DIRS_CREATED
+;
+do
+if
+[[ -d
+"
+$tmpd
+"
+]];
+then
+rm
+-rf
+"
+$tmpd
+"
+log
+"Cleaned up temporary directory:
+$tmpd
+"
+fi
+done
+fi
+}
+# Trap to ensure we clean up temp directories on exit or error
+trap
+cleanup_tempdirs EXIT
+############################
+#   Processing Functions   #
+############################
+process_files_in_directory
+() {
+local
+dir
+=
+"
+$1
+"
+log
+"Processing directory:
+$dir
+"
+# Find all .txt files in the directory (not subdirectories).
+# Using a glob here is simpler, but you could use find if desired:
+#   find "$dir" -maxdepth 1 -type f -name '*.txt'
+shopt
+-s nullglob
+local
+txt_files=(
+"
+$dir
+"
+/*.txt)
+shopt
+-u nullglob
+# If no .txt files exist, skip
+if
+[[
+${#txt_files[@]}
+-eq 0 ]];
+then
+log
+"No .txt files found in
+$dir
+."
+return
+fi
+for
+file
+in
+"
+${txt_files[@]}
+"
+;
+do
+# Process the file if it���s a regular file and not already processed
+if
+[[ -f
+"
+$file
+"
+&& ! -L
+"
+$file
+"
+]];
+then
+if
+! is_processed
+"
+$file
+"
+;
+then
+local
+file_name
+        file_name=
+"
+$(basename
+"
+$file
+"
+)
+"
+log
+"Processing
+$file
+(filename:
+$file_name
+)"
+# Create a temporary directory for chunks
+# We remove whitespace from the file name to avoid issues
+local
+sanitized_name
+        sanitized_name=
+"
+$(echo
+"
+$file_name
+"
+| tr -d '[:space:]')
+"
+local
+temp_dir
+        temp_dir=
+"
+$(mktemp -d
+"
+$dir
+/tmp_
+${sanitized_name}
+_XXXXXX"
+)
+"
+log
+"Created temporary directory:
+$temp_dir
+"
+# Keep track of created temp dirs so we can clean them up on errors
+TEMP_DIRS_CREATED=
+"
+${TEMP_DIRS_CREATED:-}
+$temp_dir
+"
+# Split the file into chunks of CHUNK_LINES lines each
+split
+-l
+"
+$CHUNK_LINES
+"
+--
+"
+$file
+"
+"
+$temp_dir
+/chunk_"
+log
+"Split
+$file
+into chunks of
+$CHUNK_LINES
+lines each in
+$temp_dir
+."
+# Summarize each chunk and append to the summary file
+for
+chunk_file
+in
+"
+$temp_dir
+"
+/chunk_*;
+do
+[[ -f
+"
+$chunk_file
+"
+]] ||
+continue
+local
+chunk_name
+          chunk_name=
+"
+$(basename
+"
+$chunk_file
+"
+)
+"
+log
+"Summarizing chunk:
+$chunk_name
+"
+# Execute the summarization command
+# The entire command array is expanded with "${MODEL_COMMAND[@]}"
+# so it can handle multiple args properly.
+"
+${MODEL_COMMAND[@]}
+"
+<
+"
+$chunk_file
+"
+>>
+"
+$main_dir
+/
+$SUMMARY_FILE
+"
+2>>
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+# Add an extra blank line after each chunk���s summary
+echo
+""
+>>
+"
+$main_dir
+/
+$SUMMARY_FILE
+"
+done
+# Mark the file as processed
+mark_processed
+"
+$file
+"
+log
+"Marked
+$file
+as processed."
+else
+log
+"Skipping
+$file
+(already processed)."
+fi
+fi
+done
+}
+process_subdirectories_recursively
+() {
+local
+parent_dir=
+"
+$1
+"
+# Iterate over all subdirectories
+# If directory names contain spaces, this for-loop will still handle them
+# because the wildcard expands properly into separate items for subdirectories.
+for
+dir
+in
+"
+$parent_dir
+"
+/*/;
+do
+[[ -d
+"
+$dir
+"
+]] ||
+continue
+process_files_in_directory
+"
+$dir
+"
+process_subdirectories_recursively
+"
+$dir
+"
+done
+}
+###################
+#   Main Routine  #
+###################
+# Process top-level .txt files in the main directory
+process_files_in_directory
+"
+$main_dir
+"
+# Then recursively process subdirectories
+process_subdirectories_recursively
+"
+$main_dir
+"
+log
+"Script completed."
+Notable Changes Explained
+set -Eeuo pipefail
+-E
+ensures that traps on ERR are inherited by functions and subshells.
+-e
+makes the script exit on any command returning a non-zero status (unless in a conditional test).
+-u
+prevents using undefined variables.
+-o pipefail
+ensures that any command in a pipeline failing causes the whole pipeline to fail.
+Full path in progress log
+Instead of just storing
+basename "$file"
+, we store
+"$file"
+itself in the progress log. This ensures that two files named
+data.txt
+in different subdirectories won���t collide in the log.
+log
+function
+Prints a timestamped message to both
+stdout
+and the progress log for consistent logging.
+Trap and cleanup
+If the script is interrupted (Ctrl+C) or any error occurs, we automatically remove temporary directories.
+Command array
+Storing the summarization invocation in an array (
+MODEL_COMMAND
+) makes it easier to manage and avoid quoting pitfalls if the command or arguments have spaces.
+Better handling of
+.txt
+detection
+Using
+shopt -s nullglob
+ensures the script doesn���t process a literal
+*.txt
+if no text files exist; it simply results in an empty array.
+Usage comment
+Providing usage instructions helps future maintainers (or yourself) remember how to run or extend the script.
+You can tailor all of these elements (logging verbosity, chunk size, file output, dependency checks, etc.) to fit your specific requirements.
+o1
+Dijiste:
+Ok these are the files I will be summarizing, they are all in the current directory this time (although sometimes I have them in folders with the channel name) The channel name is Intelligence.ai. 'Aaron Black��� Becoming an Author (Episode 6) [mlSAtdzbg9g].en.vtt'
+'Collaboration as a Science��� An interview with Fanny Sie about open science networks. [YXn0p1ZqB6s].en.vtt'
+'Creativity & problem solving with AlphaZero, Tom Zahavy ��� Principles of Designing Intelligence #11 [8UzeBdnpGcc].en.vtt'
+'Going beyond JavaScript and Actor-Based Programming��� an Interview with Douglas Crockford [VwisE497Nsg].en.vtt'
+'Hala Nelson on Setting up Data & to Succeed ��� Principles of Designing Intelligence Episode 12 [Z5_XOLOskag].en.vtt'
+'Michael Levin��� On collective intelligence, academic publishing, and programmable biology (Ep. #5). [95VvXSOAjB8].en.vtt'
+'Prachee Avasthi, CSO of Arcadia Science, on Open Science ��� Principles of Designing Intelligence #10 [nHddqni7-4M].en.vtt'
+'Predicting what believe are thinking and their behavior, at scale, with Crowd Intelligence. [h_zXiYpF2s0].en.vtt'
+'The Opportunity to Reinvent Collaboration��� Jim Kalbach, Chief Evangelist, Mural (Episode 7) [u_HNEc2B9aA].en.vtt'
+'The Reward Hypothesis with David Abel ��� Principles of Designing Intelligence #9 [d1yZcjwlW7w].en.vtt'
+'Venturing from Spreadsheets to Startups��� The journey of venture capitalist Heidi Roizen (Episode #8) [Qm6Vj5pN03U].en.vtt'
+ 
+'���Modelling the Modeller���, a conversation about the brain with Dr. Karl Friston [TeHSUNOHvvM].en.vtt'
+ChatGPT
+Thought about summarizing VTT files for 9 seconds
+Below is an example script that processes
+.vtt
+files (or both .vtt and .txt) in the current directory (and optionally subdirectories). It follows the same logic as the previously improved script���splitting files into chunks, summarizing each chunk, and logging the progress���just adjusted to handle VTT files instead of (or in addition to) TXT files.
+Tip
+: Since
+.vtt
+(WebVTT) files often contain timestamped subtitles, you may want to pre-process them (e.g., removing timestamps or metadata) before summarizing. As-is, the script simply treats them like text files.
+Sample Script (Handling Both
+.vtt
+and
+.txt
+)
+Save this as something like
+summarize.sh
+, then run:
+bash
+Copiar c��digo
+#!/usr/bin/env bash
+set
+-Eeuo pipefail
+###############################################################################
+#  Usage:
+#    1) Make this script executable: chmod +x summarize.sh
+#    2) Run it: ./summarize.sh
+#
+#  Description:
+#    This script processes all .vtt (and optionally .txt) files in the current
+#    directory and any subdirectories. It splits each file into chunks, runs
+#    a summarization command, and writes the summaries to a summary file. It
+#    logs files that were processed to avoid re-summarizing them in later runs.
+###############################################################################
+############################
+# Configuration Variables  #
+############################
+# Number of lines per chunk. Adjust as you wish.
+CHUNK_LINES=200
+# The command/model used for summarization.
+# Adjust the model name, prompt, or the entire command as needed.
+MODEL_COMMAND=(
+"ollama"
+"run"
+"vanilj/phi-4"
+"Summarize:"
+)
+# Log/summary filenames (placed in the main directory).
+PROGRESS_FILE=
+"progress.log"
+SUMMARY_FILE=
+"detailed-summary.txt"
+#######################
+#  Preparatory Checks #
+#######################
+# Ensure required commands are available.
+if
+!
+command
+-v
+"
+${MODEL_COMMAND[0]}
+"
+>/dev/null 2>&1;
+then
+echo
+"Error: '
+${MODEL_COMMAND[0]}
+' is not installed or not in PATH."
+exit
+1
+fi
+#########################
+#  Script Initialization#
+#########################
+# Store the absolute path to the directory from which the script is run.
+main_dir=
+"
+$(pwd)
+"
+# Create the progress and summary files if they don���t exist.
+touch
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+touch
+"
+$main_dir
+/
+$SUMMARY_FILE
+"
+# Logging helper function
+log
+() {
+local
+message=
+"[
+${USER:-$(whoami)}
+@
+$(hostname)
+] [
+$(date '+%Y-%m-%d %H:%M:%S')
+] $*"
+echo
+"
+$message
+"
+echo
+"
+$message
+"
+>>
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+}
+log
+"Script started."
+log
+"Summaries will be saved to
+$SUMMARY_FILE
+."
+#########################
+#   Utility Functions   #
+#########################
+# Return 0 if the file has already been processed, non-zero otherwise
+is_processed
+() {
+local
+file_path=
+"
+$1
+"
+grep -Fxq
+"
+$file_path
+"
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+}
+# Mark the file as processed by writing its full path to the progress file
+mark_processed
+() {
+local
+file_path=
+"
+$1
+"
+echo
+"
+$file_path
+"
+>>
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+}
+# Clean up any temporary directories on script exit or error
+cleanup_tempdirs
+() {
+if
+[[ -n
+"
+${TEMP_DIRS_CREATED:-}
+"
+]];
+then
+for
+tmpd
+in
+$TEMP_DIRS_CREATED
+;
+do
+if
+[[ -d
+"
+$tmpd
+"
+]];
+then
+rm
+-rf
+"
+$tmpd
+"
+log
+"Cleaned up temporary directory:
+$tmpd
+"
+fi
+done
+fi
+}
+trap
+cleanup_tempdirs EXIT
+############################
+#  Processing Functions    #
+############################
+# Process .vtt (and/or .txt) files in a single directory
+process_files_in_directory
+() {
+local
+dir
+=
+"
+$1
+"
+log
+"Processing directory:
+$dir
+"
+# If you also want to process .txt files, include them in the arrays:
+shopt
+-s nullglob
+local
+vtt_files=(
+"
+$dir
+"
+/*.vtt)
+local
+txt_files=(
+"
+$dir
+"
+/*.txt)
+shopt
+-u nullglob
+# Merge vtt + txt into a single array, if you want both
+# If you ONLY want .vtt, remove txt_files from the array
+local
+all_files=(
+"
+${vtt_files[@]}
+"
+"
+${txt_files[@]}
+"
+)
+if
+[[
+${#all_files[@]}
+-eq 0 ]];
+then
+log
+"No matching files (.vtt or .txt) found in
+$dir
+."
+return
+fi
+for
+file
+in
+"
+${all_files[@]}
+"
+;
+do
+# Make sure it's a regular file and not already processed
+if
+[[ -f
+"
+$file
+"
+&& ! -L
+"
+$file
+"
+]];
+then
+if
+! is_processed
+"
+$file
+"
+;
+then
+local
+file_name
+        file_name=
+"
+$(basename
+"
+$file
+"
+)
+"
+log
+"Processing
+$file
+(filename:
+$file_name
+)"
+# Create a temporary directory for chunks
+local
+sanitized_name
+        sanitized_name=
+"
+$(echo
+"
+$file_name
+"
+| tr -d '[:space:]')
+"
+local
+temp_dir
+        temp_dir=
+"
+$(mktemp -d
+"
+$dir
+/tmp_
+${sanitized_name}
+_XXXXXX"
+)
+"
+log
+"Created temporary directory:
+$temp_dir
+"
+TEMP_DIRS_CREATED=
+"
+${TEMP_DIRS_CREATED:-}
+$temp_dir
+"
+# Split the file into chunks of CHUNK_LINES lines each
+split
+-l
+"
+$CHUNK_LINES
+"
+--
+"
+$file
+"
+"
+$temp_dir
+/chunk_"
+log
+"Split
+$file
+into chunks of
+$CHUNK_LINES
+lines each in
+$temp_dir
+."
+# Summarize each chunk
+for
+chunk_file
+in
+"
+$temp_dir
+"
+/chunk_*;
+do
+[[ -f
+"
+$chunk_file
+"
+]] ||
+continue
+local
+chunk_name
+          chunk_name=
+"
+$(basename
+"
+$chunk_file
+"
+)
+"
+log
+"Summarizing chunk:
+$chunk_name
+"
+"
+${MODEL_COMMAND[@]}
+"
+<
+"
+$chunk_file
+"
+>>
+"
+$main_dir
+/
+$SUMMARY_FILE
+"
+2>>
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+echo
+""
+>>
+"
+$main_dir
+/
+$SUMMARY_FILE
+"
+done
+# Mark the file as processed
+mark_processed
+"
+$file
+"
+log
+"Marked
+$file
+as processed."
+else
+log
+"Skipping
+$file
+(already processed)."
+fi
+fi
+done
+}
+# Recurse subdirectories (optional)
+process_subdirectories_recursively
+() {
+local
+parent_dir=
+"
+$1
+"
+for
+dir
+in
+"
+$parent_dir
+"
+/*/;
+do
+[[ -d
+"
+$dir
+"
+]] ||
+continue
+process_files_in_directory
+"
+$dir
+"
+process_subdirectories_recursively
+"
+$dir
+"
+done
+}
+###################
+#   Main Routine  #
+###################
+# Process top-level .vtt/.txt files in the main directory
+process_files_in_directory
+"
+$main_dir
+"
+# If you have nested folders (e.g., "Intelligence.ai" subdirectory),
+# uncomment the line below:
+# process_subdirectories_recursively "$main_dir"
+log
+"Script completed."
+How To Use This Script
+Save the script
+above as
+summarize.sh
+(or whatever name you prefer).
+Make it executable
+:
+bash
+Copiar c��digo
+chmod
++x summarize.sh
+Run it in the directory
+containing your
+.vtt
+files (and/or subdirectories):
+bash
+Copiar c��digo
+./summarize.sh
+By default, the script looks for
+.vtt
+and
+.txt
+files in the current directory, processes them, and appends summaries to
+detailed-summary.txt
+.
+It records processed files in
+progress.log
+so that it won���t re-summarize them on subsequent runs.
+Check the Summaries
+:
+Open
+detailed-summary.txt
+to review the appended summaries.
+(Optional) Turn on Subdirectory Processing
+If you want to process subdirectories (e.g., a folder named
+Intelligence.ai
+), uncomment the
+process_subdirectories_recursively "$main_dir"
+line near the bottom of the script.
+Optional Preprocessing for VTT Files
+Since
+.vtt
+files often contain timestamps and cues, you may want to strip or transform them before splitting/summarizing. For example, you might use a command like:
+bash
+Copiar c��digo
+sed -E
+'s/[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}//g'
+file.en.vtt
+���to remove timestamp lines. You could integrate that into the script if desired, e.g., by writing a temporary cleaned copy of each
+.vtt
+before chunking. But that���s entirely optional and depends on your summarization quality needs.
+o1
+Dijiste:
+Add the preprocessing step.  Maybe it should give the title to the summarizer as well?
+ChatGPT
+Thought about VTT preprocessing and summarization for 9 seconds
+Below is an
+enhanced script
+that:
+Preprocesses
+.vtt
+files
+to remove typical subtitle metadata (e.g.
+WEBVTT
+, numeric sequence lines, timestamps of the form
+00:00:00.000 --> 00:00:00.000
+).
+Inserts the file name
+in the prompt so that the summarizer sees a descriptive heading.
+Note
+: The preprocessing step here is
+basic
+and removes lines matching common patterns in
+.vtt
+files. Feel free to adapt it to your particular needs (for instance, if you want to keep speaker labels or other metadata).
+Script:
+summarize.sh
+bash
+Copiar c��digo
+#!/usr/bin/env bash
+set
+-Eeuo pipefail
+###############################################################################
+#  Usage:
+#    1) Make it executable:  chmod +x summarize.sh
+#    2) Run in the directory that has .vtt (and/or .txt) files:
+#         ./summarize.sh
+#
+#  Description:
+#    This script processes .vtt (and optionally .txt) files, removing certain
+#    WebVTT metadata (like timestamps) before splitting them into chunks.
+#    It then sends each chunk to a summarization model. The summaries and
+#    progress logs are saved to disk.
+#
+#    By default, it only processes the current directory. If you want it to
+#    recurse into subdirectories, uncomment the relevant line near the end.
+###############################################################################
+############################
+# Configuration Variables  #
+############################
+# Number of lines per chunk.
+CHUNK_LINES=200
+# The command/model used for summarization.
+# Adjust the command name, arguments, or prompt as needed.
+MODEL_COMMAND=(
+"ollama"
+"run"
+"vanilj/phi-4"
+)
+# Log/summary filenames (will be placed in the main directory).
+PROGRESS_FILE=
+"progress.log"
+SUMMARY_FILE=
+"detailed-summary.txt"
+#######################
+#  Preparatory Checks #
+#######################
+if
+!
+command
+-v
+"
+${MODEL_COMMAND[0]}
+"
+>/dev/null 2>&1;
+then
+echo
+"Error: '
+${MODEL_COMMAND[0]}
+' is not installed or not in PATH."
+exit
+1
+fi
+#########################
+#  Script Initialization#
+#########################
+# The directory where the script is run:
+main_dir=
+"
+$(pwd)
+"
+# Create log/summary files if they don't exist.
+touch
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+touch
+"
+$main_dir
+/
+$SUMMARY_FILE
+"
+# Helper function to log with timestamps both to screen and progress file.
+log
+() {
+local
+message=
+"[
+${USER:-$(whoami)}
+@
+$(hostname)
+] [
+$(date '+%Y-%m-%d %H:%M:%S')
+] $*"
+echo
+"
+$message
+"
+echo
+"
+$message
+"
+>>
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+}
+log
+"Script started."
+log
+"Summaries will be saved to
+$SUMMARY_FILE
+."
+#########################
+#   Utility Functions   #
+#########################
+# Return 0 if file path is recorded in PROGRESS_FILE, i.e. already processed.
+is_processed
+() {
+local
+file_path=
+"
+$1
+"
+grep -Fxq
+"
+$file_path
+"
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+}
+# Record that we've processed this file path (so we skip it next time).
+mark_processed
+() {
+local
+file_path=
+"
+$1
+"
+echo
+"
+$file_path
+"
+>>
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+}
+# Clean up temporary directories on exit or error.
+cleanup_tempdirs
+() {
+if
+[[ -n
+"
+${TEMP_DIRS_CREATED:-}
+"
+]];
+then
+for
+tmpd
+in
+$TEMP_DIRS_CREATED
+;
+do
+if
+[[ -d
+"
+$tmpd
+"
+]];
+then
+rm
+-rf
+"
+$tmpd
+"
+log
+"Cleaned up temporary directory:
+$tmpd
+"
+fi
+done
+fi
+}
+trap
+cleanup_tempdirs EXIT
+############################
+#  Preprocessing Functions #
+############################
+# Simple function to remove common VTT metadata from a file:
+#   - Lines starting with "WEBVTT"
+#   - Lines containing " --> " (timestamps)
+#   - Lines that are purely numeric (subtitle index lines)
+#
+# The cleaned contents go to stdout.
+preprocess_vtt
+() {
+local
+file=
+"
+$1
+"
+cat
+"
+$file
+"
+\
+    | sed -E
+'s/[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}//g'
+\
+    | grep -v
+'^WEBVTT'
+\
+    | grep -vE
+'^[0-9]+$'
+}
+############################
+#  Processing Functions    #
+############################
+# Process .vtt (and/or .txt) files in a given directory (non-recursive)
+process_files_in_directory
+() {
+local
+dir
+=
+"
+$1
+"
+log
+"Processing directory:
+$dir
+"
+# If you only want .vtt, just remove the .txt references below:
+shopt
+-s nullglob
+local
+vtt_files=(
+"
+$dir
+"
+/*.vtt)
+local
+txt_files=(
+"
+$dir
+"
+/*.txt)
+shopt
+-u nullglob
+# Combine the two arrays if you want to handle both filetypes.
+local
+all_files=(
+"
+${vtt_files[@]}
+"
+"
+${txt_files[@]}
+"
+)
+# If no relevant files found, return.
+if
+[[
+${#all_files[@]}
+-eq 0 ]];
+then
+log
+"No .vtt or .txt files found in
+$dir
+."
+return
+fi
+for
+file
+in
+"
+${all_files[@]}
+"
+;
+do
+if
+[[ -f
+"
+$file
+"
+&& ! -L
+"
+$file
+"
+]];
+then
+if
+! is_processed
+"
+$file
+"
+;
+then
+local
+file_name
+        file_name=
+"
+$(basename
+"
+$file
+"
+)
+"
+log
+"Processing
+$file
+(filename:
+$file_name
+)"
+# Create a temp dir to store preprocessed or chunked files
+local
+sanitized_name
+        sanitized_name=
+"
+$(echo
+"
+$file_name
+"
+| tr -d '[:space:]')
+"
+local
+temp_dir
+        temp_dir=
+"
+$(mktemp -d
+"
+$dir
+/tmp_
+${sanitized_name}
+_XXXXXX"
+)
+"
+TEMP_DIRS_CREATED=
+"
+${TEMP_DIRS_CREATED:-}
+$temp_dir
+"
+log
+"Created temporary directory:
+$temp_dir
+"
+# 1) Preprocess the file if it's .vtt; if it's .txt, we can skip
+local
+preprocessed_file=
+"
+$temp_dir
+/preprocessed.txt"
+if
+[[
+"
+$file
+"
+== *.vtt ]];
+then
+preprocess_vtt
+"
+$file
+"
+>
+"
+$preprocessed_file
+"
+else
+# If it's a .txt, copy as-is
+cp
+"
+$file
+"
+"
+$preprocessed_file
+"
+fi
+# 2) Split the preprocessed file into chunks
+split
+-l
+"
+$CHUNK_LINES
+"
+--
+"
+$preprocessed_file
+"
+"
+$temp_dir
+/chunk_"
+log
+"Split
+$file
+into chunks of
+$CHUNK_LINES
+lines each."
+# 3) Summarize each chunk, injecting the file name into the prompt
+for
+chunk_file
+in
+"
+$temp_dir
+"
+/chunk_*;
+do
+[[ -f
+"
+$chunk_file
+"
+]] ||
+continue
+local
+chunk_name
+          chunk_name=
+"
+$(basename
+"
+$chunk_file
+"
+)
+"
+log
+"Summarizing chunk:
+$chunk_name
+"
+# We build a small inline prompt that includes the original filename
+{
+echo
+"Summarize the following transcript from the file: \"
+$file_name
+\""
+echo
+"--------------------------------------------------------------"
+cat
+"
+$chunk_file
+"
+} |
+"
+${MODEL_COMMAND[@]}
+"
+>>
+"
+$main_dir
+/
+$SUMMARY_FILE
+"
+2>>
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+# Add a blank line after each chunk���s summary
+echo
+""
+>>
+"
+$main_dir
+/
+$SUMMARY_FILE
+"
+done
+# 4) Mark the file as processed
+mark_processed
+"
+$file
+"
+log
+"Marked
+$file
+as processed."
+else
+log
+"Skipping
+$file
+(already processed)."
+fi
+fi
+done
+}
+# Recursively process subdirectories (optional; uncomment to enable)
+process_subdirectories_recursively
+() {
+local
+parent_dir=
+"
+$1
+"
+for
+dir
+in
+"
+$parent_dir
+"
+/*/;
+do
+[[ -d
+"
+$dir
+"
+]] ||
+continue
+process_files_in_directory
+"
+$dir
+"
+process_subdirectories_recursively
+"
+$dir
+"
+done
+}
+###################
+#   Main Routine  #
+###################
+# 1) Process top-level .vtt / .txt files
+process_files_in_directory
+"
+$main_dir
+"
+# 2) If you have subdirectories named after channels like "Intelligence.ai",
+#    uncomment below to process them recursively:
+# process_subdirectories_recursively "$main_dir"
+log
+"Script completed."
+Key Changes & Explanations
+Preprocessing
+The function
+preprocess_vtt()
+uses a quick combination of
+sed
+and
+grep
+to remove:
+Timestamps of the form
+00:00:00.000 --> 00:00:00.000
+Lines starting with
+WEBVTT
+Numeric-only lines (often used to index subtitles)
+For
+.txt
+files, it simply copies them as-is (no cleaning).
+Summarization Prompt
+Before summarizing each chunk, the script prints a small header:
+bash
+Copiar c��digo
+echo
+"Summarize the following transcript from the file: \"
+$file_name
+\""
+...
+This helps the summarizer incorporate the file title/context into its summary.
+Chunking and Summarizing
+Each preprocessed file is split into chunks of
+CHUNK_LINES
+(default = 200).
+You can adjust the
+CHUNK_LINES
+value if you find the model timing out or if you prefer bigger/smaller segments.
+Logging & Progress Tracking
+progress.log
+stores every step and also records which files were processed.
+detailed-summary.txt
+accumulates all chunk summaries in order.
+The script checks if a file is already in
+progress.log
+(meaning we���ve processed it before). If so, it skips that file on subsequent runs.
+Subdirectory Processing
+By default, it only processes files in the current directory.
+If you place your
+.vtt
+files in, for example, a folder called
+Intelligence.ai
+,
+uncomment
+:
+bash
+Copiar c��digo
+process_subdirectories_recursively
+"
+$main_dir
+"
+This will recursively visit each subdirectory, call
+process_files_in_directory
+, and do the same steps.
+Usage Reminders
+Make the Script Executable
+bash
+Copiar c��digo
+chmod
++x summarize.sh
+Run the Script
+In the same folder as your
+.vtt
+files (or with subfolders containing
+.vtt/.txt
+):
+bash
+Copiar c��digo
+./summarize.sh
+Check Your Summaries
+Open
+detailed-summary.txt
+to see the final appended summaries.
+Re-run
+If you run the script again, it will skip any files that were fully processed before (since they���re noted in
+progress.log
+). Remove or clear that log if you wish to reprocess.
+o1
+Dijiste:
+It says summarizing but I don't know if it's running ollama or not i used tail -f detailed-summary.txt to follow it and it doesn't look like it removed the timestamps: oning us in your book and coaching us along the way.
+
+Now, I want to dive into the topic of Networks. This is an area where I feel there's a lot we can explore together.
+
+---
+
+Feel free to ask if you need further assistance or specific details added!
+
+
+It looks like you're working with a transcript that includes timestamps and some formatting for spoken content, possibly from an audio recording or video. The text seems to be highlighting specific moments where the speaker mentions certain topics or events.
+
+Here's a breakdown of what you've provided:
+
+1. **Timestamps**: These are likely indicating when in the recording each segment starts.
+2. **Content**: It includes direct speech with some annotations for emphasis (e.g., "um", "frankly").
+3. **Topics Mentioned**:
+   - Joining a network or club related to writing.
+ChatGPT
+Thought about VTT preprocessing and model invocation for 14 seconds
+Below is an
+updated script
+with the following adjustments:
+More robust timestamp removal
+:
+Instead of a single regex, we remove
+any line
+containing
+-->
+(typical of VTT cue lines).
+We also remove lines starting with
+WEBVTT
+and purely numeric lines (often the cue index).
+This should handle most standard
+.vtt
+subtitle formats���even if timestamps vary slightly.
+More explicit summarization prompt
+:
+We now instruct the model to provide a concise summary, ignoring timestamps or irrelevant details.
+Additional logging
+to confirm Ollama is being called**:
+We log the exact command that���s run on each chunk.
+You can watch
+tail -f progress.log
+to confirm it���s invoking Ollama.
+Debugging tips
+:
+Near the bottom, there���s a short ���Debugging Tips��� section with suggestions if it still doesn���t look like the script is summarizing.
+summarize.sh
+bash
+Copiar c��digo
+#!/usr/bin/env bash
+set
+-Eeuo pipefail
+###############################################################################
+#  Usage:
+#    1) Make it executable:  chmod +x summarize.sh
+#    2) Run in the directory that has .vtt (and/or .txt) files:
+#         ./summarize.sh
+#
+#  Description:
+#    - Processes .vtt files by removing timestamps (and other typical cues).
+#    - Processes .txt files "as is."
+#    - Splits each file into chunks, calls Ollama to summarize each chunk.
+#    - Logs progress to progress.log and outputs all summaries to
+#      detailed-summary.txt.
+###############################################################################
+############################
+# Configuration Variables  #
+############################
+# Number of lines per chunk.
+CHUNK_LINES=200
+# The command/model used for summarization. Adjust as needed.
+# Example:
+#  MODEL_COMMAND=("ollama" "run" "vanilj/phi-4")
+MODEL_COMMAND=(
+"ollama"
+"run"
+"vanilj/phi-4"
+)
+# Log/summary filenames
+PROGRESS_FILE=
+"progress.log"
+SUMMARY_FILE=
+"detailed-summary.txt"
+#######################
+#  Preparatory Checks #
+#######################
+if
+!
+command
+-v
+"
+${MODEL_COMMAND[0]}
+"
+>/dev/null 2>&1;
+then
+echo
+"Error: '
+${MODEL_COMMAND[0]}
+' is not installed or not in PATH."
+exit
+1
+fi
+#########################
+#  Script Initialization#
+#########################
+main_dir=
+"
+$(pwd)
+"
+# The directory where this script is being run
+# Create the progress and summary files if they don't exist
+touch
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+touch
+"
+$main_dir
+/
+$SUMMARY_FILE
+"
+# Helper function to log with timestamps
+log
+() {
+local
+message=
+"[
+${USER:-$(whoami)}
+@
+$(hostname)
+] [
+$(date '+%Y-%m-%d %H:%M:%S')
+] $*"
+echo
+"
+$message
+"
+echo
+"
+$message
+"
+>>
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+}
+log
+"Script started."
+log
+"Summaries will be appended to
+$SUMMARY_FILE
+"
+#########################
+#   Utility Functions   #
+#########################
+# Return 0 (true) if $1 is in $PROGRESS_FILE
+is_processed
+() {
+local
+file_path=
+"
+$1
+"
+grep -Fxq
+"
+$file_path
+"
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+}
+# Mark file as processed
+mark_processed
+() {
+local
+file_path=
+"
+$1
+"
+echo
+"
+$file_path
+"
+>>
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+}
+# Temporary dir cleanup
+cleanup_tempdirs
+() {
+if
+[[ -n
+"
+${TEMP_DIRS_CREATED:-}
+"
+]];
+then
+for
+tmpd
+in
+$TEMP_DIRS_CREATED
+;
+do
+if
+[[ -d
+"
+$tmpd
+"
+]];
+then
+rm
+-rf
+"
+$tmpd
+"
+log
+"Cleaned up temporary directory:
+$tmpd
+"
+fi
+done
+fi
+}
+trap
+cleanup_tempdirs EXIT
+############################
+#  Preprocessing Function  #
+############################
+# Removes typical VTT metadata:
+#   - Lines containing '-->' (timestamps/cues)
+#   - Lines that start with 'WEBVTT'
+#   - Lines that are purely numeric (cue indexes)
+#   - Everything else is left untouched
+preprocess_vtt
+() {
+local
+file=
+"
+$1
+"
+# Remove lines with '-->', lines beginning with 'WEBVTT', or purely numeric
+grep -v --
+'-->'
+"
+$file
+"
+\
+    | grep -v
+'^WEBVTT'
+\
+    | grep -vE
+'^[0-9]+$'
+}
+############################
+#  Processing  Function    #
+############################
+process_files_in_directory
+() {
+local
+dir
+=
+"
+$1
+"
+log
+"Processing directory:
+$dir
+"
+# Collect .vtt and .txt (change as needed)
+shopt
+-s nullglob
+local
+vtt_files=(
+"
+$dir
+"
+/*.vtt)
+local
+txt_files=(
+"
+$dir
+"
+/*.txt)
+shopt
+-u nullglob
+# Combine them if we want to handle both
+local
+all_files=(
+"
+${vtt_files[@]}
+"
+"
+${txt_files[@]}
+"
+)
+# Skip if none found
+if
+[[
+${#all_files[@]}
+-eq 0 ]];
+then
+log
+"No .vtt or .txt files found in
+$dir
+"
+return
+fi
+for
+file
+in
+"
+${all_files[@]}
+"
+;
+do
+# Skip symlinks and re-processed files
+if
+[[ -f
+"
+$file
+"
+&& ! -L
+"
+$file
+"
+]];
+then
+if
+! is_processed
+"
+$file
+"
+;
+then
+local
+file_name
+        file_name=
+"
+$(basename
+"
+$file
+"
+)
+"
+log
+"Processing file:
+$file
+"
+# Create a temporary directory
+local
+sanitized_name
+        sanitized_name=
+"
+$(echo
+"
+$file_name
+"
+| tr -d '[:space:]')
+"
+local
+temp_dir
+        temp_dir=
+"
+$(mktemp -d
+"
+$dir
+/tmp_
+${sanitized_name}
+_XXXXXX"
+)
+"
+TEMP_DIRS_CREATED=
+"
+${TEMP_DIRS_CREATED:-}
+$temp_dir
+"
+log
+"Created temporary directory:
+$temp_dir
+"
+# 1) Preprocess if it's VTT. Otherwise copy as-is.
+local
+preprocessed_file=
+"
+$temp_dir
+/preprocessed.txt"
+if
+[[
+"
+$file
+"
+== *.vtt ]];
+then
+preprocess_vtt
+"
+$file
+"
+>
+"
+$preprocessed_file
+"
+else
+cp
+"
+$file
+"
+"
+$preprocessed_file
+"
+fi
+# 2) Split into chunks
+split
+-l
+"
+$CHUNK_LINES
+"
+--
+"
+$preprocessed_file
+"
+"
+$temp_dir
+/chunk_"
+log
+"Split
+$file
+into chunks of
+$CHUNK_LINES
+lines each."
+# 3) Summarize each chunk
+for
+chunk_file
+in
+"
+$temp_dir
+"
+/chunk_*;
+do
+[[ -f
+"
+$chunk_file
+"
+]] ||
+continue
+local
+chunk_name
+          chunk_name=
+"
+$(basename
+"
+$chunk_file
+"
+)
+"
+log
+"Summarizing chunk:
+$chunk_name
+"
+# The prompt is piped into Ollama
+log
+"Running command:
+${MODEL_COMMAND[*]}
+(chunk:
+$chunk_name
+)"
+{
+echo
+"Summarize the following transcript from \"
+$file_name
+\"."
+echo
+"Focus on the main ideas, ignoring timestamps or extraneous details."
+echo
+"---------------"
+cat
+"
+$chunk_file
+"
+} |
+"
+${MODEL_COMMAND[@]}
+"
+>>
+"
+$main_dir
+/
+$SUMMARY_FILE
+"
+2>>
+"
+$main_dir
+/
+$PROGRESS_FILE
+"
+# Extra new line after each chunk summary
+echo
+""
+>>
+"
+$main_dir
+/
+$SUMMARY_FILE
+"
+done
+# 4) Mark file as processed
+mark_processed
+"
+$file
+"
+log
+"Marked
+$file
+as processed."
+else
+log
+"Skipping file (already processed):
+$file
+"
+fi
+fi
+done
+}
+#######################
+#  Recursive (Optional)
+#######################
+process_subdirectories_recursively
+() {
+local
+parent_dir=
+"
+$1
+"
+for
+dir
+in
+"
+$parent_dir
+"
+/*/;
+do
+[[ -d
+"
+$dir
+"
+]] ||
+continue
+process_files_in_directory
+"
+$dir
+"
+process_subdirectories_recursively
+"
+$dir
+"
+done
+}
+###################
+#    Main Logic   #
+###################
+# 1) Process top-level .vtt/.txt files in the current directory
+process_files_in_directory
+"
+$main_dir
+"
+# 2) Uncomment to recurse subdirectories if needed
+# process_subdirectories_recursively "$main_dir"
+log
+"Script completed."
+Debugging Tips
+Check that Ollama actually runs
+Run
+which ollama
+or
+ollama list
+in your terminal.
+In
+progress.log
+, look for lines like:
+less
+Copiar c��digo
+[username@hostname]
+[YYYY-MM-DD HH:MM:SS]
+Running
+command
+:
+ollama
+run
+vanilj
+/
+phi-4
+(
+chunk
+: chunk_aa)
+That confirms the script is invoking
+ollama
+.
+Verify Timestamps Removal
+After the script starts, open (or tail) one of the temporary ���preprocessed.txt��� files in your system���s temp dir to confirm lines containing
+-->
+or
+WEBVTT
+or numeric-only lines are gone.
+If you still see timestamps, your VTT format might differ from the typical
+-->
+. Update the
+preprocess_vtt()
+function to match your exact format (for example, if your lines have different punctuation or spacing).
+Monitor Summaries Real-Time
+In one terminal, run:
+bash
+Copiar c��digo
+tail
+-f detailed-summary.txt
+In another terminal, start the script. You should see new summary text appear after each chunk is processed.
+If Summaries Appear Unchanged
+Ensure the prompt given to the model is explicit enough. Right now it says:
+���Summarize the following transcript from ���filename���. Focus on the main ideas, ignoring timestamps or extraneous details.���
+You can refine that prompt as needed, e.g., ���Please provide a concise overview in 3���4 sentences.���
+Re-run or Reprocess
+If you run the script again, it will skip files already listed in
+progress.log
+.
+To force reprocessing, remove or rename
+progress.log
+or remove the relevant file entries.
+This setup should let you confirm Ollama is being invoked, remove standard VTT timestamps, and produce more concise summaries. Adjust the script further as needed to match the exact formatting in your
+.vtt
+files or to change the chunk size/prompt style.
+o1
+ChatGPT puede cometer errores. Comprueba la informaci��n importante.
+?

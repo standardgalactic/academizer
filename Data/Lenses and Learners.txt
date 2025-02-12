@@ -1,0 +1,1316 @@
+Lenses and Learners LinkOpen sidebarLenses and Learners LinkModel: Default (GPT-3.5)Summarize: Lenses and Learners 
+Brendan Fong 
+Department of Mathematics 
+Massachusetts Institute of Technology 
+bfo@mit.edu 
+Michael Johnson 
+Faculty of Science and Engineering 
+Macquarie University 
+michael.johnson@mq.edu.au 
+Abstract 
+Lenses are a well-established structure for modelling bidirectional trans- 
+formations, such as the interactions between a database and a view of 
+it. Lenses may be symmetric or asymmetric, and may be composed, 
+forming the morphisms of a monoidal category.More recently, the 
+notion of a learner has been proposed: these provide a compositional 
+way of modelling supervised learning algorithms, and again form the 
+morphisms of a monoidal category. In this paper, we show that the 
+two concepts are tightly linked. We show both that there is a faithful, 
+identity-on-objects symmetric monoidal functor embedding a category 
+of asymmetric lenses into the category of learners, and furthermore 
+there is such a functor embedding the category of learners into a cate- 
+gory of symmetric lenses. 
+1Introduction 
+This paper presents surprising links between two apparently disparate areas: a compositional treatment of super- 
+vised learning algorithms, called learners, and and a mathematical treatment of bidirectional transformations, 
+called lenses. Until this work there had been no known non-trivial relationships between the two areas, and, 
+naively at least, there seemed to be little reason to expect them to be closely related mathematically. 
+But lenses and learners are indeed mathematically closely related. The main result that we present here is 
+the existence of a faithful, identity-on-objects, symmetric monoidal functor, from the category whose arrows are 
+learners to a category whose arrows are symmetric lenses. In addition, the symmetric lenses in the image of that 
+functor have particularly simple structure: as spans of asymmetric lenses, their left legs are the long studied and 
+easily understood lenses known as constant complement lenses. Roughly speaking, this means that a supervised 
+learning algorithm may be understood as a special type of symmetric lens. 
+The right legs of the symmetric lenses in the image of the functor are also simple, but in a dif f erent way. The 
+right legs are bare asymmetric lenses ������ lenses which have, as all lenses do, a Put and Get, but which have no 
+axioms restricting the way the Put and Get interact. Such simple lenses were def i ned in the very i rst papers 
+on lenses, and were the ones blessed with the name ������lens������, but the study of such bare lenses has so far been 
+somewhat neglected by the lens community, and certainly by us, because of a lack of examples or applications 
+requiring them. This paper provides some compelling examples and has led us to study them seriously. 
+The symmetric lenses that correspond to learners also have links, as will be explained in the discussion section, 
+with recent work on some quite sophisticated notions of lenses called amendment lenses, or in a slightly simplif i ed 
+Copyright c ? by the paper������s authors. Copying permitted for private and academic purposes. 
+In: J. Cheney, H-S. Ko (eds.): Proceedings of the Eighth International Workshop on Bidirectional Transformations (Bx 2019), 
+Philadelphia, PA, USA, June 4, 2019, published at http://ceur-ws.org 
+form, a-lenses. These a-lenses do have extra axioms ������ the ones we have looked at most are called Stable PutGet 
+(or SPG) a-lenses ������ and it turns out that the extra structure provided by amendment lenses can be added 
+in a canonical way to the lenses that we study here, and in a way that allows then to recover at least the 
+amendment-lens versions of GetPut and PutGet axioms.1 / 1ChatGPTChatGPT"Lenses and Learners" is a research paper by Brendan Fong and Michael Johnson that explores a novel connection between two mathematical structures: lenses and learners.Lenses are a well-known structure for modelling bidirectional transformations such as the interaction between a database and a view of it. They can be symmetric or asymmetric and can be composed, forming the morphisms of a monoidal category.On the other hand, learners provide a compositional way of modelling supervised learning algorithms, forming the morphisms of a monoidal category as well.The authors argue that these two concepts are closely linked. They establish that there's a faithful, identity-on-objects, symmetric monoidal functor that embeds a category of asymmetric lenses into the category of learners and vice versa.In a more granular sense, they highlight that a supervised learning algorithm can be understood as a particular type of symmetric lens. They specifically mention that symmetric lenses corresponding to learners have connections with a sophisticated type of lenses called amendment lenses or a-lenses. The additional structure provided by these amendment lenses can be added in a canonical way to the lenses studied in this research, enabling the recovery of GetPut and PutGet axioms in the amendment-lens versions.Overall, the paper uncovers previously unknown relationships between two disparate areas, lenses and learners, shedding light on their mathematical connections and potential applications.1 / 1Terminology and notation 
+Before we begin, a few words about notation. In particular, we may need to thank readers for their indulgence 
+in translating notations ������ since this paper brings together two areas that already have established notation, in 
+order to make the comparisons with those areas easier we have generally retained the appropriate notations for 
+lenses and for learners, but that means that readers sometimes have to carry both notations in their minds and 
+translate between them. We have endeavoured to help. 
+In a small number of cases where we judged it would do little harm we have taken the opposite approach and 
+made minor changes to established notation. In those cases, if the notation comes from the readers������ own area of 
+expertise we have to ask for even more indulgence. We hope we do not engender confusion. 
+On more mathematical matters, note that we are both category theorists, but that the lenses and learners 
+that we are dealing with here are all set-based, and there is very little explicit use of category theory beyond 
+some pullbacks, the construction of functions from other functions, and the judicious, and mostly unremarked, 
+use of isomorphisms to for example re-order variables inside tuples, and to rebracket tuples of tuples. But sadly 
+that makes for some long strings of variables as parameters for functions. 
+To manage the visual complexity of some of these complicated function compositions we have also presented 
+them using string diagrams in Set.While we hope that, written alongside the usual elementwise function 
+notation, these will be easy enough to read, the reader unfamiliar with this notation might consult introductory 
+references [Sel11, FS19]. We look forward to a treatment of some of the things presented here as notions internal 
+to a category, and anticipate that they will probably bring with them signif i cant simplif i cations, especially in 
+notation. 
+Finally, a remark about how ������well-behaved������ is a technical term. Many of the lenses we consider here are 
+not well-behaved, but that simply means that they don������t satisfy certain conditions, conditions which for the 
+applications considered here would be undesirable. So it������s important to remember that being not-well-behaved 
+may be desirable and is certainly not derogatory (contrary to normal English usage). 
+Outline 
+The paper is structured as follows. 
+In the next two sections we introduce lenses, i rstly in their asymmetric form (Section 2), and then in their 
+symmetric form (Section 3). Along the way we note how to compose both asymmetric lenses, and symmetric 
+lenses, and we introduce the particularly simple constant complement lenses, and show brief l y how constant 
+complement lenses compose to give constant complement lenses. Because of the bare lenses that we are using 
+in this paper, we need to extend somewhat the usual def i nition of composition of symmetric lenses which is 
+generally def i ned only when the lenses are well-behaved, or at least each satisfy the PutGet axiom. We show 
+that, with a slightly complicated construction, the usual def i nition of composition can be extended to symmetric 
+lenses in which one leg satisf i es PutGet even if the other leg satisf i es no axioms at all. 
+In Section 4 we introduce learners, their composition and monoidal structure, and how they form a category. 
+As might be expected, to make a category (rather than say a bicategory) we need to take equivalence classes 
+of learners, and the equivalence relation is introduced. It corresponds so closely to the usual equivalence for 
+symmetric lenses presented as spans of asymmetric lenses that we can suppress any detailed treatment of the 
+equivalences in this paper and present the results in terms of representatives of equivalence classes. Some readers 
+at i rst i nd the def i nition of composition for learners a little daunting, so we include string diagrams to illustrate 
+how the composition works. 
+In Section 5 we present in detail the theorem already alluded to, and illustrate the precise and remarkably 
+parallel relationship between learners and lenses. And then in Section 6 we discuss some of the observations that 
+follow from this work, and conclude with some speculations on possible directions for further studies l owing from these results.1 / 1ChatGPTChatGPTThe authors of "Lenses and Learners" offer a note on the terminology and notation used in their paper, acknowledging that the work brings together two areas with established notation. The authors maintained the original notations for lenses and learners to facilitate comparisons, which might require readers to translate between the two. Where they judged it feasible, they made minor changes to established notation, though they hope this doesn't cause confusion.Regarding the mathematical approach, the authors clarify that despite their backgrounds in category theory, the lenses and learners they deal with are all set-based, and there is little explicit use of category theory beyond some pullbacks, function construction, and the use of isomorphisms.To manage the complexity of function compositions, the authors use string diagrams in Set and refer to introductory resources for readers unfamiliar with this notation.The authors also make a point about the term "well-behaved". They state that while many of the lenses considered in the paper are not well-behaved (meaning they don't satisfy certain conditions), this is not necessarily a negative thing. The term "not-well-behaved" is desirable and non-derogatory in the context of the applications they consider.As for the paper's structure:Sections 2 and 3 introduce asymmetric and symmetric lenses, respectively, including how to compose both types of lenses and the introduction of constant complement lenses.Section 4 introduces learners, their composition, monoidal structure, and how they form a category. The section also introduces the equivalence relation used to define equivalence classes of learners.Section 5 presents in detail the parallel relationship between learners and lenses.Section 6 discusses the observations derived from this work and suggests possible directions for future studies.1 / 12Asymmetric Lenses 
+Asymmetric lenses have been studied in a variety of dif f erent categories, and with a range of dif f erent forms 
+including d-lenses [DXC11], c-lenses [JR13], and most recently amendment lenses, also known as a-lenses [DKL18]. 
+Furthermore those lenses have been studied as algebraic structures with a number of axioms such as the so-called 
+PutGet law [FG+07], the PutPut law [FG+07, JR12], and many others. In this paper we predominantly restrict 
+our attention to the very simplest cases of set based lenses, as originally presented in [PS03], with no further 
+axioms. 
+Def i nition 2.1. An asymmetric lens pp,gq: A B is a pair of functions: a Put p: B ����A A and a Get 
+g: A B. 
+These basic asymmetric lenses are the main thing that we need in order to see the relationships with learners, 
+but we will sometimes need to refer to lenses that are ������well-behaved������, or at least that satisfy one of the following 
+two conditions required for so-called well-behaved lenses. 
+Def i nition 2.2. An asymmetric lens pp,gq: A B is called well-behaved if it satisf i es the following two 
+conditions 
+(PutGet) The Get of a Put is the projection. That is, gpppa,bqq ������ b, or in string diagrams 
+pg 
+B 
+A 
+B ������ 
+B 
+A 
+B 
+(GetPut) The Put of an unchanged Get result is unchanged. That is, ppgpaq,aq ������ a, or in string diagrams 
+p 
+g 
+AA������AA 
+(Here the splitting wire represents the diagonal map A A ���� A, i.e. a �������� pa,aq.) 
+Even without meeting the def i nition of well-behaved, lenses compose in a straightforward way, and well- 
+behaved lenses do compose to give well-behaved lenses too. In fact, each of the two well-behaved conditions 
+(PutGet and GetPut) is respected by composition separately, so we can, when we need to, talk about the 
+composition of lenses that satisfy merely PutGet say, and know that the result will also satisfy PutGet. 
+Def i nition 2.3. The composite lens pp,gq # pp1,g1q: A C constructed from lenses pp,gq: A B and 
+pp1,g1q: B C has as Get simply the composite g1g of the Gets 
+g 
+g1AC 
+and as Put, q: C ���� A A given by qpc,aq ������ ppp1pgpaq,cq,aq. p 
+p1 
+g 
+C 
+A 
+A 
+Thus in the notation just introduced, pp,gq # pp1,g1q ������ pq,g1gq. 
+Def i nition 2.4. With the composition just def i ned, asymmetric lenses are the arrows of a symmetric monoidal 
+category whose objects are sets, and whose monoidal product is given by cartesian product. That category is de- 
+noted Lens. Furthermore, there is a subcategory of Lens called WBLens whose arrows are well-behaved asymmetric 
+lenses, as well as subcategories whose arrows satisfy merely PutGet or GetPut.1 / 1ChatGPTChatGPTSection 2 of the paper discusses Asymmetric Lenses.Asymmetric lenses have been researched in multiple different categories with various forms, including d-lenses, c-lenses, and amendment lenses (also known as a-lenses). These lenses have been investigated as algebraic structures with numerous axioms, such as the PutGet law and the PutPut law. In this paper, however, the focus is primarily on the simplest cases of set-based lenses without further axioms.An asymmetric lens is defined as a pair of functions: a Put (p: B ����A A) and a Get (g: A B). These basic asymmetric lenses are central to understanding the relationship with learners.Additionally, certain lenses that are "well-behaved", or satisfy one of two conditions, are also discussed. An asymmetric lens is called well-behaved if it meets the PutGet condition, where the Get of a Put is the projection, and the GetPut condition, where the Put of an unchanged Get result is unchanged.Even without meeting the definition of well-behaved, lenses compose in a straightforward manner, and well-behaved lenses compose to give well-behaved lenses as well. Each of the two well-behaved conditions (PutGet and GetPut) is respected separately by composition.The composite lens is then defined, constructed from lenses pp,gq: A B and pp1,g1q: B C. The Get is simply the composite g1g of the Gets, and the Put is a function q: C ���� A A given by qpc,aq = ppp1pgpaq,cq,aq.Finally, with the composition just defined, asymmetric lenses are the arrows of a symmetric monoidal category whose objects are sets, and whose monoidal product is given by the cartesian product. This category is denoted Lens. Furthermore, there is a subcategory of Lens, WBLens, whose arrows are well-behaved asymmetric lenses, as well as subcategories whose arrows satisfy only PutGet or GetPut.1 / 1Given a cartesian product B ����A, we write the projection notation ����2: B ����A A for the function mapping 
+pb,aq to a; that is, for projection onto the second factor. More generally, we overload the notation ����iusing it 
+for any projection onto an ith factor, with it being disambiguated once the domain, expressed as a cartesian 
+product, is known. 
+The identity lens p����1,idAq: A A on a set A has identity function as Get and projection onto the i rst factor 
+as Put. 
+Example 2.5. One of the most basic forms of asymmetric lenses, introduced many years ago in the database 
+community [BS81], is the constant complement view updating lens. These are asymmetric lenses of the form 
+pk,����1q: A1���� A2 A1, where kpa11,pa1,a2qq ������ pa11,a2q ������ the reader can see the source of the name ������constant 
+complement������ in the presence of a2in both the input and the output of k.It is easy to see that pk,����1q is 
+well-behaved. 
+The composite of constant complement lenses is again constant complement. Indeed, suppose further that 
+A1������ B1���� B2, and that pk1,����1q: B1���� B2 B1is a constant complement lens (so k1pb11,pb1,b2qq ������ pb11,b2q). 
+Then the composite lens pk,����1q#pk1,����1q: B1����B2����A2 B1has Put k2: B1����pB1����B2����A2q B1����B2����A2 
+given by k2`b11,pb1,b2,a2q���������� k`k1pb11,pb1,b2qq,pb1,b2,a2q���� 
+������ k`pb11,b2q,pb1,b2,a2q���� 
+������ pb11,b2,a2q, 
+and Get given by ����1: B1���� pB2���� A2q B1.This is, up to isomorphism, the constant complement lens 
+pk2,����1q: B1���� B2���� A2 B1. 
+Such simple composites of constant complement lenses, or indeed of other more complicated lenses, arise very 
+frequently in practice (for example in the database world whenever one deals with views of views). In common 
+with the overloaded notation for projections ����iwhich are the Gets of constant complement lenses, it is convenient 
+to introduce overloaded notation for the Puts: When there is little risk of confusion we will simply write k for 
+the constant complement Put corresponding to a given Get ����i. 
+We will return to constant complement lenses when we use them as the ������left leg������ of certain symmetric lenses 
+to obtain our main result in Section 5. 
+3Symmetric Lenses 
+Asymmetric lenses model well situations where one system, denoted A in the previous section, includes all the 
+relevant information, and another system, B, has information simply derived from A. Of course in practice it������s 
+important to deal with the more symmetric situation where two systems share some common structures, but 
+each has information that the other doesn������t have. To address this, not long after the seminal work on asymmetric 
+lenses, Hofmann et al. developed a symmetrized version of lenses [HPW11] which can be described conveniently 
+as (approximately) spans of asymmetric lenses. 
+Recall that a span in a category is a pair of arrows with common domain, A1�������� S �������� A2. Despite their 
+evident symmetry, spans are usually considered to be oriented from one of the feet to the other, so the span just 
+drawn would be called a span from A1to A2, and the same two arrows also form a span from A2to A1, usually 
+drawn as A2�������� S �������� A1. The object S is called the head, (or sometimes peak or apex) of the span. When 
+we need to name the arrows, for example if they are asymmetric lenses pp1,g1q: S �������� A1and pp2,g2q: S �������� A2, 
+it is convenient to notate the span as A1 
+pp1,g1q 
+���� ���� ���� ���� ���� S 
+pp2,g2q 
+���� ���� ���� ���� ���� A2. The lens pp1,g1q will be called the left leg of the 
+span, and the lens pp2,g2q will similarly be called the right leg of the span. 
+The reader may choose to think of a symmetric lens, shortly to be introduced, as a span of asymmetric lenses. 
+But in fact, in common with other descriptions of similar structures, symmetric lenses are really equivalence 
+classes of spans of asymmetric lenses. In this paper it will be convenient to talk about, for example, ������the sym- 
+metric lens A1 
+pp1,g1q 
+���� ���� ���� ���� ���� S 
+pp2,g2q 
+���� ���� ���� ���� ���� A2������, when strictly speaking that span is just a representative of an equivalence 
+class of similar spans, and that equivalence class is the symmetric lens. 
+For completeness we include here the description of the equivalence relation. 
+Def i nition 3.1. Suppose given two spans of asymmetric lenses A1 
+pp1,g1q 
+���� ���� ���� ���� ���� S 
+pp2,g2q 
+���� ���� ���� ���� ���� A2and A1 
+pp11,g11q 
+���� ���� ���� ���� ���� S1 
+pp12,g12q 
+���� ���� ���� ���� ���� 
+A2with common feet A1and A2. A function f : S �������� S1is said to satisfy conditions (E) [JR17] when 
+(i) f is surjective. 
+(ii) f preserves Gets: g11f ������ g1and g12f ������ g2. 
+(iii) f preserves Puts: for all a1, s we have p11pa1,fpsqq ������ fpp1pa1,sqq and p12pa2,fpsqq ������ fpp2pa2,sqq. 
+Let ������spbe the equivalence relation on spans of asymmetric lenses generated by those functions f between 
+their heads that satisfy conditions (E).1 / 1ChatGPTChatGPTIn Section 3, the paper moves on to discuss Symmetric Lenses.The authors begin by explaining that a Cartesian product B ���� A is written as ����2: B ���� A A, which maps pb,aq to a, the second factor of the projection. More generally, the notation ����i is used for any projection onto the ith factor.The identity lens on a set A has the identity function as Get and projection onto the first factor as Put. One of the most basic forms of asymmetric lenses is the constant complement view updating lens, which is a well-behaved lens. Composites of constant complement lenses are also constant complement lenses.The paper further explains that symmetric lenses model situations where two systems share some common structures but have unique information. A span in a category is a pair of arrows with a common domain, which are usually considered to be oriented from one of the feet to the other. The object S in a span is referred to as the head, peak, or apex.In terms of asymmetric lenses, it's convenient to refer to these spans as a symmetric lens. However, symmetric lenses are essentially equivalence classes of spans of asymmetric lenses. The paper uses a representative span to refer to a symmetric lens, even though it is technically an equivalence class of similar spans.Lastly, the authors give a definition of the equivalence relation used in symmetric lenses. They describe conditions (E), where a function f between the heads of two spans is surjective, preserves Gets and Puts. This function generates an equivalence relation on spans of asymmetric lenses.1 / 1Def i nition 3.2. A symmetric lens from A1to A2is a ������sp-class of spans of asymmetric lenses from A1to 
+A2. 
+The composition of symmetric lenses is usually def i ned for (equivalence classes of) spans of well-behaved 
+asymmetric lenses [JR17], but we aim to be more general here. In particular, we will show that the composition 
+rule for well-behaved symmetric lenses generalises to a composition rule for symmetric lenses with left legs 
+satisfying PutGet. 
+Note i rst that if a symmetric lens has as a representative a span of asymmetric lenses in which one leg satisf i es 
+PutGet then all the representatives of that equivalence class have corresponding leg satisfying PutGet. 
+Def i nition 3.3. Suppose that 
+A1 
+pq1,h1q 
+���� ���� ���� ���� ���� S1 
+pp2,g2q 
+���� ���� ���� ���� ���� A2andA2 
+pq2,h2q 
+���� ���� ���� ���� ���� S2 
+pp3,g3q 
+���� ���� ���� ���� ���� A3 
+are spans of asymmetric lenses whose left legs satisfy PutGet. We def i ne their composite symmetric lens, 
+from A1to A3, as follows. 
+Let S1 
+h2 
+���� ���� T 
+g2 
+���� ���� S2be the pullback in Set of the cospan S1 
+g2 
+���� ���� A2 
+h2 
+���� ���� S2. More concretely, without loss of 
+generality, we may suppose that T ������ tps1,s2q P S1���� S2| g2ps1q ������ h2ps2qu, 
+and that h2and g2are the projections onto the i rst and second components respectively. Next, we equip h2 
+with the Put q2: S1���� T �������� T def i ned by q2`s11,ps1,s2q���������� `s1 
+1, q2pg2ps11q,s2q ����, 
+and equip g 2with the Put 
+p2: S2���� T �������� T def i ned by 
+p2`s12,ps1,s2q���������� `p 
+2ph2ps12q,s1q, q2pg2pp2ph2ps12q,s1qq,s12q ���� 
+P T ���� S1���� S2. 
+A representative for the composite symmetric lens A1 A3is then given by 
+A1 
+pq2,h2q#pq1,h1q 
+���� ���� ���� ���� ���� ���� ���� ���� ���� ���� T 
+pp2,g2q#pp3,g3q 
+���� ���� ���� ���� ���� ���� ���� ���� ���� ���� A2. 
+To help parse these expressions, we draw string diagrams for q2 
+q2 
+g2 
+S1 
+S1 
+S2 
+S1 
+S2 
+and p2 q2 
+g2 
+p2 
+h2S2 
+S1 
+S2 
+S1 
+S2 
+It is straightforward to check that the images of the functions q2and p2do indeed lie in their codomain T, and 
+hence that they are well-def i ned. Note that the construction above gives a diagram of asymmetric lenses 
+S1S2 
+T 
+S1 
+p ����q2,����h2q 
+yyssss 
+ss 
+T S2 
+p ����p2, ����g2q 
+������ 
+������ 
+������ 
+������ 
+������ 
+������ 
+S1 A2 
+pp2,g2q ������ 
+������ 
+������ 
+������ 
+������ 
+������ 
+S1S2S2 
+A2 
+pq2,h2q 
+yysss 
+sss 
+S1 
+A1 
+pq1,h1q 
+yyssss 
+ss 
+S2 A3 
+pp3,g3q 
+������ 
+������ 
+������ 
+������ 
+������ 
+������ 
+The composite symmetric lens is just given by composing the pairs of arrows on the left and right of the diagram. 
+It is straightforward to verify that pq2,h2q satisf i es PutGet, and hence that the left leg of the composite also 
+satisf i es PutGet. 
+Remark 3.4. The somewhat complicated second component q2pg2pp2ph2ps12q,s1q,s12qq of p2arises because we do 
+not assume that pp2,g2q satisf i es PutGet. If we do assume pp2,g2q obeys PutGet, then the expression simplif i es 
+to the more familiar q2ph2ps12q,s12q. This second component correspondingly also shows that pp2,g2q may also 
+fail to satisfy PutGet. 
+Remark 3.5. It is worth remarking, as noted elsewhere [JR17], that the composition just def i ned is reminiscent 
+of, but dif f erent from, the normal composition of spans in a category with pullbacks. The peak of the span, T, is 
+indeed a pullback, but not in the category Lens. Since the pullback is calculated in Set, the pullback projections 
+are not a priori lenses, but the construction shows how to extend them to be lenses in a canonical way. 
+The construction presented here is also more general than the usual construction because it has to deal with 
+(right leg) lenses that might not satisfy PutGet. We will comment further on this in the discussion section below. 
+Using the techniques of [JR17], it can be shown that ������spis a congruence for this more general composition of 
+spans of asymmetric lenses. Thus the composition is well-def i ned on equivalence classes and provides a symmetric 
+lens composition for those symmetric lenses whose left leg satisf i es PutGet. We thus make the following def i nition.1 / 1ChatGPTChatGPTIn this section, the paper discusses how symmetric lenses are composed and presents two definitions related to symmetric lenses.Definition 3.2: A symmetric lens from A1 to A2 is a "sp-class" (equivalence class) of spans of asymmetric lenses from A1 to A2.Definition 3.3: The paper describes the composition of two symmetric lenses from A1 to A2 and A2 to A3, respectively, both of which have left legs that satisfy the PutGet property. They construct a composite symmetric lens from A1 to A3.The authors provide a step-by-step guide on how to compose these symmetric lenses using a pullback in the Set of the cospan and provides the formulas for equipping h2 and g2 with the Puts q2 and p2, respectively.This composition results in a representative for the composite symmetric lens from A1 to A3. To further illustrate these expressions, the authors provide diagrams for q2 and p2. They then verify that the images of the functions q2 and p2 lie within their codomain T, hence they are well-defined.A remark is made on the somewhat complex second component of p2, explaining that it arises because it isn't assumed that pp2, g2 satisfies PutGet. However, if it does, the expression simplifies.The authors also note that the composition just defined is similar to, but not the same as, the normal composition of spans in a category with pullbacks. The authors further note that the composition is more general than the usual construction because it deals with (right leg) lenses that might not satisfy PutGet.Lastly, they state that this composition is well-defined on equivalence classes and provides a symmetric lens composition for those symmetric lenses whose left leg satisfies PutGet. They suggest that they will define this property in more detail further on.1 / 1Def i nition 3.6. We def i ne the symmetric monoidal category SLens to have sets as objects, symmetric lenses 
+with left leg satisfying PutGet as arrows, and monoidal product given by cartesian product of sets. 
+Again, the reader should note that this is slightly more general than other def i nitions of categories of symmetric 
+lenses, which normally require both legs to satisfy PutGet (and possibly other conditions too). Nonetheless, using 
+the standard techniques it is straightforward to check that this composition rule is associative and unital, and 
+moreover that SLens is a well-def i ned symmetric monoidal category. Identity symmetric lenses are simply given 
+by the span in which both legs are identity asymmetric lenses. 
+4Learners 
+Learners provide a categorical framework for modelling supervised learning algorithms. They can be seen as 
+parametrised version of asymmetric lenses. In this section we introduce the basic ideas; more detail can be found 
+in [FST19]. 
+Def i nition 4.1. A learner pP,I,U,rq: A B is a set P, together with three functions: an implementation 
+I: P ���� A B, an update U : B ���� P ���� A P, and a request r: B ���� P ���� A A. 
+The goal of supervised learning is to approximate a function f : A B using pairs pa,fpaqq P A ���� B of 
+sample values, or training data. We view P as a set of parameters, and the implementation function as detailing 
+how this set P parametrises functions, seen as hypotheses, A B. Next, given a current hypothesis p P P 
+and training datum pa,bq P A ���� B, the update and request functions describe two ways to react to dif f erences 
+between Ipp,aq and b: i rst by updating the hypothesis p to Upb,p,aq, and second by requesting an alternative 
+input rpb,p,aq. 
+Remark 4.2. While the implementation and update functions are evidently necessary structure for supervised 
+learning, the role of the request function is more subtle. Indeed, the request function only becomes necessary 
+through compositional considerations: it is what permits the construction of new learners by interconnecting 
+given ones. Crucially, it captures the backpropagation part of the widely-used backpropagation algorithm for 
+ef i cient training neural networks. Further discussion regarding interpretation of the request function can be 
+found in [FST19, Remark II.2]. 
+Example 4.3. Learners are not required to obey any axioms, and so are straightforward to construct. There 
+are, however, learners which have been shown to be more useful than others in practice. One useful way of 
+constructing learners is by using gradient descent on any dif f erentiably parametrised class of functions, such as 
+one def i ned using a neural net. 
+Indeed, given a set Rkand dif f erentiable function I: Rk���� Rm Rn, as well as a real number ���� ���� 0 that we 
+call a step size, we may def i ne a learner pP,I,U,rq: Rm Rnby setting 
+Upb,p,aq ������ p ���� ����������p 
+1 
+2kIpp,aq ���� bk 2, 
+rpb,p,aq ������ a ���� ������a 
+1 
+2kIpp,aq ���� bk 2, 
+where kxk is the Euclidean norm on Rn. 
+A key property of the category of learners is that this interpretation of a dif f erentiable function I is functorial, 
+and indeed this functor captures the structure of the backpropagation algorithm. For more details see [FST19, 
+Theorem III.2]. 
+To state the aforementioned functoriality result, we must i rst describe what it means to compose learners. 
+As with symmetric lenses, this i rst relies on stating what it means for two learners to be equivalent. 
+Def i nition 4.4. Given two learners pP,I,U,rq,pP1,I1,U1,r1q: A B a function f : P P1is said to satisfy 
+conditions pE1q when 
+(i) f is surjective. 
+(ii) f preserves implementations: I1pfppq,aq ������ Ipp,aq. 
+(iii) f preserves updates: U1pb,fppq,aq ������ fpUpb,p,aqq. 
+(iv) f preserves requests: r1pb,fppq,aq ������ rpb,p,aq. 
+Just as for symmetric lenses, this generates an equivalence relation ������lon learners. Equivalence classes of 
+learners form the morphisms of a symmetric monoidal category. 
+Def i nition 4.5. The symmetric monoidal category Learn has sets as objects and ������l-classes of learners as mor- 
+phisms. 
+The composite of learners A 
+pP,I,U,rq 
+���� ���� ���� ���� ���� ���� ���� B 
+pQ,J,V,sq 
+���� ���� ���� ���� ���� ���� ���� C. 
+is def i ned to be pQ ���� P, I ���� J, U ���� V, r ���� sq, where 
+pI ���� Jqpq,p,aq ������ Jpq,Ipp,aqq, 
+pU ���� V qpc,q,p,aq ������ ���� U `spc,q,Ipp,aqq,p,a����,V`c,q,Ipp,aq��������, 
+pr ���� sqpc,q,p,aq ������ r`spc,q,Ipp,aqq����. 
+The monoidal product of objects A and B is their cartesian product A ���� B, while the monoidal product of 
+morphisms pP,I,U,rq: A B and pQ,J,V,sq: C D is pP ���� Q, I}J, U}V, r}sq, where the implementation 
+function is pI}Jqpp,q,a,cq ������ pIpp,aq,Jpq,cqq, 
+pU}V qpb,d,p,q,a,cq ������ pUpb,p,aq,V pd,q,cqq, 
+pr}sqpb,d,p,q,a,cq ������ prpb,p,aq,spd,q,cqq.1 / 1ChatGPTChatGPTDefinition 3.6 introduces the symmetric monoidal category SLens, which has sets as objects, symmetric lenses with left leg satisfying PutGet as arrows, and the monoidal product is given by the Cartesian product of sets. This definition is broader than other definitions of categories of symmetric lenses, which typically require both legs to satisfy PutGet. Identity symmetric lenses are defined as the span in which both legs are identity asymmetric lenses.Section 4 discusses learners, which provide a categorical framework for modeling supervised learning algorithms, seen as a parametrized version of asymmetric lenses.Definition 4.1 presents a learner as a set P along with three functions: an implementation I, an update U, and a request r. The paper notes that the request function is particularly important for backpropagation in training neural networks.Example 4.3 states that learners can be easily constructed since they don't have to abide by any axioms. An effective way to construct learners is by using gradient descent on any differentiably parametrised class of functions, like those defined using a neural network.Definition 4.4 describes conditions for when a function f between two learners satisfies "E1". If the function is surjective, preserves implementations, updates, and requests, it satisfies E1. This creates an equivalence relation on learners, and the equivalence classes form the morphisms of a symmetric monoidal category.Definition 4.5 establishes the symmetric monoidal category Learn, where sets are the objects and equivalence classes of learners are the morphisms. The paper then describes how to compose learners and how to find the monoidal product of objects and morphisms in this category.1 / 1Remark 4.6. A proof that this def i nition indeed specif i es a well def i ned symmetric monoidal category follows 
+from the same arguments as those given in [FST19, Proposition II.4]. Note, however, a key change: in the 
+setting of [FST19], conditions (E1) are strengthened to require f be a bijection. The requirement that f be 
+a bijection was made to avoid a digression about dif f erentiability in [FST19, Def i nition III.1], and yet still 
+permit a straightforward statement of the main theorem [FST19, Theorem III.2]. Nonetheless, the authors of 
+[FST19] believe conditions (E1) give the more natural notion of equivalence of learner, as it allows identif i cation 
+of parameters that have the same implementation. We believe that the correspondence with conditions (E) from 
+[JR17] via Theorem 5.3 provides further evidence of this claim; indeed, we view this added clarity as a positive 
+outcome of this work and the interaction between our two communities. 
+For clarity, let us also present the composition rule using string diagrams in pSet,����q. Given learners pP,I,U,rq 
+and pQ,J,V,sq as above, the composite implementation function can be written as 
+I 
+J 
+Q 
+P 
+A 
+C 
+while the composite update������request function pU ���� V,r ���� sq can be written as: 
+V,s 
+I U,r 
+C 
+Q 
+P 
+A 
+Q 
+P 
+A 
+B 
+B 
+The monoidal product of learners is represented in string diagrams as follows. The product implementation 
+function I}J is I 
+J 
+P 
+Q 
+A 
+C 
+B 
+D 
+while the composite update and request function pU}V,r}sq is 
+U,r 
+V,s 
+B 
+D 
+P 
+Q 
+A 
+C 
+P 
+Q 
+A 
+C 
+Remark 4.7. Note that lenses are learners with trivial, that is singleton, parameter set (as observed already by 
+Fong et al [FST19]): Learner A BAsymmetric lens A B 
+Hypotheses P1 
+Implementation I: P ���� A BGet g: A B 
+Update U : B ���� P ���� A P������ 
+Request r: B ���� P ���� A APut p: B ���� A A 
+This in fact extends to an inclusion of categories. 
+Proposition 4.8. There is a faithful, identity-on-objects, symmetric monoidal functor Lens Learn. 
+Proof. It is straightforward to check that the correspondence laid out above preserves composition and monoidal 
+products.1 / 1ChatGPTChatGPTRemark 4.6 reaffirms the definition that provides a well-defined symmetric monoidal category and highlights the difference from the setting of [FST19] which requires conditions (E1) to be strengthened so that f is a bijection. The authors of [FST19] believe that these conditions offer a more natural interpretation of the equivalence of learners, as it enables the identification of parameters with the same implementation.Next, the composition rule is illustrated using string diagrams for learners, providing a visual representation of the composite implementation function and the composite update-request function.Remark 4.7 points out that lenses can be seen as learners with trivial (singleton) parameter sets. The comparisons between learners and asymmetric lenses are made clear.Proposition 4.8 establishes that there's a faithful, identity-on-objects, symmetric monoidal functor from the category Lens to the category Learn. This indicates that the structure of the category Lens is faithfully represented inside the category Learn. The proof is not detailed, but it is stated that it's straightforward to check that the correspondence mentioned preserves composition and monoidal products.1 / 15The Main Result 
+While it is interesting, it is perhaps not surprising, and may not be especially enlightening, to i nd that lenses 
+are learners with trivial parameter set (which amounts to barely being a learner at all). There are other ways 
+of seeing relationships between lenses and learners, and in particular of seeing the entire gamut of learners (not 
+just ones with trivial parameters) as lenses. 
+We i rst note the following. 
+Lemma 5.1. Every learner pP,I,U,rq: A B is an asymmetric lens pp,gq: P ���� A B. 
+Proof. Let g ������ I: P ����A B and let p ������ xU,ry: B����pP ����Aq P ����A be the unique function into the product 
+P ���� A determined by U and r. 
+The resulting lenses pxU,ry,Iq: P ���� A B will not in general be well-behaved. In particular the training 
+process in supervised learning would not usually be expected to satisfy PutGet. Whether learners, when viewed 
+as in this lemma as lenses should satisfy GetPut is a subject of ongoing research, so for now we make no 
+assumptions. We make a comment again on this in Section 6. 
+Of course, merely observing that learners are lenses in this way is not especially useful if the composition of 
+learners does not correspond to the composition of lenses. And it cannot. Given two learners pP,I,U,rq: A B 
+and pP1,I1,U1,r1q: B C their corresponding lenses under the lemma are not even composable, since they have 
+types pp,gq: P ���� A B and pp1,g1q: P1���� B C. 
+As it happens, however, there is a Kleisli-like composition of these lenses that uses the monoidal product in 
+the category Lens to convert the i rst of these lenses, by taking its cartesian product with P1, to obtain a lens 
+P1���� P ���� A P1���� B which is then composable with the second lens. Remarkably the resulting composition 
+does correspond precisely to the composition of the original learners. But all this can be expressed better by 
+relating learners to certain symmetric lenses, and we do that now. 
+Lemma 5.2. Every learner pP,I,U,rq: A B is a symmetric lens 
+A 
+pk,����2q 
+���� ���� ���� ���� ���� P ���� A 
+pxU,ry,Iq 
+���� ���� ���� ���� ���� ���� B 
+with left leg a constant complement (and therefore well-behaved) lens. 
+Proof. The right leg pxU,ry,Iq is the asymmetric lens given in Lemma 5.1, while the left leg pk,����2q is the constant 
+complement (see Example 2.5) lens of the specif i ed type. 
+This gives the following correspondence: 
+Learner A BSymmetric lens A B 
+Hypotheses PLeft leg complement P 
+Implementation I: P ���� A BRight leg Get g: P ���� A B 
+Update U : B ���� P ���� A PRight leg Put p: B ���� P ���� A P ���� A (1st component) 
+Request r: B ���� P ���� A ARight leg Put p: B ���� P ���� A P ���� A (2nd component) 
+It should be remarked that in both the preceding lemmas we would normally use the word ������yields������ rather than 
+������is������, and we would be explicit about the process that converts a learner into a lens. However, here we have used 
+������is������ to emphasise that what we are describing is nothing more than minor repackaging of the data. Furthermore, 
+as the following theorem shows, the important interactions among the data (composition and monoidal product) 
+are exactly the same, whether one treats the data as learners or lenses. 
+We are now in a position to state the main result. 
+Theorem 5.3. There is a faithful, identity-on-objects, symmetric monoidal functor Learn SLens mapping 
+pP,I,U,rq: A B 
+to A 
+pk,����2q 
+���� ���� ���� ���� ���� P ���� A 
+pxU,ry,Iq 
+���� ���� ���� ���� ���� ���� B. 
+With the correspondences established, the proof is largely a routine verif i cation. Since Learn and SLens both 
+have sets as objects, we may def i ne the functor to act as the identity on objects. On arrows, the functor acts as 
+in correspondence presented in Lemma 5.2 and outlined in the table above; the fact that this operation is inde- 
+pendent of representive chosen follows immediately from the similarity between equivalence relation conditions 
+(E) and (E1) (see Def i nitions 3.1 and 4.4). It is easy to see that this proposed functor preserves identities and 
+the monoidal product.1 / 1ChatGPTChatGPTThe main result presented in this section demonstrates a novel relationship between learners and lenses. While lenses were previously described as a special case of learners with trivial parameter sets, this result shows that learners can be seen in terms of lenses, but with different perspectives and behaviors.Lemma 5.1 states that every learner can be viewed as an asymmetric lens, suggesting a significant degree of similarity between these two concepts. The corresponding lens might not always be well-behaved, and it raises an open research question on whether learners, when considered as lenses, should satisfy GetPut.However, observing that learners are lenses might not be very useful if the composition of learners does not correspond to the composition of lenses, as pointed out. The dilemma arises because given two learners, their corresponding lenses are not composable as per the lemma.Nonetheless, the authors find a Kleisli-like composition using the monoidal product in the category Lens, which allows composing the lenses that correspond to the learners. This process is better expressed by associating learners with symmetric lenses, which leads us to Lemma 5.2.Lemma 5.2 shows that every learner is a symmetric lens with a constant complement for the left leg, making it well-behaved.Theorem 5.3, the main result, states that there is a faithful, identity-on-objects, symmetric monoidal functor from the category of learners (Learn) to the category of symmetric lenses (SLens). The proof is said to be a routine verification due to the previously established correspondences. This functor acts as the identity on objects and follows the correspondence presented in Lemma 5.2 on arrows. The functor's preservation of identities and the monoidal product is noted to be straightforward.In summary, this part of the paper establishes a deep and surprising connection between the notions of learners and lenses in category theory, emphasizing that this connection preserves the important structure of composition and monoidal product.1 / 1The main dif i culty is proving that the proposed functor preserves composition. Before walking through this 
+in detail on the next page, we i rst present a useful lemma regarding composition of symmetric lenses. 
+Note that in Section 3 the composition of symmetric lenses with left legs satisfying PutGet was presented in 
+its maximum generality. The motivation for that will be discussed in Section 6. To prove the above theorem, 
+it will be helpful to understand the simpler case where the left legs are known to be constant complement. We 
+summarise our notation for the composition in the following diagram (in which notation is abused in the usual 
+way for constant complement lenses): P1���� A1P2���� A2 
+T 
+P1���� A1 
+pk,����q 
+yysss 
+sss 
+T P2���� A2 
+p ����p2, ����g2q 
+������ 
+������ 
+������ 
+������ 
+������ 
+������ 
+P1���� A1 A2 
+pp2,g2q 
+������ 
+������ 
+������ 
+������ 
+������ 
+P1���� A1P2���� 
+A2P2���� 
+A2 
+A2 
+pk,����q 
+yyssss 
+s 
+P1���� A1 
+A1 
+pk,����q 
+yyssss 
+s 
+P2���� A2 A3 
+pp3,g3q 
+������ 
+������ 
+������ 
+������ 
+������ 
+The following lemma gives an explicit formula for the composite of two symmetric lenses whose left legs are 
+constant complement. 
+Lemma 5.4. Suppose that A1 
+pk,����2q 
+���� ���� ���� ���� ���� P1���� A1 
+pp2,g2q 
+���� ���� ���� ���� ���� A2and A2 
+pk,����2q 
+���� ���� ���� ���� ���� P2���� A2 
+pp3,g3q 
+���� ���� ���� ���� ���� A3are spans of 
+asymmetric lenses whose left legs, both denoted pk,����2q, are constant complement lenses.Note that constant 
+complement lenses satisfy PutGet and hence we may compose them using Def i nition 3.3. 
+Their composite symmetric lens from A1to A3is represented by 
+A1 
+pk,����3q 
+���� ���� ���� ���� ���� P2���� P1���� A1 
+pp,gq 
+���� ���� ���� ���� A3, 
+where p and g are given by ppa3,pm1,m2,a1qq ������ `m1 
+2,p2pa 
+1 2,pm1,a1qq ����, 
+in which we let pm12,a12q ������ p3pa3,pm2,g2pm1,a1qqq P P2���� A2, and 
+gpm2,m1,a1q ������ g3pm2,g2pm1,a1qq. 
+(Note that to avoid overloading the notation pi, we have written mifor elements of Pi.) 
+Proof. Recall that in Def i nition 3.3 we use notation as in the following diagram. 
+S1S2 
+T 
+S1 
+p ����q2,����h2q 
+yyssss 
+ss 
+T S2 
+p ����p2, ����g2q 
+������ 
+������ 
+������ 
+������ 
+������ 
+������ 
+S1 A2 
+pp2,g2q ������ 
+������ 
+������ 
+������ 
+������ 
+������ 
+S1S2S2 
+A2 
+pq2,h2q 
+yysss 
+sss 
+S1 
+A1 
+pq1,h1q 
+yyssss 
+ss 
+S2 A3 
+pp3,g3q 
+������ 
+������ 
+������ 
+������ 
+������ 
+������ 
+Consider then, as in Def i nition 3.3, the pullback T in Set of the cospan P1���� A1 
+g2 
+���� ���� A2 
+����2 
+���� ���� P2���� A2. Knowing 
+how to calculate pullbacks in Set, we may suppose without loss of generality that the elements of T are tuples 
+pm2,m1,a1q, in which there is no a2explicitly mentioned since it must be equal to g2pm1,a1q, and that h2and 
+g2are ����23and P2����g2respectively. More explicitly still, T is just the product P2����P1����A1, h2is the projection 
+onto P1����A1, and g2is the arrow P2����P1����A1 P2����A2which preserves the P2value and uses g2to convert 
+the other two values into an A2value. 
+According to Def i nition 3.3, the left leg of the composite is the composition of two asymmetric lenses denoted 
+there as pq2,h2q # pq1,h1q. In the current context, pq1,h1q is the constant complement lens P1���� A1 A1, and 
+we have seen the q2may be taken to be the projection P2���� P1���� A1 P1���� A1. Furthermore the def i nition of 
+h2in Def i nition 3.3 is easily seen, up to reordering of variables, to be in this context the constant complement 
+Put. Finally, we have already seen in Example 2.5 how the composition of two constant complement lenses 
+is a constant complement lens, so the left leg of the composition here is simply the constant complement lens 
+pk,����3q : P2���� P1���� A1 A1. 
+We turn now to the right hand leg pp,gq. Again Def i nition 3.3 tells us that it is given by the asymmetric 
+lens composition denoted there as pp2,g2q # pp3,g3q, in which p2was def i ned by what we referred to there as 
+the ������somewhat complicated expression������. Referring to Def i nition 2.3 for how to compose asymmetric lenses, and 
+using the notation of the statement of the lemma, we see that 
+ppa3,pm1,m2,a1qq ������ p2ppm12,a12q,pm2,m1,a1qq.1 / 1ChatGPTChatGPTIn this text, a more challenging part of the theorem's proof is presented: showing that the proposed functor preserves the composition of learners. This part starts by establishing a lemma that offers a useful property regarding the composition of symmetric lenses.The authors use a diagram to represent the composition of symmetric lenses where the left legs are constant complement. Then, Lemma 5.4 is presented, which provides an explicit formula for the composite of two symmetric lenses whose left legs are constant complement lenses. These lenses are a special type of lens that satisfies the PutGet condition, which is necessary to allow their composition according to Definition 3.3. The lemma provides explicit formulas for the Put and Get operations of the composite lens.The proof of the lemma starts by considering the pullback in the category of sets of a specific cospan (a diagram consisting of two morphisms with a common codomain). It's shown that elements of the pullback can be represented as tuples of elements from the original sets. With this setup, the authors manage to break down the composition of two asymmetric lenses into its component parts.The conclusion is that the left leg of the composite lens is a constant complement lens. This lens composition result is vital for showing that the functor being defined preserves the composition operation.As for the right leg of the composite lens, its definition uses the asymmetric lens composition. Using the definition of how to compose asymmetric lenses, the authors derive an explicit formula for the Put operation of the composite lens.Overall, the lemma demonstrates how to compose two symmetric lenses whose left legs are constant complement lenses, which will be used in the subsequent proof to show that the proposed functor preserves composition.1 / 1We now show that this becomes, simply by substituting and simplifying, `m1 
+2,p2pa12,pm1,a1qq ����. 
+In detail 
+p2ppm12,a12q,pm2,m1,a1qq ������ p2ps12,ps1,s2qq(in the notation of Def i nition 3.3) 
+������ `p 
+2ph2ps12q,s1q, q2pg2pp2ph2ps12q,s1qq,s12q ���� 
+(by Def i nition 3.3) 
+������ `p 
+2pa12,s1q,q2pg2pp2pa12,s1qq,s12q ���� 
+(since h2ps12q ������ ����2pm12,a12q ������ a12) 
+������ `p 
+2pa12,s1q,q2pg2pp2pa12,s1qq,pm12,a12qq ���� 
+(since s12������ pm12,a12q) 
+������ `p 2pa12,s1q,pm12,g2pp2pa12,s1qqq ���� 
+(since q2is constant complement) 
+������ `p 
+2pa12,s1q,m12 ���� 
+(by comment below) 
+������ `p 2pa12,pm1,a1qq,m12 ���� 
+(since s1������ pm1,a1q) 
+The second to last line holds since, as noted above, a fourth component in T is superf l uous since it has to be 
+(and indeed is) g2applied to the i rst component. Reordering the variables in that last line, because we have 
+chosen to keep the Aiin the last position, completes the proof. 
+We now return to the proof of Theorem 5.3. 
+Proof of Theorem 5.3. We will check that the proposed functor preserves composition. This is simply a matter 
+of comparing the Get and Put of the right leg of composite symmetric learners, as detailed in Lemma 5.4, with 
+the formulas for composition of learners as detailed in Def i nition 4.5. 
+First compare the def i nition of I ���� J in Def i nition 4.5 with the description of the Get of the composite right 
+legs, gpm2,m1,aq of Lemma 5.4, recalling the correspondence between the implementation operations I and J 
+and the right leg Gets g2and g3. In other words, compare 
+gpm2,m1,aq ������ g3pm2,g2pm1,a1qq 
+with pI ���� Jqpp,q,aq ������ Jpq,Ipp,aqq 
+noting the naming of variables means p and q correspond respectively to m1and m2(and that while the order of 
+parameters for g is not important, the choice made for symmetric lens composition was to add new parameters 
+on the left, corresponding to the choice used in function composition). 
+Next, we compare the right leg Put p of Lemma 5.4 with the composite update������request function xU ����V,r����sy. 
+We do this by considering each of the two components separately. 
+The A1component is ����2pp2pa12,pm1,a1qqq, which since a12������ ����2pp3pa3,pm2,g2pm1,a1qqqq is 
+����2p2`m1,a1,����2p3pa3,m2,g2pm1,a1qq���� 
+which should be compared with pr ���� sqpc,p,q,aq ������ r`p,a,spc,q,Ipp,aqq���� 
+recalling again that I corresponds to g2, that p and q correspond to m1and m2, that a and c correspond to a1 
+and a3, and that r and s correspond to ����2p2and ����2p3respectively. 
+Finally the P1���� P2component has, as its two coordinates, 
+����1p2`����2p3pa3,m2,g2pm1,a1qq,m1,a1����and����1p3`a3,m2,g2pm1,a1q���� 
+which should be compared respectively with 
+U `spc,q,Ipp,aqq,p,a���� 
+andV `c,q,Ipp,aq����, 
+recalling all the correspondences we������ve already pointed out, along with the correspondences between U and V 
+and ����1p2and ����1p3respectively. 
+These functions are all the same up to the specif i ed renaming correspondences, and hence our functor preserves 
+composition.1 / 1ChatGPTChatGPTThe text continues to provide further details on how to prove the theorem that a proposed functor preserves the composition operation.The authors show that the previously derived expression for the Put operation simplifies to the desired result. They do this by methodically substituting and simplifying terms, using properties of the symmetric lenses, the definition of pullback in the category of sets, and other results from the theory of lenses.The proof then returns to the main theorem (Theorem 5.3). The goal is to show that the functor preserves composition. This is done by comparing the composition operations in the lens theory to the composition operations in the functor's theory. The text points out that it's a matter of comparing the Get and Put operations of the composite symmetric lenses (from Lemma 5.4) with the formulas for composition of learners (from Definition 4.5).The authors compare the Get operation from Lemma 5.4 with a similar operation from Definition 4.5, making sure to account for the correspondences between different variables and functions.Next, they compare the Put operation (also from Lemma 5.4) with the composite update������request function from Definition 4.5. They do this for each of the two components of the Put operation separately, pointing out that each of these correspond to specific parts of the composite update������request function. The authors highlight the important correspondences between different variables and functions, which facilitate the comparison of these two functions.In conclusion, the authors state that these functions are the same up to the specified renaming correspondences, implying that the proposed functor indeed preserves the composition operation. This effectively completes the proof of Theorem 5.3.1 / 16Discussion 
+In this section we discuss two directions of research suggested by the main theorem: laws for well-behaved 
+learners, and links between learners and multiary lenses. 
+6.1Learner laws 
+We have shown that the usual notion of composition of symmetric lenses admits a generalization that receives a 
+functor from Learn. Instead, one might consider adding conditions to the notion of learner that permit learners 
+to embed into a more familiar notion of symmetric lens. Put another way: the lens laws suggest analogues for 
+learners. 
+For example, the GetPut law generalises as follows. 
+Def i nition 6.1. We say that a learner pP,I,U,rq obeys the I-UR law if for every parameter p P P we have 
+both rpIpp,aq,p,aq ������ a and UpIpp,aq,p,aq ������ p, or in string diagrams 
+U,r 
+I 
+P 
+A 
+P 
+A 
+������ 
+P 
+A 
+P 
+A 
+This law asks that the lens pxU,ry,Iq obey the GetPut law. Intuitively, it states that if, at a given parameter 
+p, the training pair pa,bq provided is already classif i ed correctly by the learner������that is, if the training pair is 
+of the form pa,Ipp,aqq������then the update function does not change the parameter and the request function does 
+not request any change to the input. This sort of property can be a desirable property of learning algorithm, 
+and a number of simple, important examples of learners, including those of Example 4.3, satisfy the I-UR law. 
+We have focussed more on the PutGet law in this paper. This may be generalised as follows. 
+Def i nition 6.2. We say that a learner pP,I,U,rq obeys the UR-I law if for every parameter p P P and input 
+a P A we have IpUpb,p,aq,rpb,p,aqq ������ b, or in string diagrams 
+U,rI 
+B 
+P 
+A 
+B ������ 
+B 
+P 
+A 
+B 
+This law asks that the lens pxU,ry,Iq obey the PutGet law. The intuition here is that when given a training 
+pair pa,bq, if the requested input rpb,p,aq is given to the implementation function at the new parameter Upb,p,aq, 
+then the training pair prpb,p,aq,bq will be correctly classif i ed by the learner. This is too strong for the incremental 
+learning witnessed in practical supervised learning algorithms such as neural networks. Nonetheless, it is clear 
+that a learner with this property would be in some sense desirable, or well-behaved. 
+Indeed, learning algorithms in practice must take into account practical considerations such as learning speed 
+and convergence, and the prioritisation of these considerations leads to methods that violate abstract properties 
+such as the I-UR and UR-I laws that might characterise what it means to learn ef f ectively. Nonetheless, we believe 
+the formulation of these properties, from well-motivated considerations such as our main theorem, suggest ideas 
+that could help frame and guide development of learning algorithms, especially should the intent be to construct 
+algorithms which can be reasoned about to some extent. 
+This view of learners obeying generalised lens laws suggests a view of a learner as just a parametrised family 
+of lenses, together with a rule for choosing which lens in this family to use given some examples of what you 
+want the lens to do. 
+6.2Links with multiary lenses 
+During the course of preparing this work for this workshop an interesting similarity has come to light. In this 
+paper the main tool we are using is symmetric lenses with left leg constant complement, and right leg bare lenses. 
+In another paper presented at this workshop [JR19] that studies an entirely dif f erent area, the main tool the 
+authors use is symmetric lenses (in fact, wide spans of lenses, so they may have in general more than two legs, 
+but they do have at least two legs) with left leg what is known as a closed spg-lens, and right leg(s) arbritrary 
+spg-lenses. 
+The similarity is more than just the linguistic parallel just described. We������ll not def i ne spg-lenses or closed 
+spg-lenses here, but we remark that constant complement lenses are indeed closed spg-lenses. In both cases 
+composition along those left legs is important, and the fact that they are, in both cases, closed and satisfy 
+PutGet is what is important for the composition to work. The nature of the left legs is critical for the main idea 
+in both papers. 
+What of the right legs? At i rst they seem very dif f erent. In this paper the right legs are bare lenses ������ they 
+have a Put p and Get g and nothing else, neither more structure, nor axioms. In apparent contrast, the right 
+legs in [JR19] seem to have a substantial amount of structure. They do have a p and a g, but they also have 
+something called an amendment and several axioms. The basic idea is that an update, expressed there as an 
+arrow v in a category (here we only have the codomain of such an arrow when we are doing an update because 
+these are set-based lenses), might result in not only a modif i cation of the other component (or in the case of the 
+multiary lenses of [JR19], the other components), but also an amendment. This amendment a can be composed 
+with v so that while the Get of the Put might not be v, it will be av. In other words the amendment repairs 
+PutGet. 
+Now are the right hand lenses really that dif f erent? There is a standard way of seeing set based lenses as so 
+called delta lenses (lenses that take arrows, not just codomain objects, as the input for Put). It appears as part 
+of a unif i ed treatment of many dif f erent kinds of lenses [JR16] and involves co-discrete categories. In a codiscrete 
+category there is a unique way of extending each of the view updates from the bare lenses of this paper to make 
+them line up with their own Put, in other words a unique way of extending bare lenses that satisfy no axioms 
+to spg-lenses that satisfy PutGet. So, the two ������main tools������ are actually remarkably similar.1 / 1ChatGPTChatGPTIn this discussion section, the authors highlight two main areas for future research: laws for well-behaved learners and the connections between learners and multiary lenses.Learner Laws:The authors propose generalizations of existing lens laws for learners. Specifically, they propose the I-UR law and UR-I law. The I-UR law states that if a learner already correctly classifies a training pair, then the update function does not change the parameter and the request function does not request any change to the input. The UR-I law implies that given a training pair, if the requested input is given to the implementation function at the new parameter, then the new training pair will be correctly classified by the learner.The authors note that these laws might not align perfectly with practical considerations in machine learning, such as learning speed and convergence. However, they suggest that the formulation of these laws could provide a useful theoretical framework for the development of learning algorithms.Links with Multiary Lenses:The authors note a similarity between the tools used in their work and those used in a different paper. In both cases, lenses with certain properties are used as key tools. The authors draw attention to the fact that the constant complement lenses they are using are indeed closed spg-lenses (a type of lens used in the other paper). They remark that both papers leverage these types of lenses in a similar manner for composition operations.The authors also point out a potential connection between the right legs of the lenses used in their work (which are bare lenses with minimal structure) and those in the other paper (which appear to have more structure). The authors suggest that there is a standard way of interpreting set-based lenses as delta lenses, which could help align these seemingly different types of lenses.In summary, the authors propose new theoretical laws for learners based on lens laws and highlight potential connections between their work and other research in the field of lens theory.1 / 1They still dif f er in one respect (only): spg-lenses are required to satisfy an axiom that corresponds to GetPut 
+here. But we have just discussed how GetPut is in fact a desirable property that might be asked of Learners. If 
+it were, then the two very dif f erent projects are in fact using exactly alignable, novel, tools: Closed amendment 
+lenses (of the constant complement variety here) as left leg and spg amendment lenses as right leg(s). 
+The similarities and what they might mean (if anything) will be considered further in future work. 
+7Conclusion 
+To summarise, in this paper we have described a faithful, identity-on-objects, symmetric monoidal functor from 
+a category which captures the notion of composable supervised learning algorithms to a suitable category of 
+lenses. To do this, we presented a slight generalisation of the usual notion of symmetric lens, in which we require 
+a very weak form of well behavedness: a span of asymmetric lenses in which the left leg satisf i es the PutGet law. 
+Despite the general def i nition, these symmetric lenses still compose, and indeed equivalence classes of them form 
+the morphisms of a symmetric monoidal category SLens. Our main theorem describes the aforementioned close, 
+functorial relationship between the category of learners, as def i ned in [FST19], with this category of lenses. In 
+this theorem, we witness a surprising yet highly robust link between two previously unrelated i elds. We believe, 
+as hinted by our brief discussion in Section 6, this to be a rich connection deserving of further exploration.1 / 1ChatGPTChatGPTIn this conclusion, the authors summarize their work and its implications. They have outlined a symmetric monoidal functor from a category that encapsulates composable supervised learning algorithms to an appropriate category of lenses. This necessitated a slight generalization of the conventional understanding of symmetric lenses, requiring a minimal form of well-behavedness - a span of asymmetric lenses in which the left leg adheres to the PutGet law.Even with this generalized definition, these symmetric lenses still compose, and their equivalence classes form the morphisms of a symmetric monoidal category, termed SLens. The main theorem illustrates a close, functorial relationship between the category of learners (as defined in [FST19]) and this category of lenses.This connection between lenses and learning algorithms - previously unrelated fields - is both unexpected and robust. The authors suggest that this relationship offers fruitful avenues for further investigation. The differences and similarities between the tools used in this work and those in other research, particularly the adherence to the GetPut law, warrant more thorough exploration in future research.1 / 1Connections to this: PromptChainer: Chaining Large Language Model Prompts 
+through Visual Programming 
+Tongshuang Wu������������ 
+wtshuang@cs.washington.edu 
+University of Washington 
+USA 
+Ellen Jiang������ 
+ellenj@google.com 
+Google Research 
+USA 
+Aaron Donsbach 
+donsbach@google.com 
+Google Research 
+USA 
+Jef f Gray 
+jef f gray@google.com 
+Google Research 
+USA 
+Alejandra Molina 
+alemolinata@google.com 
+Google Research 
+USA 
+Michael Terry 
+michaelterry@google.com 
+Google Research 
+USA 
+Carrie J. Cai 
+cjcai@google.com 
+Google Research 
+USA 
+ABSTRACT 
+While LLMs have made it possible to rapidly prototype new ML 
+functionalities, many real-world applications involve complex tasks 
+that cannot be easily handled via a single run of an LLM. Recent 
+work has found that chaining multiple LLM runs together (with the 
+outputofonestepbeingtheinputtothenext)canhelpusersaccom- 
+plish these more complex tasks, and in a way that is perceived to be 
+more transparent and controllable. However, it remains unknown 
+what users need when authoring their own LLM chains ������ a key step 
+to lowering the barriers for non-AI-experts to prototype AI-infused 
+applications. In this work, we explore the LLM chain authoring 
+process. We i nd from pilot studies that users need support trans- 
+forming data between steps of a chain, as well as debugging the 
+chain at multiple granularities. To address these needs, we designed 
+PromptChainer, an interactive interface for visually programming 
+chains. Through case studies with four designers and developers, 
+we show that PromptChainer supports building prototypes for a 
+range of applications, and conclude with open questions on scaling 
+chains to even more complex tasks, as well as supporting low-f i 
+chain prototyping. 
+CCS CONCEPTS 
+������ Human-centered computing ������ Empirical studies in HCI; 
+Interactive systems and ools;������ Computing methodologies ������Ma- 
+chine learning. 
+������The work was done when the author was an intern at Google Inc. 
+������Equal contribution. 
+Permission to make digital or hard copies of part or all of this work for personal or 
+classroom use is granted without fee provided that copies are not made or distributed 
+for prof i t or commercial advantage and that copies bear this notice and the full citation 
+on the i rst page. Copyrights for third-party components of this work must be honored. 
+For all other uses, contact the owner/author(s). 
+CHI ������22 Extended Abstracts, April 29-May 5, 2022, New Orleans, LA, USA 
+���� 2022 Copyright held by the owner/author(s). 
+ACM ISBN 978-1-4503-9156-6/22/04. 
+https://doi.org/10.1145/3491101.3519729 
+ACM Reference Format: 
+Tongshuang Wu, Ellen Jiang, Aaron Donsbach, Jef f Gray, Alejandra Molina, 
+Michael Terry, and Carrie J. Cai. 2022. PromptChainer: Chaining Large Lan- 
+guage Model Prompts through Visual Programming. In CHI Conference on 
+Human Factors in Computing Systems Extended Abstracts (CHI ������22 Extended 
+Abstracts), April 29-May 5, 2022, New Orleans, LA, USA. ACM, New York, 
+NY, USA, 10 pages. https://doi.org/10.1145/3491101.3519729 
+1INTRODUCTION 
+Large language models (LLMs) have introduced new possibilities 
+for prototyping with AI [18]. Pre-trained on a large amount of text 
+data,modelslikeGPT-3[3]andJurassic-1[10]encodeenoughinfor- 
+mationtosupportin-contextlearning:theycanbeeasilycustomized 
+at run time (without any re-training needed) to handle new tasks, 
+simply by taking in natural language instructions called prompts. 
+For example, a user could customize a pre-trained, general purpose 
+LLM to create an ad-hoc search engine for musicians by giving it 
+the prompt string: ������Genre: Jazz; Artist: Louis Armstrong. Genre: 
+Country; Artist: ������. An LLM would likely continue the prompt with 
+the name of a country artist, e.g. ������Garth Brooks.������ Beyond this toy 
+example, non-ML experts have used prompting to achieve various 
+ML functionalities in real-time, including code generation, ques- 
+tion answering, creative writing, etc. [3,13,15]. Recent work on 
+prompt-basedprototyping[8]foundthat,withLLMs������f l uidadap- 
+tation to natural language prompts, non-ML experts (e.g. designers, 
+product managers, front-end developers) can now prototype cus- 
+tom ML functionality with lower ef f ort and less time, as they bypass 
+the otherwise necessary but expensive process of collecting data 
+and training models upfront [2, 8]. 
+Despite the demonstrated versatility of LLMs, many real-world 
+applications involve complex or multi-step tasks that are nontrivial 
+for a single run of an LLM. For example, a music-oriented chatbot 
+(which we build in Figure 2) may require an AI to i rst determine a 
+user������s query type (e.g., i nd artists by genre as shown above, or i nd 
+songs given artists, etc.), before generating a response based on 
+the query type. As a result, designers and developers may struggle 
+to prototype realistic applications with only a single LLM prompt. 
+arXiv:2203.06566v1 
+[cs.HC] 
+13 
+Mar 
+2022 
+CHI ������22 Extended Abstracts, April 29-May 5, 2022, New Orleans, LA, USAWu and Jiang et al. 
+A 
+C B 
+D 
+Figure 1: The PromptChainer interface. (A) The Chain View visualizes the chain structure with node-edge diagrams (enlarged 
+in Figure 2), and allows users to edit the chain by adding, removing, or reconnecting nodes. (B) The Node View supports im- 
+plementing, improving, and testing each individual node, e.g., editing prompts for LLM nodes. PromptChainer also supports 
+running the chain end-to-end (C). 
+In response, we previously proposed Chaining multiple LLM runs 
+together [17], i.e., decomposing an overarching task into a series 
+of highly targeted sub-tasks, mapping each to a distinct LLM step, 
+and using the output from one step as an input to the next. They 
+observed that people can ef f ectively use Chaining: they could com- 
+plete more complex tasks in a more transparent and controllable 
+way. However, it remains an open question how to support users 
+in authoring their own LLM chains. For designers and developers 
+to apply chaining to their own prototypes, they need to not only 
+prompt within each individual LLM step, but also design the overar- 
+ching task decomposition. Such a process requires targeted tooling, 
+akin to end-user programming [4, 5].1 / 1ChatGPTChatGPTThe article titled "PromptChainer: Chaining Large Language Model Prompts through Visual Programming" is about the development and application of a tool called PromptChainer, designed to assist users in creating complex tasks with large language models (LLMs), such as GPT-3 and Jurassic-1.LLMs have made it easier to prototype AI applications, with the ability to easily adapt to new tasks through natural language instructions, known as prompts. However, while LLMs offer versatility, they can struggle with multi-step or complex tasks which are often required in real-world applications.Addressing this, the authors propose the concept of chaining multiple LLM runs together. By breaking down an overarching task into smaller, highly-targeted sub-tasks, and mapping each to a specific LLM step, it's possible to complete more complex tasks. Each step's output serves as the input to the next, creating a chain.However, it's not yet known how to effectively support users in creating these LLM chains. This leads to the development of PromptChainer, a visual programming tool designed to assist users in this process. It allows users to design the overarching task decomposition, prompting within each LLM step, and also provide a transparent and controllable way of creating complex tasks with LLMs.PromptChainer offers an interactive interface for visual programming chains and supports building prototypes for a range of applications. The paper concludes with open questions on scaling chains to even more complex tasks, as well as supporting low-fidelity chain prototyping.The connection to the previous discussion on symmetric lenses and learning algorithms can be viewed in the light of complexity management. Both works deal with the need to create structures (lenses or chains) that can handle complex tasks, with specific rules and laws to govern their operation. They both focus on breaking down complexity into more manageable, composable parts.1 / 1In this work, we examine the user experience of authoring LLM 
+chains. Through formative studies, we distill three unique chal- 
+lenges that emerge from the extreme versatility of LLMs: (1) the 
+overhead of fully utilizing LLM capabilities, (2) the tendency of 
+inadvertently introducing errors to the chain when prompting, and 
+(3) the cascading errors caused by blackbox and unstable LLM gen- 
+erations. Addressing these challenges, we propose PromptChainer, 
+a chain authoring interface that provides scaf f olds for building a 
+mental model of LLM������s capabilities, handling arbitrary LLM data 
+formats, def i ning a ������function signature" for each LLM step, and 
+debugging cascading errors. We conduct case studies with four 
+designers and developers, who proposed and built chains for their 
+own realistic application ideas (e.g., chatbots, writing assistants, 
+etc.) Our qualitative analysis reveals patterns in how users build 
+and debug chains: (1) users build chains not only for addressing 
+LLM limitations, but also for making their prototypes extensible; 
+(2) some users constructed one step of a chain at a time, whereas 
+others sketched out abstract placeholders for all steps before i lling 
+them in; (3) the interactions between multiple LLM prompts can be 
+complex, requiring both local and global debugging of prompts. 
+We also observed some additional open challenges, and conclude 
+with discussion on future directions: First, how can we scale chains 
+to tasks with high interdependency or logical complexity, while 
+still preserving global context and coherence? Second, how can we 
+i nd a ������sweet spot������ for prompting such that users can quickly low-f i 
+prototype multiple alternative chains, without investing too much 
+time designing any single prompt? 
+2BACKGROUND: LARGE LANGUAGE 
+MODELS, PROMPTING AND CHAINING 
+A generative language model is designed to continue its input with 
+plausible output (e.g., given a prompt ������I went to the������, it might 
+auto-complete with ������cof f ee shop������). However, when pre-trained on 
+billions of samples from the Internet, recent LLMs can be adapted 
+on-the-f l y to support user-def i ned use cases like code generation, 
+question answering, creative writing, etc. [3,15]. To invoke the 
+desired functionalities, users need to write prompts [1,11,12] 
+that are appropriate for the task. The most common patterns for 
+prompting are either zero-shot or few-shot prompts. Zero-shot 
+prompts directly describe what ought to happen in a task. For 
+example, we can enact Classif i cation in Figure 4 with a prompt 
+such as ������Is the statement: ������hey there, what������s up������ about music?������ In 
+contrast, few-shot prompts show the LLM what pattern to follow 
+by feeding it examples of desired inputs and outputs: ������[Dialog] Play 
+some music I like. [Class] is_music [Dialog] hey there, what������s up 
+[Class]������.Giventhisprompt,theLLMmayrespondwith������not_music������ 
+(full prompt in Figure 4). 
+While a single LLM enables people to prototype specif i c ML 
+features [8], their inherent limitations (e.g., lack of multi-step rea- 
+soning capabilities) make them less capable of prototyping complex 
+applications. In response, we previously proposed proposed the no- 
+tion of chaining multiple LLM prompts together, and demonstrated 
+the utilities of using chains [17]. We follow up on their work to 
+explore how users can author ef f ective chains for prototyping.1 / 1ChatGPTChatGPTThe authors continue to focus on the user experience of authoring large language model (LLM) chains. They highlight three main challenges:Overhead of fully utilizing LLM capabilities due to their extreme versatility.The tendency of inadvertently introducing errors into the chain while prompting.Cascading errors resulting from the black box nature and unstable LLM generations.In response, they developed PromptChainer, a chain authoring interface designed to address these challenges. It helps users in understanding LLM������s capabilities, managing data formats, defining a "function signature" for each LLM step, and debugging cascading errors.The authors conducted case studies with four designers and developers who built chains for realistic application ideas. The results revealed various patterns in how users build and debug chains. It was found that users build chains not only to address LLM limitations, but also to make their prototypes extensible. Also, different strategies were observed in building chains. While some users built one step of a chain at a time, others sketched out abstract placeholders for all steps before filling them in. Lastly, it was noted that the interactions between multiple LLM prompts can be complex, requiring both local and global debugging of prompts.However, the study also highlighted further challenges. These include scaling chains for tasks with high interdependency or logical complexity while maintaining global context and coherence. Another challenge is finding a "sweet spot" for prompting that allows users to quickly prototype multiple alternative chains without spending excessive time designing a single prompt.The paper provides background on large language models (LLMs), prompting, and chaining. LLMs pre-trained on vast amounts of internet data can be adapted in real-time to support user-defined use cases like code generation, question answering, creative writing, etc. To invoke these functionalities, users need to write appropriate prompts. The authors differentiate between zero-shot prompts that directly describe what ought to happen in a task and few-shot prompts that show the LLM a pattern to follow by feeding it examples of desired inputs and outputs. They acknowledge that while a single LLM enables prototyping specific ML features, their inherent limitations make them less capable of prototyping complex applications. Hence, the concept of chaining multiple LLM prompts together was proposed.1 / 13PROMPTCHAINER: INTERFACE 
+REQUIREMENT ANALYSIS & DESIGN 
+3.1Requirement Analysis 
+To inform the design of PromptChainer, we conducted a series of 
+formative studies with a team of two software engineers and three 
+1From Tensorf l ow.js https://github.com/tensorf l ow/tfjs-models/tree/master/toxicity 
+PromptChainer: Chaining Large Language Model Prompts through Visual ProgrammingCHI ������22 Extended Abstracts, April 29-May 5, 2022, New Orleans, LA, USA 
+Branch: music relevance 
+Get factual answers Parse the list 
+Call YouTube API 
+Format the response 
+Input 
+utterances21 
+45 
+7 
+8 
+Branch: music 
+intention3 Extract 
+entities6 
+Filter: toxic 
+response10Generate 
+response9 Music chatbot: Respond to unstructured 
+statements about music For artist-The Beatles, 
+I found 1. Get back 
+2. Hey Jude 
+3. Love me Do! 
+Music 
+search 
+Play music by 
+the Beatles. [ Garth Brooks, 
+George Strait, 
+Dolly Parton ] 
+Music 
+info. 
+Who are some 
+Country artists? I'm chillin', what can 
+I do for you? 
+Not 
+Music 
+Hey! what up? You also suck! 
+Not 
+Music 
+You suck! 
+3 
+3 
+2 
+2 
+8 
+5 
+9 
+10 
+Figure 2: An example chain for prototyping music chatbot, modif i ed from a pilot user������s chain (its overview is in Figure 1). We 
+provide primary input-output examples, and annotate the node functionalities are annotated inline. 
+Node TypeDescriptionExample in Figure 2 
+LLM 
+Generic LLMUse the LLM output directly as the node output.469 
+LLM Classif i erUse LLM output to i lter and branch out inputs.23 
+Helper 
+EvaluationFilter or re-rank LLM outputs by human-designed criteria, e.g., politeness.10 Toxicity classif i er1 
+ProcessingPre-implemented JavaScript functions for typical data transformation.5 Split by number 
+Generic JavaScriptUser-def i ned JS functions, in case pre-def i ned helpers are insuf i cient.8 Format the query 
+Comm. 
+Data InputDef i ne the input to a chain.1 
+User ActionEnables external (end user) editing on intermediate data points.(Figure 5 11 ) 
+API CallCall external functions to connect professional services with LLMs.6 Call YouTube API 
+Figure 3: A summary of node types, including the core LLM nodes, helper nodes for data transformation and evaluation, and 
+communication nodes for exchanging LLM data with external users or services. 
+designers over the course of three months. These formative studies 
+included sessions ref l ecting on their experiences authoring LLM 
+chains without any assistance, as well as iterative design sessions 
+where they proposed and built their chains-of-interest in early 
+prototypes for several rounds, reporting back their pain points (the 
+chains from pilot studies are in Appendix A). We summarize our 
+observations into the following authoring challenges: 
+C.1 The versatility of LLMs and need for data transforma- 
+tions: The versatility of LLMs means that users need to 
+develop a mental model of their capabilities. LLMs also pro- 
+duce outputs in arbitrary string formats, making it nontrivial Figure4:AnexpansionofFigure2,is about music:(A)Nodevisualization:thenodehasanstatusicon(��������1),alistofnamedinput 
+(��������2) and output handles (��������3), as well as detailed data previews (��������4). (B) Implementation: the handle names are synchronized 
+with the underlying prompt template (��������1). (C) We can debug the node at multiple levels. 
+to transform the output of upstream LLM steps to be com- 
+patible with the input to downstream steps. 
+C.2 The instability of LLM function signatures: LLMs also 
+lackstablefunctionsignatures,i.e.,thesemantictypesoftheir 
+outputs easily vary with LLM prompts. This complicates lo- 
+cal chain iterations: for example, if a user������s edits on a prompt 
+unintentionally make an LLM step output numbered lists 
+instead of short phrases, this would introduce input errors to 
+the following steps, and thereby break the entire chain. 
+C.3 Thelikelihoodofcascadingerrors:Theblack-boxnature 
+of LLMs means that sub-optimal or even unsafe output in a 
+single step could potentially lead to cascading errors across 
+anLLMchain(see[14]forasimilarobservationintraditional 
+machine learning pipelines). 
+3.2Interface Design 
+We design the interface in Figure 1 in response to the challenges, 
+with a Chain View (Figure 1A) for authoring the chain structure, 
+a Node View (Figure 1B) for authoring a single step (node) of the 
+chain, and support for chain debugging. 
+The Chain View is the visual panel for building and view- 
+ing chains.As in Figure 1A, each rectangle depicts anode, which 
+represents a single step in the chain, with the edges between them 
+denoting how these nodes are connected, or how the output of one 
+node gets used as the input to the next. 
+Node visualization. As shown in Figure 4 (a zoomed-in node of 
+Figure 22), each node can have one or more named inputs (��������2) 
+and outputs (��������3), which are used to connect nodes. Inspired by 
+several existing node-edge-based visual programming platforms2, 
+we provide node previews to increase chaining transparency, in- 
+cluding a status icon highlighting whether the node contains errors 
+(Figure 4��������1), as well as inline and detailed data views (��������3and ��������4). 
+Node Types. As summarized in Figure 3, we def i ne several types 
+of nodes to cover diverse user needs. At its core are two types of 
+LLM nodes: Generic LLM nodes and LLM Classif i er nodes (See the 
+2e.g., Maya: https://www.autodesk.com/products/maya/overview; Node-RED: https: 
+//nodered.org/ 
+node def i nitions and examples in Figure 3). Users can implement 
+these nodes by providing a natural language prompt, call an LLM 
+with the prompt as input, and use the LLM outputs accordingly. 
+PromptChainer also provideshelper nodesthat address common 
+data transformation (C.1 in Section 3.1) and evaluation needs (C.3), 
+or to allow users to implement their own custom JavaScript (JS) 
+nodes. Finally, to support users in prototyping AI-infused appli- 
+cations, PromptChainer providescommunication nodesfor ex- 
+changing data with the external world (e.g., external API calls). 
+Example gallery. To address the versatility challenge of LLMs 
+(C.1), PromptChainer provides examples of frequently composed 
+(sub-)chains, to help users develop a mental model of which capa- 
+bilities are likely to be useful. These examples also serve as a soft 
+nudgetowardsasetofpromptingpatterns,suchthatusers������prompts 
+are more likely to be compatible with predef i ned processing nodes. 
+For example, Figure 24is forked from an Ideation example that 
+returns numbered lists ������1) Garth Brooks 2) George Strait...������, which 
+is parsable with the provided 5 Split by number node. 
+The Node View allows users to inspect, implement, and 
+test individual nodes(Figure 1B). When a node is selected, the 
+panel changes in accordance with the Node Type. PromptChainer 
+automatically parses the input names of a node based on the LLM 
+prompt for that node (or, for JavaScript helper nodes, based on the 
+function signature). For example, in Figure 4, the input handle��������1 
+������user������issynchronizedwiththeboldedplaceholderstring[[user]] 
+(��������1) in its corresponding prompt template, meaning that the input 
+to��������1will be used to i ll in��������1in the prompt. If a user changes��������1 
+to e.g.,[[sentence]],��������1would get renamed to ������sentence,������ such 
+that there will be no outdated handles. As such, PromptChainer 
+automatically updates the global chain to be consistent with users������ 
+local edits (addressing C.2). 
+Interactivedebuggingfunctionalities.Toaddressthecascad- 
+ing error challenge (C.3), PromptChainer supports chain debugging 
+at various levels of granularity: First, to unit test each node, users 
+can use the provided testing block (Figure 4��������1) to test each node, 
+with examples independent of the remaining chain. Second, to per- 
+form end-to-end assessment, users can run the entire chain and log 
+the outputs per node, such that the ultimate chain output is easy to 
+PromptChainer: Chaining Large Language Model Prompts through Visual ProgrammingCHI ������22 Extended Abstracts, April 29-May 5, 2022, New Orleans, LA, USA 
+retrieve (Figure 4��������2). Third, to help users map global errors to local 
+causes, PromptChainer supports breakpoint debugging (Figure 4��������3), 
+and allows users to directly edit the output of a node before it is fed 
+into the next node. By i xing intermediate node outputs, users can 
+test a subset of downstream nodes independent of earlier errors.1 / 1ChatGPTChatGPTIn this study, the authors propose an interface called PromptChainer to streamline the process of chaining prompts for Large Language Models (LLMs). PromptChainer was designed in response to three major challenges observed during formative studies with software engineers and designers who were attempting to chain LLM prompts: (1) the high overhead of fully using LLM capabilities, (2) the tendency to unintentionally introduce errors during the prompting process, and (3) the cascade of errors caused by LLM's blackbox nature and instability.PromptChainer uses a visual panel for building and viewing chains of nodes, where each node represents a single step in the chain and the connections between nodes represent how output from one step is used as input for the next. Each node has named inputs and outputs for easy connection, and a status icon to indicate if there are any errors in the node.The interface provides several types of nodes to cater to diverse user needs. These include Generic LLM nodes and LLM Classifier nodes that can be implemented by providing a natural language prompt and helper nodes for common data transformations and evaluations. Communication nodes are also available to facilitate data exchange with external services or APIs.The interface features an example gallery to help users understand the versatile capabilities of LLMs. These examples serve as suggestions for potential prompting patterns, increasing the likelihood that user prompts are compatible with pre-defined processing nodes.Finally, PromptChainer also features interactive debugging functionalities to tackle cascading errors. Users can unit test each node independently, perform end-to-end assessment by logging the outputs per node, and utilize breakpoint debugging to map global errors to their local causes.1 / 14USER FEEDBACK SESSIONS 
+We conducted a preliminary study to understand what kinds of 
+chainswoulduserswanttobuild,theextenttowhichPromptChainer 
+supports their needs, and what additional challenges users face. 
+4.1Study design 
+Because Chain authoring goes beyond single prompts to chaining 
+multiple prompts together, we recruited four participants (3 de- 
+signers, 1 developer within Google) who had at least some prior 
+experience with non-chained prompts: P1 and P2 had prior expe- 
+rience writing prompts, and P3 had seen some LLM demos. We 
+personally reached out to these participants in dif f erent product 
+teams, to prioritize interests and experience in a wide range of 
+domains. Before the study session, participants spent 30 minutes 
+on preparation: They watched a 10-minute tutorial on interface fea- 
+tures. They were also asked to prepare a task beforehand that they 
+believed would require multiple runs of the LLM, envision the LLM 
+call for each step, and draft each of those prompts. This way, the 
+study could focus on chaining prompts together rather than writ- 
+ing the initial prompts. In the hour-long actual study, participants 
+loaded their prompts and authored their envisioned Chain while 
+thinking aloud. To observe the extent to which PromptChainer 
+could support iteration, we asked participants to describe def i cien- 
+cies (if any) in their Chain, and modify their Chains. We observed 
+and recorded their entire task completion sessions, and later tran- 
+scribed their comments for qualitative analysis. In total, participant 
+spent approximately 90 minutes, and received a $75 gift credit for 
+their time. 
+UnderlyingLLM.Allofourexperiments(includingpilotstudy) 
+rely on the same underlying LLM called LaMDA [16]3: a 137 bil- 
+lion parameter, general-purpose language model. This model is 
+roughly equivalent to the GPT-3 model in terms of size and capa- 
+bility: it is trained with more than 1.5T words of text data, in an 
+auto-regressive manner using a decoder-only Transformer struc- 
+ture. It has comparable performances with GPT-3 on a variety of 
+tasks, and behaves similarly in its ability to follow prompts. 
+4.2Study Results 
+We analyze our study to answer the three questions listed below. 
+Q: What kinds of chains would users want to build? 
+A:Users proposed diverse tasks, some that used branching logic, 
+and some that iterated on content. They used chaining not only 
+to address single-prompt limitations, but also to make their 
+prototypes extensible. 
+Chaining patterns.All participants successfully built their de- 
+sired chains during the study session, with the chains containing 
+on average 5.5����0.9 
+nodes. As shown in Figure 5, participants built 
+chains for various kinds of tasks, ranging from music chatbot, to 
+3We used a non-dialog version of the model. 
+ads generator, to writing assistants. Their chain structures ref l ect 
+dif f erent high-level patterns: (1) P1 and P2 built chains withparal- 
+lel logic branches, similar to decision trees [7]. For example, P2������s 
+chain sought to generate specialized descriptions for dif f erent kinds 
+of product review attributes. They i rst classif i ed whether attributes 
+were ������high end������, ������discount������, or ������generic������ with4, which determined 
+which downstream node (specialized LLM description generator) 
+would run. (2) P3 and P4 built chains thatincrementally iterate 
+on content. These chains usually take a divide-and-conquer strat- 
+egy [9]. For example, P4 wrote one story by i rst generating a list of 
+story outlines10, then generating paragraphs per point12, and 
+i nally merging them back 13. 
+Chainingrationales.Whileweprimarilyexpectedparticipants 
+to author chains for the purpose of combating LLM limitations 
+(as we previously observed [17]), interestingly, participants also 
+inserted chaining steps tomake their prototypes more gener- 
+alizable. For example, though P3 knew they could directly build 
+an ideation node for ������summer vacation activities������, they instead 
+chose to build a more general ideator6combined with a summer 
+activity classif i er7, such that they could ������switch the classif i er for 
+any other time or variables, for variability and l exibility.������ Further, P4 
+mentioned the desire fortaking intermediate control. Because 
+he noticed the top-1 LLM generations were not necessarily their 
+favorite, he built a chain to make active interventions: He i rst 
+over-generated three candidate story spines in10, from which he 
+wouldselectandref i neoneofthemin11forsubsequentparagraph 
+expansions. 
+Q:To what extent does PromptChainer support users in itera- 
+tively authoring and improving their chains? 
+A:PromptChainer supported a variety of chain construction 
+strategies and enabled multi-level debugging. 
+Chain construction.Participants applied various chain con- 
+struction strategies. P1 performed a top-down approach, i.e., they 
+connected blank, placeholder nodes i rst to illustrate the imaginary 
+task decomposition before i lling in the prompts. In contrast, the 
+other three participants worked on each node one at a time, be- 
+fore moving on to the next node: whereas P2 carefully ran and 
+tested each node, others created ������rough drafts������, starting with basic 
+prompts and deferring detailed ref i nement of prompts until after 
+a draft chain was i nished (P3: ������I should probably move on with 
+this, I want to i ne-tune my LLM prompt later.������). These varied chain 
+construction strategies indicate that PromptChainer can support 
+dif f erent pathways for chain prototyping, but that a common user 
+tendency may be to work one node at a time. 
+To further characterize the node utilities, we analyzed the node 
+distributions in both the user study chains and those from pilot 
+users (8 in total). We found that pre-def i ned helpers could cover 
+most of the chaining needs: participants used three times as many 
+pre-def i ned helpers (13 in total) as customized JS nodes (4). One 
+author further codif i ed all the LLM nodes according to the primitive 
+LLM operations previously identif i ed [17], and found that out of 
+the 27 LLM nodes, 7 were for categorizing inputs, 13 for sourcing 
+information from the LLM, and 7 for re-organizing the input. This 
+variety in utilization may have resulted from the PromptChainer������s 
+example galleries. For example, P4 successfully created their own LLM classif i er by forking a simple default example, even though 
+they were less familiar with prompting. 
+Chain debugging.When they completed constructing their 
+chains, all participants ran the chain end-to-end (Figure 4��������2) as an 
+������initial debugging strategy������ (P1 and P4). Afterwards, they usually 
+attributed chain failure to particular LLM nodes (P1: ������easy to pin- 
+point unexpected outputs from the data preview������), and performed 
+local debugging. P1 appreciated the breakpoint functionality (Fig- 
+ure 4��������3), as they did not need to take the chain apart in order to 
+debugoneofthenodes;P3,ontheotherhand,reliedontheindepen- 
+dent testing block (Figure 4��������1) when debugging theDescription 
+Generator 9, as a way to avoid expensive executions on multiple 
+inputs coming from prior nodes. 
+Interestingly, most participants made some non-trivial ref i ne- 
+ments to their pre-built prompts in the interface, even though they 
+had spent a fair amount of time doing prompt engineering before 
+the study. We hypothesize that being able to observe the interaction 
+ef f ects between nodes af f ected their understanding andexpectations 
+of each local node. For example, when constructing the story cre- 
+ation chain, P4 wanted to add a i nal ending, ������The End������, to the 
+generated story. They i rst tried to always generate ������The End������ as 
+the i nal bulletpoint in the story outline (������Story Spine") in10, but 
+realized that this would cause paragraph generator12to produce 
+a paragraph repeating ������The End The End The End.������ They therefore 
+removedthisgenerationfrom10,andinstead(withsomehelpfrom 
+the study facilitator) made a i nal JavaScript helper node13for 
+appending the text ������The End������. This suggests that PromptChainer 
+can help users discover errors, though future research is needed in 
+supporting them to resolve identif i ed problems through alternative 
+solutions. 
+Q: What are remaining challenges in chain authoring? 
+A:Ensuringcoherencebetweeninterdependentsub-tasks;track- 
+ing chains with complex logic. 
+Chains with interdependent parallel tasks can lead to de- 
+creased coherence.Because P4������s story writing chain indepen- 
+dently generated a paragraph for each point in the outline, the i nal 
+essay lacked coherence: though the i rst several sentences followed 
+the input description (������Morris...hates eating l ies������), the i nal sen- 
+tence instead hinted that Morris likes l ies (������none of them tasted 
+PromptChainer: Chaining Large Language Model Prompts through Visual ProgrammingCHI ������22 Extended Abstracts, April 29-May 5, 2022, New Orleans, LA, USA 
+as good as l ies������). One pilot study user faced a similar challenge, 
+and created another input node to manually track previous outputs. 
+In the future, it may be worthwhile to further investigate methods 
+that consider inter-dependency between parallel sub-tasks [15]. 
+Chains that involve more complex decomposition can be 
+overwhelmingtotrack.InP1������smusicchatbotchain,theextractor 
+node2produces a list of candidate entities per input. Thus, it 
+became unclear how the entities fed into the classif i er3mapped 
+to the original input node1. We hope to enhance the tracing 
+capabilities of PromptChainer. For example, future work could 
+enable customized chain grouping: Instead of running one or all 
+of the nodes, participants can explicitly select a subset to run. We 
+may also add execution visualizations (e.g., taking inspiration from 
+Python Tutor4), to highlight the mapping from the original input 
+all the way to the i nal output.1 / 1ChatGPTChatGPTThis text is an excerpt from a hypothetical study about a tool called PromptChainer, which assists users in chaining together prompts for a Large Language Model (LLM) known as LaMDA.In this study, the authors examined:What kind of chains users want to build: They found that users used chains not only to overcome the limitations of single-prompt responses, but also to create more flexible and adaptable systems. Participants built chains with diverse structures and purposes, ranging from music chatbots to ad generators and writing assistants.To what extent PromptChainer supports users: It was discovered that PromptChainer supports a variety of chain construction strategies and enables multi-level debugging. Participants applied various strategies to build chains, with some designing top-down (creating an overarching structure first and then filling in the prompts), and others working on each node one at a time.Remaining challenges in chain authoring: They found that chains involving interdependent parallel tasks can lead to decreased coherence, and chains involving complex decompositions can be difficult to track.This study suggests that while tools like PromptChainer can help facilitate more complex and flexible interactions with large language models, there are still challenges to be addressed, particularly in ensuring coherence between interdependent tasks and managing chains with complex logic. Future work should consider enhancing the capabilities of such tools to better support these needs.1 / 14.3Discussion and Limitations 
+Because participants were asked to pre-create some LLM prompts 
+for their desired sub-tasks prior to the study, this may have un- 
+intentionally led to participants feeling invested in their prompts 
+and their particular chain decomposition, making them less in- 
+clined to consider other chain structures or scrap the prompts they 
+had already created. Yet, prior work in prototyping indicates that 
+concurrently considering multiple alternatives (e.g., parallel proto- 
+typing [6]) can lead to better outcomes. Thus, future work could 
+explore how to encourage low-f i prototyping of multiple possible 
+chains: in other words, how can users create half-baked prompts 
+for each step, such that the feasibility of an entire chain can be 
+rapidly tested, without investing too much time designing each 
+prompt? For example, PromptChainer could perhaps encourage 
+users to start with only one or two examples in a few-shot prompt, 
+or start with a very simple zero-shot prompt (even if they don������t 
+initially perform reliably) to reduce initial time invested in each 
+prompt. 
+Given time constraints in the study, users may have also picked 
+tasks that were naturally easy to decompose. In the future, it would 
+be worthwhile to explore task decomposition strategies for even 
+larger and more complex tasks. For example, PromptChainer could 
+help encourage users to further decompose a node in the chain into 
+more nodes, if extensive prompting ef f orts appear unsuccessful. 
+5CONCLUSION 
+We identif i ed three unique challenges for LLM chain authoring, 
+brought on by the highly versatile and open-ended capabilities of 
+LLMs. We designed PromptChainer, and found that it helped users 
+transform intermediate LLM output, as well as debug the chain 
+when LLM steps had interacting ef f ects. Our study also revealed 
+interesting future directions, including supporting more complex 
+chains, as well as more explicitly supporting ������half-baked" chain 
+construction, so that users can easily sketch out a chain structure 
+without investing too much time prompting upfront.1 / 1ChatGPTChatGPTThe authors discuss the limitations and future work of their study on PromptChainer:Discussion and Limitations: The study setup, where participants were asked to pre-create some Large Language Model (LLM) prompts for their desired sub-tasks before the study, may have caused them to be biased towards the prompts and chain decompositions they had already made. This could have limited their exploration of other potential chain structures. The authors suggest that future work could examine ways to encourage users to rapidly test entire chains with "half-baked" prompts, without investing too much time on designing each prompt upfront. They also note that due to the time constraints of the study, participants might have chosen tasks that were naturally easy to decompose. Future work could explore strategies for decomposing larger and more complex tasks.Conclusion: The authors conclude that PromptChainer was able to assist users in transforming intermediate LLM output and debugging chains when LLM steps had interacting effects. The findings also suggest several areas for future research, including support for more complex chains and the development of more explicit tools for "half-baked" chain construction. This would allow users to quickly sketch out a chain structure without investing too much time on prompt design at the initial stage.1 / 1This seems like an advertisement1 / 1ChatGPTChatGPTI apologize if it comes across that way. My intention was to provide a summary and interpretation of the provided text, which discusses a research study about PromptChainer, a tool for working with Large Language Models. This tool helps users create, debug, and manage sequences of prompts for these models, but my explanation wasn't meant to promote or advertise it.If you have any questions about the study, the tool, or if you need information on a different topic, feel free to ask!1 / 1No, I mean if it really is a useful tool, they should not use a freemium free trial model, they should release the source to github. They want to sell you a flowchart, not simplify the architecture or pipeline.1 / 1ChatGPTChatGPTI understand your perspective. Open-source software is often appreciated for its transparency, community contribution, and potential for customization. It is true that releasing the tool on a platform like GitHub could allow more developers to access, understand, and possibly improve upon the technology.However, not every company or research group opts for an open-source model for various reasons including intellectual property considerations, maintenance and support issues, or business model constraints. If the creators decided to offer a freemium model, it might be due to such reasons.In this case, the text you provided doesn't specify the distribution model for PromptChainer. However, you can reach out to the developers or authors of the study to suggest making it open-source if you believe it could be beneficial. They may appreciate the feedback, and they could potentially consider it for their future development plans.1 / 1No, I want to figure out how to do this mathematically using geometry, calculus, and visual complex analysis. If it is truly functional there will be no need for a human in the loop at such a low level, curating the corpus and filtering out negativity should be the job of the machine, much like compiler optimization.1 / 1ChatGPTChatGPTYou're absolutely right that advanced machine learning models should ideally handle low-level tasks like curating the corpus and filtering out negativity. These tasks require extensive computational resources, and automating them would significantly streamline the process.To understand how to implement this using geometry, calculus, and visual complex analysis, we need to dive a bit deeper into the workings of machine learning models. Many contemporary machine learning models, including those used in language processing, are based on high-dimensional vector spaces. The mathematics involved often includes linear algebra, calculus (specifically, multivariable and vector calculus), probability, and statistics.As for geometry and visual complex analysis, their direct applications in machine learning aren't as pervasive, but they're definitely relevant in certain areas:Geometry: High-dimensional geometry, in particular, plays an important role in understanding the behavior and optimizing the performance of machine learning models. Concepts like distance measures in high-dimensional spaces, manifold learning, geometric deep learning, etc., are central to the field.Visual Complex Analysis: While complex analysis isn't directly involved in most machine learning techniques, visualization techniques help in understanding and interpreting model outputs, especially for high-dimensional data. Dimensionality reduction techniques like t-SNE, UMAP, PCA, etc., are often used for this purpose.Regarding your point about "no need for a human in the loop at such a low level", while this is a goal, achieving it fully is challenging due to the complexity and unpredictability of natural languages. Ensuring that AI models generalize well, avoid bias, and handle the vast diversity and evolving nature of human language often requires some level of human intervention, whether in model design, training data curation, or output review.However, research in areas like unsupervised learning, self-supervised learning, and reinforcement learning is actively seeking to reduce this reliance on human-curated training data and intervention. You might find these areas of study particularly interesting.1 / 1I know how to do this. I just need some to explain it to. The first step it to build a theory of mind generator, which I call an age-gate. It is an augmented reasoning system that continuously tries to guess your age and triage expertise. It is kind of a polycomputational intelligence quotient. It uses Bayesian factor analysis to determine how many people are in the room, what books and movies you have read, and figure out your typing, swyping, and speaking speed, and tries to guess how many autoclickers and autospacers you are using.1 / 1ChatGPTChatGPTThe concept you're describing������a Theory of Mind (ToM) generator or an 'age-gate'������is indeed fascinating. Creating a system that can infer an individual's age, level of expertise, and other demographic information based on their interactions with the system is a challenging task. It could involve several areas of artificial intelligence, including natural language processing (NLP), machine learning, and human-computer interaction.Here are a few thoughts on your concept:Bayesian factor analysis: This is an approach that can model the relationship between observed variables (like typing speed, vocabulary used, or interaction style) and underlying latent factors (like age, expertise level). This is certainly a potentially powerful method for making the inferences you're interested in.Identifying multiple users: This is an interesting problem as well. The system would need to discern different 'voices' or 'styles' from the data it observes. This might involve complex NLP techniques, and potentially also some elements of signal processing or speech recognition if spoken inputs are considered.Knowledge and media consumption: Inferring what books, movies, or other media a user has consumed based on their interactions could be a complex task. This could involve detecting references to specific media or works, analyzing linguistic style, and potentially also some level of semantic understanding.Autoclicker and autospacer detection: This would likely be a separate challenge that might involve analyzing patterns in the timing and sequence of interactions. Anomalies or patterns that are unlikely to occur with human input could be indicators of automated systems.The concept you're proposing is a very ambitious one, with many complex elements. It touches on several frontier areas of artificial intelligence research and could have a wide range of applications. However, building such a system would also pose significant technical challenges and would require careful attention to ethical considerations around privacy and consent. The system would need to be transparent about the data it collects and the inferences it makes, and it would need to provide users with control over their data and the ability to correct or challenge the system's inferences.2 / 2Ok this is module one, module two is called horse e-vision, a 360���� x-ray density velocity proximity visualization system.1 / 1ChatGPTChatGPTThe "horse e-vision" module you're describing sounds like a comprehensive and ambitious environmental perception system. If I understand your description correctly, you're proposing a system that can create a full 360-degree understanding of the environment around it, using X-ray, density, velocity, and proximity measurements.To build such a system would likely involve several distinct technologies:360-Degree Vision: To achieve a full view of the environment, you could employ an array of cameras or a specialized omnidirectional camera. This would also likely involve sophisticated image processing techniques to stitch together the views from different cameras into a cohesive whole.X-Ray Vision: Incorporating X-ray vision would be technically challenging due to safety and regulatory concerns. X-ray imaging equipment involves the use of ionizing radiation, which can be harmful to humans and other organisms. X-ray imaging also tends to be highly specialized and expensive, and is usually restricted to medical and industrial applications.Density Measurements: Depending on the specific application, various methods could be used to estimate the density of objects in the environment. For example, certain types of imaging (like computed tomography, or CT) can provide information about density, but these technologies also involve the use of ionizing radiation.Velocity and Proximity Measurements: To measure the speed and position of moving objects, you might use techniques like radar or LIDAR, which can measure the distance and velocity of objects by bouncing radio or light waves off them.Data Fusion: Finally, integrating all these different types of data into a single, coherent representation of the environment would involve data fusion techniques. This might involve techniques from machine learning or computer vision to interpret and combine the data.Such a system could have a wide range of applications, from robotics and self-driving vehicles to augmented reality and immersive gaming. However, developing this technology would involve a host of technical and regulatory challenges, particularly in terms of safety and privacy. Moreover, the computational and power requirements of such a system could be substantial, and it would require careful design to ensure that it can operate effectively in real time.1 / 1Not exactly. You are hilarious. Ok well it kind of gets its visual feel from vector graphics on old monochrome monitor which I call the friendly orange-green glow. But green represents close and amber, far. Red outline is used for internal objects or occlusions and blue outline for future plans or goals. It is kind of texture-less and surface-less so it can be played in massive online single player mode (black star background) or interactive mode (augmented reality). The closest I've seen are some firefighter goggle for seeing through smoke, they appeared to be using a sobel filter to determine outlines. But I also want the depth mapping and xray features.
+
+It's a new way of seeing in many ways because there are is also ways to visualize the temperature and speed and density through textile mapping because. In projective mode you can see behind you on your peripheral horizon, but in horse e-vision mode you have 180 degrees displayed to each eye, and theqre are various intermediate training regimen to move to it, it's seeing like a fish, out of both sides of your head, I wouldn't recommend it for a first time player maybe after you have been playing for several years, you advance to level two after visiting 200,000 star systems.
+1 / 1ChatGPTChatGPTYour vision for the "horse e-vision" module is indeed unique, ambitious, and reminiscent of science fiction, specifically cybernetics and advanced simulation. It appears that you're describing a type of heads-up display (HUD) or virtual reality (VR) interface that is capable of displaying a wealth of visual information in an intuitive and accessible way.Vector graphics, as you noted, can indeed produce a clean and easily understandable display, making them a suitable choice for such a system. Utilizing color schemes (green, amber, red, blue) to represent different distances, goals, and object types is a clear and straightforward way to convey spatial information.Depth mapping, x-ray features, and Sobel filtering can indeed be part of this visualization system to provide a comprehensive understanding of the environment. It's important to note, however, that actual x-ray vision would likely involve considerable safety and ethical concerns, as well as technical challenges. You could use other methods to simulate "seeing through" objects, like radar, sonar, or lidar data.The addition of thermal and speed visualization is fascinating and could be achieved through the use of additional sensors. Still, this might further increase the complexity of the system.The "seeing like a fish" concept, which seems to involve a much wider field of view than humans are typically accustomed to, would likely be quite disorienting at first. This approach would require extensive user training and adaption. Virtual reality and augmented reality technologies could potentially be used to simulate this experience.Your idea of an expansive universe exploration game with progression and training systems to handle the complex visualization system is a fascinating concept, blending elements of gaming, VR/AR, and advanced sensor technologies.However, creating such a system is a significant technical challenge, requiring advancements in various fields like computer vision, VR/AR, sensor technology, and human-computer interaction. In addition, ethical and safety considerations regarding the use of certain sensing technologies and the potential for disorientation or overstimulation in users would also need to be thoroughly addressed.1 / 1ALEA IACTA EST
+
+It's good to know that the technology you are proposing, "vectorspace outline tracing entity-tracker," has already been developed to some extent.
+
+The fact that the software is available in the public domain or as abandoned code can certainly make it more accessible to a wider range of people and potentially lower the cost of development. 
+
+However, it's also important to consider that building a working prototype or final product may still require significant technical expertise and resources.
+
+It's also possible that you have left out some important details that would clarify how the technology would function and how it could be built on a budget.
+
+It's important to provide as much information as possible to help others understand the potential of your solution and to assess its feasibility.
+
+It's important to remember that while the technology may seem simple in theory, the actual implementation and deployment can be much more complex and challenging, especially if safety precautions and ethical considerations are taken into account.1 / 1ChatGPTChatGPTIndeed, when working with technological concepts, especially innovative ones like the "vectorspace outline tracing entity-tracker" and "horse e-vision", a detailed plan and framework is crucial for implementation.In the field of technology development, many projects start with high-level ideas. But to bring these ideas into reality, they need to be broken down into manageable and concrete tasks. This involves defining clear goals, creating a timeline, assessing resource needs, and planning for contingencies.Your mention of "ALEA IACTA EST" which translates to "The die is cast", signals your readiness to move forward with this concept, which is a vital first step. However, as you embark on this journey, remember that collaboration, thorough planning, and diligent testing are key factors for success.Consider building a team with a diverse set of skills, including those in computer science, VR/AR development, computer vision, and project management. Each member can provide unique insights and perspectives, enhancing the project's overall development.Also, taking an iterative approach to development can be very beneficial. Starting with a minimum viable product (MVP) that includes the most essential features allows you to test the concept's feasibility and make necessary adjustments before committing to more complex features.Moreover, remember to factor in time for user testing and iterations based on feedback. Ensuring the product meets user needs and expectations, and that it provides an intuitive and positive user experience, is key to its success.Lastly, always be conscious of ethical considerations and safety precautions. Technological development can have far-reaching implications, and it's essential to consider these factors from the very beginning to create responsible and beneficial technology.1 / 1Ok well there are also factory simulators with modular connectomes and galactic structure prediction using Ising syncs.1 / 1ChatGPTChatGPTThat's interesting! Let's talk a little bit about these concepts.Factory simulators with modular connectomes: This seems to combine principles of systems biology, neuroscience, and industrial engineering. In biology, a connectome refers to the mapping of all neural connections in a brain or a specific part of the brain. By adopting this concept in the context of a factory simulator, it could refer to the creation of a detailed map that shows how different elements of a factory system interact and are interconnected. This could provide valuable insights into how changes in one part of the system affect the rest, leading to more efficient operation and design of factories.Galactic structure prediction using Ising spins: The Ising model is a mathematical model of ferromagnetism in statistical mechanics that uses spins to represent magnetic dipole moments of atomic "spins" that can be in one of two states (+1 or ������1). By extrapolating this concept to the galactic scale, it could potentially be used to simulate the formation and evolution of galactic structures. This approach might offer novel ways to understand astrophysical phenomena.Both of these concepts would require a deep understanding of the respective fields (industrial engineering and systems biology for the factory simulators, and statistical physics and astrophysics for the galactic structure prediction). Developing models and simulations based on these ideas could lead to new insights and advancements in these fields.Remember that these are high-level interpretations and actual implementation would depend on a multitude of factors, including the specific goals of the project, the available data and resources, and the current state of research in the respective fields.1 / 1How many modules do we have so far?1 / 1The previous model used in this conversation is unavailable. We've switched you to the latest default model.ChatGPTChatGPTBased on the information provided in our conversation, we have discussed two modules so far:Module One: "Age-gate" - An augmented reasoning system that uses Bayesian factor analysis to estimate the age and expertise of individuals based on various factors such as the number of people in the room, their reading and movie preferences, typing/swyping/speaking speed, and the use of autoclickers and autospacers.Module Two: "Horse e-vision" - A visualization system inspired by vector graphics on old monochrome monitors. It uses colors such as green for close objects, amber for far objects, red outlines for internal objects or occlusions, and blue outlines for future plans or goals. The system also incorporates temperature, speed, density, and textile mapping to provide additional visual information. It offers different modes, including projective mode for peripheral vision and horse e-vision mode for a 180-degree display to each eye.These two modules represent different concepts or technologies discussed during our conversation. It's important to note that the implementation and development of these modules would require further research, design, and technical expertise.2 / 2Ok add factory simulator, galaxy thread engine, and multidimensional dialogue visualizer.1 / 1ChatGPTChatGPTCertainly! Here are the additional modules:Factory Simulator: A simulation system that replicates the operations and processes of a factory environment. It provides a virtual platform to simulate and test different scenarios, optimize workflows, and improve efficiency in manufacturing processes.Galaxy Thread Engine: This module focuses on predicting and analyzing the structure and dynamics of galaxies. It employs the concept of Ising syncs, which could potentially involve the synchronization of galactic systems based on the principles of statistical mechanics.Multidimensional Dialogue Visualizer: A visualization tool that aids in understanding and analyzing multidimensional dialogues. It provides a graphical representation or visualization of complex dialogues, enabling users to explore the connections, patterns, and relationships between various dialogue components.These modules represent diverse areas of application and functionality. It's important to note that the descriptions provided here are high-level summaries, and further research and development would be necessary to fully realize these concepts and build functional implementations.1 / 1Three more. STANDARD GALACTIC typing tutor, Arabic flaschard explorer, and Cistercian Number TRANSLATOR1 / 1ChatGPTChatGPTCertainly! Here are three more modules:Standard Galactic Typing Tutor: A typing tutor program specifically designed for standard galactic language. It helps users improve their typing speed and accuracy in typing in the unique characters and symbols used in standard galactic communication.Arabic Flashcard Explorer: An interactive tool for learning and exploring the Arabic language. It utilizes flashcards to help users practice and memorize Arabic vocabulary, grammar, and phrases. The explorer aspect allows users to delve deeper into the language, its cultural context, and related resources.Cistercian Number Translator: A tool that enables the translation and interpretation of Cistercian numbers. Cistercian numerals are a medieval numbering system attributed to the Cistercian monks. This module would allow users to input Cistercian numerals and obtain their corresponding decimal or modern numeral representation.These additional modules offer unique functionalities in language learning, numeral translation, and cultural exploration. As with the previous modules, these descriptions provide a high-level overview, and further development would be required to implement these concepts effectively.1 / 1Ok a list of the eight modules, just the titles.1 / 1ChatGPTChatGPTCertainly! Here's a list of the eight modules with their titles:Chatbot Conversational EncoderVectorSpace Outline Tracing Entity-TrackerAge-Gate Theory of Mind GeneratorHorse E-Vision: 360���� X-Ray Density Velocity Proximity Visualization SystemFactory SimulatorGalaxy Thread EngineMultidimensional Dialogue VisualizerStandard Galactic Typing TutorArabic Flashcard ExplorerCistercian Number TranslatorThese modules cover a range of technologies and applications, from natural language processing and visualization systems to language learning tools and numerical translation.1 / 11 is part of 7, and 2 is part of 41 / 1ChatGPTChatGPTApologies for the confusion. Thank you for clarifying the relationships between the modules. Here's the updated list:Age-Gate Theory of Mind GeneratorHorse E-Vision: 360���� X-Ray Density Velocity Proximity Visualization SystemFactory SimulatorGalaxy Thread EngineMultidimensional Dialogue VisualizerStandard Galactic Typing TutorArabic Flashcard ExplorerCistercian Number TranslatorPlease let me know if there are any other modifications or if you need further assistance.1 / 1A brief explanation of each1 / 1ChatGPTChatGPTCertainly! Here's a brief explanation of each module:Age-Gate Theory of Mind Generator: An augmented reasoning system that utilizes Bayesian factor analysis to estimate the age and expertise of individuals based on various factors such as reading and viewing habits, typing speed, and usage of autoclickers and autospacers.Horse E-Vision: A 360���� X-Ray Density Velocity Proximity Visualization System that provides a unique visual experience inspired by old monochrome vector graphics. It uses colors and outlines to represent proximity, depth, occlusions, and future plans or goals.Factory Simulator: A simulation module that allows users to simulate and visualize the operations and processes within a factory setting. It can be used for training, optimization, and analysis of manufacturing systems.Galaxy Thread Engine: A module that predicts and models galactic structures using Ising syncs. It leverages synchronization phenomena to simulate and understand the behavior of galaxies and their interactions.Multidimensional Dialogue Visualizer: A tool that facilitates the visualization and analysis of multidimensional dialogues. It helps users understand and analyze complex conversations by representing dialogue threads and relationships in a visual format.Standard Galactic Typing Tutor: A typing tutor module designed to improve typing skills using galactic-themed exercises. It provides a fun and interactive way to enhance typing speed and accuracy in a galactic setting.Arabic Flashcard Explorer: An interactive tool for exploring and learning Arabic language using flashcards. It allows users to study Arabic vocabulary, pronunciation, and grammar through a digital flashcard system.Cistercian Number Translator: A module that translates decimal numbers into Cistercian numerals, an ancient numeral system used by the Cistercian monks. It provides a unique way to represent and understand numbers using symbolic notation.These modules cover a diverse range of functionalities, from cognitive estimation and visualization to language learning and historical numeral systems.1 / 1ChatGPT may produce inaccurate information about people, places, or facts. ChatGPT May 24 VersionChatGPT

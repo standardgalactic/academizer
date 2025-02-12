@@ -1,0 +1,287 @@
+Yeah. Thanks. Hey, everybody. Thanks for coming. So I'm Corey Bartelheimer and I work for
+Europe as a data scientist. So Europe is an online mortgage loan platform. So it means
+I get to play a lot with mortgage loan data, but also house price data. So in this talk,
+I will talk about how to do a Bayesian workflow with PIME Scene hours. But before we get into
+the stats now, the code, let me talk a bit about the problem. So anybody here that would like to
+buy a house in Berlin, anyone? Yeah, few, not so many. Okay, so I definitely would like to buy a
+house, but I'm not sure if I have the money. I think if you would have the money, you probably
+would want to buy one, right? So because I thought, well, I have all this data about house prices,
+why not check how expensive the different areas are in Berlin, which one is maybe the most expensive
+one? Is there maybe an area that I could afford that is maybe a bit cheaper? So one way to approach
+this model, this problem is to say, okay, I'm going to use a prediction, make a prediction
+problem out of it, like predict how expensive the house is. And a good way to predict the house
+price is to start with its size. The more expensive the bigger house is, of course,
+more expensive it's going to be. So here we have the price where there's a living area. And to my
+I think, well, you could say, well, it looks a bit linear. So maybe you could get away with doing a
+simple model. The only problem is that we have a very huge spread, especially in the larger, for
+the larger houses. If you look at some neighborhoods, so this one is Prenzlauberg, it's
+well, very expensive area to be considered like one of the most expensive one in Berlin, as you
+can see here. And if you compare, then this neighborhood with, for example, Spandau, Spandau
+is very much in the west of Berlin. I think many people wouldn't even consider it to still be part
+of Berlin. And Spandau is much cheaper compared to Prenzlauberg. So this seems to explain a bit of
+the spread. And if you look at these two examples, you could easily imagine to fit two different
+linear models to these things. And it looks like these would give like a relatively good fit.
+So one idea would be to say like, okay, let's fit a linear model to each different zip code.
+But here the problem is that for some areas, some zip code like this one in Schoenberg,
+for some reason, we only have three observations for the zip code. If we fit the linear model to
+these three observations, suddenly house prices get cheaper the larger they are, which is nice,
+but not very plausible. So for these three observations, we would prefer the linear model
+or the prediction to be closer to our general model of the total data. And this is basically
+the idea behind the hierarchical model that also Corbyn mentioned his talk. So I think hierarchical
+models are one of the reasons why I'm quite excited about Bayesian models. I think everybody's talking
+about Bayer like big data, but most of the time, very often, we still have big data. But then if
+you look down in the groups, it's somehow more collection of small data. So, so this like the
+Bayesian part is very good in taking part of the small data aspect. And the hierarchical approach
+then also takes care of like exploiting this group structure that you get in your data.
+So let me show you bit the math behind the hierarchical model. I hope you are familiar
+or you've seen this at some point before. So this is a basic linear model, why here is the
+price of a house. And it's normally distributed around some mean mu and mu is our linear part of
+this model, where we have alpha, the intercept and better as our slope parameter for the living area.
+To make this model Bayesian, we then just add some priors for alpha, better and sigma.
+To make this model than a hierarchical model, we need to make a few changes
+to this linear part. So now we say that for each zip code, we fit one alpha parameter and one
+better parameter. So basically for each zip code, we fit one linear model. But then in our prior
+distribution, we say that for each like each of these alpha and better parameters, they all come
+from a common distribution around a common mean mu. So this means that then these these areas
+where we only had three observations, they stick very close to this overall common mean mu,
+so that they don't drive like they don't get like too far away from this common mean.
+So then again, like we put price on all of these hyper parameters. So here we now have
+a few more parameters, but basically the changes are the one at the upper hand.
+So yeah, next is the part to get this model into pymC. So into Python. So for this, I'm using
+pymC three and I'm going to start with coding the linear model. So the linear model is relatively
+easy to extend to the hierarchical model. So here we see a lot of code and a lot of formulas.
+So I'm going to walk you through this like step by step. In the model description, we start with
+our Y is normally just like this Y description. And I prefer to have the Y at the top like this is
+the parameter that we want to predict. So in some sense, the most important one that I want to start
+with, but in Python, of course, we have to first declare all the other variables that we're going
+to use. So we have to put it at the bottom. Also in the model description, it's kind of implicit
+that this is the variable that we actually observed. And then in Python, of course, we have to make
+this explicit. And the next part is our linear part. And this is very much the same as the model
+description. So the code is, yeah, very pretty much the same. Here area comes from a partner's
+data frame, but you can also use non-py arrays. And then we have to declare the prior parameters.
+And this again, also is very similar to how you would write down the model. The only thing
+that's a bit different is that in PymC, you have to declare the name of the variable twice.
+So now if you want to extend this model to the hierarchical model, I'm just going to focus
+off the few changes we need to make here because most of the code actually is going to stay the
+same. So we need to make some changes to this linear model. And so now we're going to use an
+index variable for our alpha and our better parameter. So this index parameter again comes
+from partner's data frame, and it needs to be integer. So zip codes in Germany look slightly
+like integers, but they're actually strings. So you have to map the zip codes to an integer variable.
+And then for the priors, we also have to declare the shape. So in this small declaration, we don't
+say like how many zip codes we actually have, but PymC needs to know how many alpha and better
+parameters it needs to fit. So we tell it like how many zip codes there are in our data. And then
+again, the price are very much the same. Just you have to repeat the code a few more times.
+So yeah, I've been talking a bit about price. And I remember when I started doing Bayesian
+methods, I always found like prior declaration a bit is a cherry. Like people just would throw
+priors at you with some parameters, but I found it difficult to say like, okay, how, what kind of
+prior actually fits for my problem. So I want to show you a bit like one way that I find much
+easier to think about if the prior fits with my model. So here I'm going to concentrate on the
+models for the linear model, but they're actually very much the same as for the hierarchical model,
+because in the record, you just extend these ones. So we can fit our sample from this prior
+using the PymC model. So this means that first we just sample data from these three probability
+distributions, but then it also inputs this data into, into this model and gives us prediction
+using justice prior distributions. And so here we can just plot these prior distributions. And
+these priors are so-called flat priors. If you compare these probability distribution
+with a standard normal distribution, you can see why they're called flat. So they do span very
+wide range of the real line. But if a prior is flat or not, it actually depends also a lot
+about the scale of our data. So I standardized my data at the living area, which means that the
+intercept represents the price of an average sized house. I divided the price per 100,000 just
+to have a bit lower numbers. So that means the price is always in 100,000 euros. And then the
+better parameter is the price change in 100,000 euros per standard deviation. And then the sigma
+is our price spread, like how far does this price spreads from this linear model that we have.
+And if you then compare these, scale of this with our probability distribution, you can see
+that it really covers quite wide range of values. So then the best thing is to actually put this
+into linear model and say like, okay, if we have this prior, what kind of linear models would we
+expect? So this is in the result. And I think it's best to think if you give it some reference
+values. So here on the top line, the in dark blue is the most expensive flat salt in Berlin at
+8 million in the last couple of years. And then in orange, the lower one is the zero for zero
+euro. And you can see that this kind of price put a lot of probability math on values where we can
+say these are not plausible values. Like most likely we wouldn't see this data that goes above
+8 million euros. We probably wouldn't even see much data that goes above 2 million euros. And
+especially not with like a living area of less than 300 square meters. Also, it probably shouldn't
+be below zero because houses are usually expensive and have a positive price. So a better way to do
+price is to use so-called weekly informative priors. So in weekly informative priors, we try to
+capture this range of data that we think is plausible, but we still try to not be too informative,
+like to go into one value, but to really just give the more like, okay, this is the kind of
+range of values that we expect. So if we then compare this one with the prior we had before,
+you can see it's much more informative. But if you then also check this model, you can still see
+that there's a lot of range of variety, like how this model can change and then also learn from
+the data. So now most of our models like below this most expensive flat, we still have many
+like so many values that are below zero. So this is maybe something you could improve. And we also
+still have many lines that have a negative slope, which we also know from our domain knowledge, it's
+not possible. So if you want to be even more informative, it could also be possible to make
+this priors even more informative and give them this knowledge saying like, okay, better has to
+be positive. And also alpha is also positive. But for most cases, these weekly informative
+priors already work very well. So I'm just going to go with them. So now we've decided on price,
+we can then sample from our model. In this case, I think it didn't took too long. So maybe less
+than two minutes. So at least for this data was quite fast. So before we can then use our model,
+we have to check if it actually converged or not. So to check if the model converged, I'm going to
+use the package ours, which gives many convenient functions to plot the model, etc. And to for
+these conversion statistics. So a good thing to start when checking if a Bayesian model converged
+is to check these trace plots. So here we can see the trace plots for this common mean parameters.
+And these trace plots, I would say look pretty good. If you're not sure what to look for, if
+when a trace plot looks good, let me show you a few examples. So this was one example where I
+miscoded something in the model. And there are a few things that you really do not want to see in
+your trace plots. So first, there are some, well, on the left, you see that they're like somehow
+two modes. So it didn't, it doesn't look like these two chains converge to the same parameter.
+And then also here in the trace file, you can see some very weird patterns. And you don't want to
+see any patterns or weird patterns in your trace plot at all. It should look super random. And
+the other thing is these black rugged lines. So this is prime c telling you that there were
+divergencies in your model. If you have any divergencies, this is really bad. And you should
+check what happened and should be concerned. This says that actually there were divergencies
+at almost every step of my model. So something's really, really bad. And you should not use this.
+In this case, prime c usually also tells us like to not use the results and things bad happened.
+And yeah, so in this case, yeah, if this happens, go back to your code and check if there's some
+coding mistake, et cetera. So this was a different model. And it looks much better than the one
+above. It still has a few divergencies here. So this is definitely still reason for concern and
+to not use this data. But already the trace plots look much better. Like they don't have this very
+weird patterns. But they are also still look like they had some troubles to converge. Like you see
+that there's still a lot of alter correlation. And it's not very tightly packed. But in this case,
+often it's enough to just change your sampling parameters so that maybe let the tuning run for
+longer. So prime c usually also tells you what kind of parameters you could try if this happens
+so that it improves. And in that case, it's very possible to go from this model above to one that
+fits quite well. So but the problem is that I have one alpha parameter and one better parameter
+for each zip code. And in Berlin, we have more than 100 zip codes. So in total, my model has
+more than 400 parameters. So that means we can't really look at each trace plot. So in this case,
+there are a few summary diagnostic statistics that we can look at to check if there are any problems.
+So the first one is the Monte Carlo standard error Monte Carlo standard error types like how
+good the posterior mean is how good the standard like what the standard error is. The next one is
+the estimate the effective sample size. And so as you could see before the trace plots like they
+have alter correlation. So it actually means that your sample you get in the end from your posterior,
+it's not the same independent sample size number from from the size of your sample. So
+because of this articulation, it's not a completely independent sample. And there are some ways to
+estimate how how effective this sample size is that you have. And then the last one is the
+our head the our head statistics that you check if all the chains the different chains you have
+converge to the same distribution. So this should be very close to one. So then we can plot as a
+histogram the yeah all these three data statistics for all our for all our parameters. And for the
+Monte Carlo standard error it should be below like 10% of your posterior standard deviation.
+Here we can see that it's all below 2%. So that looks fine. The effective sample size should
+be at least greater than 10% of the number of iterations that you have. And here also
+yeah this is all above that line. And our head statistic should be at least smaller than one
+or five. Many people are saying probably even better to be below one or one. And here it's all
+below one or six. So that's all pretty fine. So in this case we can say okay probably the small
+converge I don't see any obvious problems. And we can check how good this model actually fits our
+data. So for this I'm using the sample like the posterior predictive. So because we don't actually
+get a point estimate from our models but like a whole distribution it's you cannot like straight
+forwardly use the same approach as for standard machine learning where you just check the accuracy
+because you actually have a distribution to check. So one way is to then check the distribution
+and compare the distribution of your observed data with the posterior predictive distribution. So
+here I sampled three samples from our posterior predictive and compare them with the observed
+data in the left. And you can see that the distribution looks very similar but there's
+one problem that our observed data does not go below zero but our posterior things or model
+things that this is possible. So this is basically the same approach just like slightly visualized
+differently. So now you can have compare the x axis a bit better and again we see the same
+problem our observed data this one here does not go below zero but the posterior like samples
+from our posterior predictive think this is possible. So if you would want to improve this
+model this is definitely a good step to start. Yeah and I think it's time to compare okay the
+average from our posterior mean with our actual observed data and ideally this should be close
+to the diagonal line. We can see that for the lower house prices they are relatively close.
+They do look here like they're a bit more below so that our model over estimates the price
+but we can see that especially for the larger for the more expensive houses the spread widens
+and it looks a bit like here the house prices are actually underestimated by the model.
+So I hope I know your careers to know okay how expensive our houses in Berlin.
+So because we put use the relatively simple model we can use that the intercept represents
+the average the price of an average sized house an average size house in Berlin is around
+100 square meters and we now have one intercept for each zip code. So it's relatively easy to
+plot this and check okay what is the price estimated by our model for 101 square meter
+home for each zip code. So there are like two zip codes where we don't have any data
+and we can see that everything here in central Berlin is very expensive so it starts around
+400,000 euros for this kind of home and yeah get some of them are like up to 550,000 euros.
+Also the southwest is a bit more expensive if you're not from Berlin this area is very famous
+for all its villas and weather expensive large houses and then the other areas around are a bit
+cheaper. So another thing about the the Bayesian approach is that we get a distribution back for
+our prediction. So if you want to say okay let's look for 100 square meter home in 10243 which is
+the area of this conference venue. We do get not just like one point estimate back but a whole
+distribution saying like okay most likely it's somewhere between 300,000 and 600,000 euros
+and then with this distribution it's also very easy to answer questions such as what is the
+probability that the price of such a house is below 300,000 euro and unfortunately this probability
+is rather low with 16 percent and then we can do take this a step further and say like okay
+what is the probability to find such a home in each zip code and then plot the probability to
+find 100 square meter home that is below 350,000 euros and unfortunately in this yeah I mean it's
+very similar to what we saw before with the prices so anywhere here this probability is very low
+here too and then around here it's better. So like the outer skirts are cheaper.
+Yeah so that's already kind of getting to the end of my model of my talk. What could you do next? So
+of course we would like to improve this model this is a relatively simple start. A good thing to do
+always in data science arts and Bayesian modeling is to iterate, iterate on your price, iterate on your
+model, etc etc. If you want to improve the model I think a good way to start is to include a few
+more predictors I only use the living area but you can of course include also the year of construction
+this is a very important predictor also what kind of house is it is it actually a flat or is it a
+house does it have a garden does it have a balcony etc etc. Then what you could also do is to add a
+few more hierarchies so I only use the zip code as a hierarchy but you could easily imagine like
+okay let's add another hierarchies where zip codes that are close to each other form one neighborhood
+and then if you have more zip codes together you have a bigger district etc and one way for
+example for zip codes to do this is to just use the first three or two letters of your zip code
+saying okay all that have the same first three letters belong to another hierarchy if it has
+same two zip codes belongs to a district and then you could also add group predictors so we add
+for example an predictor for the percentage of green areas in a zip code or for the district we
+could add for example economical indices that are available for this this area also so I think this
+is a huge benefit of this Bayesian model approach you can have very flexible models like adding more
+hierarchies more group predictors etc you could also try different likelihoods so you already saw
+that the model saw the the prices could go below zero because I used the normal likelihood but you
+could also use a log normal likelihood or also for example a robust like user make a robust model
+by using a student t distribution so this would make it more robust towards outliers and this data
+does have quite a few outliers and I guess if you want to buy a house you maybe need to save a bit
+more money all right so yeah if you're interested in Bayesian modeling these are a few resources
+that we can recommend some of them or many of them are for stand but especially for the statistical
+rethinking there's also a port to prime c so these are definitely good resources to check out if you're
+from Berlin I'm also organizing the Berlin Bayesian meetup so feel free to pop by if you're
+interested in that we're very welcome to come and yeah that's it thank you very much
+thank you Corey questions
+thank you for the talk I have maybe a rather specific question like what you said at the very
+end you said if you use a log likelihood it wouldn't go into the negative domain but I
+was thinking it goes into the negative domain because the betas are also in the negative
+domain so that's why you have negative prices both of course you could have if you could have a
+normal likelihood and if then you are for and you're better at both positive you will not get
+negative for that but if you have a log likelihood this does not matter like a log normal likelihood
+so then the prices have to be positive by like you enforce it through the model
+it's basically the same as like predicting the log price instead of the price
+hi what's the reason you used Arvis over the like yeah visualization offered by prime c
+yeah so Arvis is actually now the partner package of prime c so I think um the visualizations
+in prime c are actually using Arvis I don't have it for sure but it offers more visualizations but
+also some of the visualizations I did myself because I could not find them in the Arvis package
+so you had this one slide where there were like reasons why a model was good something about an
+r value being less than 1.05 um I often see lots of these statistics and you know I've
+done some math but one thing that always evaporates in my mind is what's the intuition behind some
+of these things do you know of a good resource where that's sort of the intuitions explain a bit
+more um yeah so I do um so I uploaded all the code for this notebooks and in some of the notebooks
+I actually wrote down like some of the like links to resource that explain well maybe not too much
+of the intuition but a bit of the math and intuition behind the r-head and the other two
+parameters I mean I think the r-head is relatively intuitive you have the chain and do you want them
+to be very similar um but yeah I can recommend you like I put the links in the notebooks
+where can we find the notebooks I'm gonna so yeah it's on your top but I'm gonna
+upload it I don't know what tweet somewhere some more questions
+yeah thank you for the talk maybe a bit provocative question why not just to strip out the latitude
+and longitude from the zip codes using the shape files and then just use the geographically weighted
+regression so I didn't use the latitude because I didn't have it in my data so when I was working
+on this data for many of the houses I only had the zip code I didn't have the address for
+anonymization reasons etc and so I think then this zip code approach works well I guess
+well what you could do if you only have the zip code you could use the mean of the zip code latitude
+yeah it doesn't seem like a really
+yes
+so but then you would have
+yes I mean zip code is indeed it's not very precise and also many zip codes are very heterogeneously
+but I think one thing that I dislike about this approach is for some observations you would have
+exact latitude longitude address and then for some not so you would have many observations
+that have the same latitude longitude like for all the observations where you don't have the exact
+address and that does not seem like a super nice approach to me I'm interested how fast it works
+how many houses you had in your data set and how long does it take to to create the model
+okay so this data set uses around I had around 9 000 observations and I wanted to time it but
+yeah it didn't but it was very quick so I think it was less than two minutes for the hierarchy model
+okay we have time for some more questions I come to you
+yeah thank you for your talk did you try to run your
+experiments with a generalized linear model with mixed effects on the zip code because if you stay
+only with Gaussian distributions I expect the result to be yeah basically the same
+I'm not sure I got this you say if I try out generalized linear model
+yeah it was mixed effects on the zip code but that's what I did yeah yeah exactly that's what you
+did but why did you use a pyMC framework because you can optimize it without
+Monte Carlo sampling from pyMC you mean like instead of using a Bayesian approach to
+yeah well so I mean one reason was also that I wanted to try out this approach but the other
+I think would be because of this sorry what I read was there was a frequency approach you
+don't always get the best convergences and especially if the model gets more complex
+they run into problems that they don't converge and I think that the Bayesian approach also has
+advantage that then you can have this this probability um yeah I'm not going to go back
+to that this probability distribution of your results so I think this is definitely a bonus
+okay last question and then we go for lunch
+uh just for curiosity did you compare your results with variational base methods
+does it give you similar results or is there no I did not
+okay then let's thank Cory again
