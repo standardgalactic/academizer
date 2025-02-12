@@ -1,0 +1,1840 @@
+Selective Reconstruction Theory
+Open sidebar
+Selective Reconstruction Theory
+GPT-4
+LARGELANGUAGEMODELS ASANALOGICALREASON- 
+ERS 
+Michihiro Yasunaga,2,1Xinyun Chen,1Yujia Li,1Panupong Pasupat,1Jure Leskovec,2 
+Percy Liang,2Ed H. Chi,1Denny Zhou1 
+1Google DeepMind2Stanford University 
+myasu@cs.stanford.edu, {xinyunchen,dennyzhou}@google.com 
+ABSTRACT 
+Chain-of-thought (CoT) prompting for language models demonstrates impressive 
+performance across reasoning tasks, but typically needs labeled exemplars of the 
+reasoning process. In this work, we introduce a new prompting approach, analogical 
+prompting, designed to automatically guide the reasoning process of large language 
+models. Inspired by analogical reasoning, a cognitive process in which humans draw 
+from relevant past experiences to tackle new problems, our approach prompts language 
+models to self-generate relevant exemplars or knowledge in the context, before proceed- 
+ing to solve the given problem. This method presents several advantages: it obviates the 
+need for labeling or retrieving exemplars, offering generality and convenience; it can 
+alsotailorthegeneratedexemplarsandknowledgetoeachproblem,offeringadaptability. 
+Experimental results show that our approach outperforms 0-shot CoT and manual few- 
+shot CoT in a variety of reasoning tasks, including math problem solving in GSM8K 
+and MATH, code generation in Codeforces, and other reasoning tasks in BIG-Bench. 
+1INTRODUCTION 
+Large language models (LLMs) demonstrate strong performance across various tasks (Brown et al., 2020; 
+Chowdhery et al., 2022; Liang et al., 2022; Qin et al., 2023). Recently, chain-of-thought (CoT) prompting 
+has demonstrated LLMs��� abilities to tackle complex tasks, such as solving math problems, by prompting 
+them to generate intermediate reasoning steps (Wei et al., 2022b; Kojima et al., 2022). For instance, 
+common methods like few-shot CoT (Wei et al. 2022b; Figure 1, middle) make LLMs generate reasoning 
+steps by offering a few exemplars of question���rationale���answer triplets; 0-shot CoT (Kojima et al. 2022; 
+Figure 1, left) aims for the same objective by offering instructions like ���think step by step.��� These studies 
+highlight the importance of devising effective methods to guide LLMs to reason. 
+However, the existing CoT paradigm faces two key challenges: providing relevant guidance or exemplars 
+of reasoning, and minimizing the need for manual labeling. Specifically, 0-shot CoT offers generic 
+reasoning guidance, which may not suffice for complex tasks like code generation (��6). Few-shot CoT 
+provides more detailed guidance but demands labeled exemplars of the reasoning process, which can be 
+costly to obtain for every task. This raises a research question: can we achieve the best of both worlds 
+and automate the generation of relevant exemplars to guide LLMs��� reasoning process? 
+In this work, we propose analogical prompting, a new prompting approach that automatically guides 
+the reasoning process of LLMs. Our inspiration comes from analogical reasoning in psychology, a concept 
+where humans draw from relevant past experiences to tackle new problems (Vosniadou & Ortony, 1989). 
+For instance, when faced with a new math problem (e.g., finding the area of a square given four points 
+in a coordinate system; Figure 1), humans often recall how they have solved similar problems in the past 
+(e.g., finding the area of a square with a known side length) to derive insights for solving the new problem. 
+They also recall high-level knowledge, such as the need to find the side length to calculate a square���s area. 
+Our idea is to prompt LLMs to mimic this reasoning process to effectively solve new problems. 
+Concretely, given a problem to solve, we prompt LLMs to self-generate relevant exemplars in the context, 
+using instructions like ���# Recall relevant problems and solutions:...���, and then proceed to 
+solve the original problem (Figure 1, 2). Simultaneously, we can also prompt LLMs to generate high-level 
+knowledge that complements specific exemplars, using instructions like ���# Provide a tutorial:...��� 
+(Figure 3). This proves particularly useful for complex tasks like code generation (see ��6). Notably, our 
+Figure 1: Overview of our approach, analogical prompting. Left: Existing methods for prompting 
+LLM to reason are either generic (0-shot CoT) or demand labeled exemplars (few-shot CoT). Right: Given 
+a problem, our method prompts LLMs to self-generate relevant exemplars before solving the problem. 
+Thiseliminatestheneedforlabelingandalsotailorstheexemplarstoeachindividualproblem. SeeFigure3 
+for a sample prompt where the LLM self-generates both knowledge and exemplars. 
+method can operate in a single prompt, generating knowledge, exemplars, and a solution to the initial 
+problem end-to-end in one pass. The underlying idea here is that modern LLMs have already acquired 
+knowledge of various problems during training. Explicitly prompting them to recall relevant problems 
+and solutions in the context guides LLMs to perform in-context learning to solve new problems. 
+Our proposed approach offers several advantages. It self-generates exemplars and obviates the need for 
+manuallylabelingreasoningexemplarsforeachtask,addressingthechallengesfacedby0-shotandfew-shot 
+CoT. Furthermore, the self-generated exemplars are tailored to individual problems, such as ���geometry��� or 
+���probability���, rather than generic ���math problems���. This can simplify the complexity associated with recent 
+CoT techniques that retrieve relevant exemplars from external data (Zhang et al., 2022b; Shum et al., 2023). 
+We evaluate the proposed approach in various reasoning-intensive tasks, including mathematical problem 
+solving in GSM8K (Cobbe et al., 2021) and MATH (Hendrycks et al., 2021b), code generation in 
+Codeforces, and other reasoning tasks in BIG-Bench (Srivastava et al., 2022). We use several base LLMs: 
+GPT-3.5, GPT-4 (OpenAI, 2023; Ouyang et al., 2022), and PaLM2 (Anil et al., 2023). Experimental 
+results show that our approach outperforms 0-shot CoT and few-shot CoT across a range of tasks and base 
+LLMs, achieving an average accuracy gain of +4%. Notably, our approach improves performance on tasks 
+involving diverse types of reasoning, such as MATH (including algebra, probability, geometry, etc.) and 
+Codeforces(involvingdynamicprogramming,graphalgorithms,etc.). Thisresultsuggeststheeffectiveness 
+of generating tailored exemplars for individual problems to guide the reasoning process of LLMs.
+ChatGPT
+This abstract discusses a new prompting approach named "analogical prompting" to guide the reasoning process of Large Language Models (LLMs) in problem-solving tasks. This method is inspired by human analogical reasoning, where past experiences are leveraged to solve new problems. Instead of relying on labeled exemplars of the reasoning process (as in Chain-of-Thought (CoT) prompting), this approach prompts LLMs to self-generate relevant exemplars and knowledge tailored to each problem, providing a general, convenient, and adaptable method for a range of reasoning tasks. The authors claim that this approach outperforms both 0-shot and few-shot CoT prompting in various tasks, including mathematics problem solving and code generation. Experimental results based on several base LLMs, including GPT-3.5, GPT-4, and PaLM2, show an average accuracy gain of +4% across different types of reasoning tasks.
+2RELATED WORKS 
+2.1LARGE LANGUAGE MODELS AND PROMPTING 
+A language model estimates probabilities over text. Recent research has scaled up these models from 
+millions (Devlin et al., 2019) to billions of parameters (Brown et al., 2020) and expanded training data 
+to include web texts and instruction data (Gao et al., 2020; Ouyang et al., 2022; Chung et al., 2022). These 
+advances have made large language models proficient in various NLP tasks. 
+LLMs with billions of parameters demonstrate in-context learning and few-shot learning abilities (Brown 
+et al., 2020; Liu et al., 2022; Su et al., 2022; Mishra et al., 2022; Wei et al., 2022a; Yasunaga et al., 2023). 
+They use input prompts (instructions or a few exemplars) to guide LLMs to generate desired responses 
+for tasks, marking the advent of the prompting era. Our approach harnesses the in-context learning abilities 
+of LLMs to guide their reasoning process using self-generated exemplars. 
+A closely related work to ours is recitation-augmented generation (Sun et al., 2022). In open-domain 
+QA, this work prompts LLMs to recite relevant facts in context before answering questions. Our idea 
+2 
+Large Language Models as Analogical Reasoners 
+of self-generating exemplars is related to recitation, but focuses on recalling problem-solving and reasoning 
+processes rather than factual knowledge. 
+2.2CHAIN-OF-THOUGHT PROMPTING 
+Chain-of-thought(CoT;Weietal.2022b)isapromptingstrategythatguidesLLMstoproduceintermediate 
+reasoning steps towards a final answer, enhancing problem-solving performance. Common instances of 
+CoT include 0-shot CoT (Kojima et al., 2022) and few-shot CoT Wei et al. (2022b). 
+0-shot CoT prompts LLMs with a general instruction like ���think step by step��� to produce intermediate rea- 
+soning steps. Few-shot CoT achieves stronger performance by providing multiple exemplars of reasoning 
+process (question���rationale���answer), leveraging LLMs��� in-context learning abilities. However, it requires 
+labeled exemplars. Our approach tackles this challenge by prompting LLMs to self-generate exemplars. 
+Within few-shot CoT, the original approach employs a fixed set of labeled exemplars for all test problems. 
+Recent work explores retrieval-based CoT, which aims to obtain more relevant exemplars from external 
+data for each problem (Zhang et al., 2022b; Shum et al., 2023). While our work shares the goal of 
+providing relevant exemplars, instead of retrieval, we make LLMs self-generate exemplars. Self-generation 
+offers several advantages: it is simpler, as it does not require external data retrieval, and it is more versatile, 
+as it can produce not only specific exemplars but also broader insights or knowledge that complement 
+them. Empirically, our generation-based CoT outperforms retrieval-based CoT, especially with larger 
+base LLMs, while retrieval-based CoT excels with smaller base LLMs (��6). 
+Finally, there are other techniques for enhancing CoT, such as self-consistency (Wang et al., 2022) and 
+least-to-most (Zhou et al., 2022). Our work can complement and integrate with these efforts. 
+Please see ��A for additional related works.
+ChatGPT
+The section reviews related work in the domains of Large Language Models (LLMs) and Chain-of-Thought (CoT) Prompting.
+In subsection 2.1, the text outlines the evolution of LLMs, from models with millions to billions of parameters, and the expansion of their training data. These advances have enabled LLMs to excel in various NLP tasks, demonstrating in-context and few-shot learning abilities. This progression marks the onset of the "prompting era," where input prompts (either instructions or exemplars) guide LLMs to generate desired responses. The subsection also mentions a work closely related to the new approach: recitation-augmented generation, which prompts LLMs to recite relevant facts before answering open-domain QA tasks. However, the new approach focuses on self-generating exemplars for problem-solving and reasoning processes instead of recalling factual knowledge.
+Subsection 2.2 introduces Chain-of-Thought (CoT) prompting, a strategy that guides LLMs to produce intermediate reasoning steps towards a final answer, improving problem-solving performance. It describes two common instances of CoT: 0-shot and few-shot CoT. While 0-shot CoT provides general instructions for LLMs to think step by step, few-shot CoT offers stronger performance by providing multiple exemplars of the reasoning process but requires labeled exemplars. The new approach overcomes this challenge by prompting LLMs to self-generate exemplars, avoiding the need for labeled examples and external data retrieval, while also producing broader insights. The section concludes by noting that the new generation-based CoT outperforms retrieval-based CoT with larger LLMs and can integrate with other techniques enhancing CoT.
+3PRELIMINARIES 
+We focus on problem-solving tasks, where the objective is to produce a solutionyfor a given problem 
+statementx, such as mathematical questions or code generation specifications. The solution may include 
+both the intermediate reasoning steps or rationale r and the final answer a. 
+A prompting method��is a function that maps a problem statementxinto a specific textual input��(x) 
+for an LLM, which then generates a solution �� y=LLM(��(x)). For instance, 
+��� In 0-shot prompting, �� directly yields x. 
+��� In 0-shot CoT, �� supplements x with a general instruction, such as ���[x] think step by step���. 
+���In few-shot CoT,��supplementsxwith several labeled exemplars,{(xi,ri,ai)}K 
+i=1, such as ���[x1] 
+[r1][a1]...[xK][rK][aK] [x]���. 
+Our aim is to design a prompting method �� that enhances the accuracy of solutions LLMs generate. 
+4APPROACH 
+We introduce analogical prompting, a new prompting approach that automatically provides exemplars 
+to guide LLMs��� reasoning process. Inspired by how humans recall relevant past experiences when tackling 
+new problems, our approach makes LLMs self-generate relevant exemplars or knowledge in context, 
+before proceeding to solve the problem (Figure 1, right). We present two techniques to achieve this: 
+self-generated exemplars (��4.1) and self-generated knowledge + exemplars (��4.2). 
+4.1SELF-GENERATED EXEMPLARS 
+Our approach is based on the idea that modern LLMs possess a broad range of problem-solving knowledge 
+acquired during training. Explicitly prompting them to recall or generate relevant problems and solutions 
+in context aids LLMs to perform in-context learning to solve new problems. 
+Specifically, given a target problem to solve x, our prompt augments it with instructions like: 
+# Problem: [x] 3 
+Large Language Models as Analogical Reasoners 
+# Relevant problems: Recall three relevant and distinct problems. For each 
+problem, describe it and explain the solution. 
+# Solve the initial problem: 
+Foraconcreteexample,seeFigure2. TheLLMfirstgeneratesseveral(K)relevantexemplarsintheformof 
+question-rationale-answer sequences (���# Relevant problems:��� part of the instruction). Then the model 
+proceeds to solve the initial problem, leveraging the recalled exemplars in the context (���# Solve the ini- 
+tial problem:���partoftheinstruction). Notethatalltheseinstructionsareprovidedwithinasingleprompt, 
+allowing the LLM to generate relevant problems and solution to the initial problem in one continuous pass. 
+Using ���#��� symbols in the prompt (e.g., ���# Relevant Problems���) helps LLMs structure the response better. 
+Below are key technical decisions we made: 
+���Generating relevant and diverse exemplars is important: To achieve this, we explicitly include an 
+instruction in the prompt, such as ���generate problems that are distinct from each other��� (e.g., Figure 
+2). This step is crucial as some LLMs have a tendency to repetitively generate identical problems, 
+which can be misleading when solving the target problem. 
+���Single-pass vs. independent exemplar generation: An alternative approach is to independently 
+generate exemplars by separately sampling them from the LLM and then re-prompt the LLM with 
+all the exemplars. While this method does work, our current single-pass prompt approach achieves 
+comparable performance and offers greater convenience, eliminating the need for multiple prompts. 
+Consequently, we have chosen to adopt the single-pass method. 
+���The number of exemplars to generate (K): Through experimentation, we have found that generating 
+K= 3 to 5 exemplars works the best (more details in ��6.5). 
+Our approach offers two advantages. It offers detailed exemplars of reasoning without manual labeling, 
+addressing the challenges in 0-shot and few-shot CoT. The generated exemplars are tailored to individual 
+problems (e.g., ���geometry��� or ���probability���), offering more relevant guidance than traditional few-shot 
+CoT, which uses fixed exemplars (e.g., general math problems; Figure 1, middle). 
+4.2SELF-GENERATED KNOWLEDGE+EXEMPLARS 
+While generating exemplars is useful, in complex tasks like code generation, LLMs may overly rely on 
+the low-level exemplars and fail to generalize when solving the target problems. To address this challenge, 
+we also allow LLMs to self-generate high-level takeaways that complements the exemplars, which we refer 
+to as ���knowledge.��� Specifically, we enhance the prompt with an additional instruction like the following. 
+For a concrete example, see Figure 3. 
+# Tutorial: Identify core concepts in the problem and provide a tutorial. 
+One technical consideration is whether to generate knowledge before or after exemplars. We found that 
+generating knowledge before exemplars yields superior results (Table 6). By generating knowledge first, 
+LLMs identify the core concepts of the problem. This, in turn, helps LLMs generate exemplars that align 
+more closely in terms of the fundamental problem-solving approaches rather than surface-level lexical 
+similarities. For further discussion, please refer to ��6.2.
+ChatGPT
+This section focuses on problem-solving tasks where the goal is to produce a solution
+y
+y
+y
+for a given problem statement
+x
+x
+x
+. The solution encompasses both intermediate reasoning steps (rationale
+r
+r
+r
+) and the final answer
+a
+a
+a
+. The text introduces a prompting method
+��
+\phi
+��
+, a function mapping a problem statement
+x
+x
+x
+into a textual input
+��
+(
+x
+)
+\phi(x)
+��
+(
+x
+)
+for LLMs, guiding them to generate a solution
+y
+^
+=
+LLM
+(
+��
+(
+x
+)
+)
+\hat{y} = \text{LLM}(\phi(x))
+y
+^
+���
+=
+LLM
+(
+��
+(
+x
+))
+.
+Different prompting approaches are discussed:
+0-shot prompting:
+��
+\phi
+��
+yields
+x
+x
+x
+directly.
+0-shot CoT:
+��
+\phi
+��
+adds general instructions to
+x
+x
+x
+, like ���think step by step���.
+Few-shot CoT:
+��
+\phi
+��
+supplements
+x
+x
+x
+with labeled exemplars.
+The objective is to create a prompting method
+��
+\phi
+��
+that improves the accuracy of the solutions generated by LLMs.
+Analogical Prompting:
+The new approach introduced, called "analogical prompting", automatically provides exemplars to guide LLMs. It instructs LLMs to self-generate relevant exemplars or knowledge before solving a problem.
+Self-Generated Exemplars (��4.1):
+The approach is based on LLMs��� vast problem-solving knowledge acquired during training. For a given problem
+x
+x
+x
+, the prompt is augmented with instructions for the model to recall or generate relevant problems and solutions. The LLM first generates relevant exemplars in the form of question-rationale-answer sequences, then solves the initial problem using these exemplars. Instructions are provided within a single prompt, allowing continuous generation of problems and solutions. Key technical decisions include generating relevant and diverse exemplars, using a single-pass prompt approach, and finding the optimal number of exemplars to generate (usually between 3 to 5).
+Self-Generated Knowledge + Exemplars (��4.2):
+In complex tasks, relying solely on exemplars may be insufficient. The approach also prompts LLMs to self-generate high-level takeaways or ���knowledge��� to complement the exemplars. An added instruction might request the identification and tutorial provision of core concepts in the problem. The sequence of generating knowledge and exemplars matters, with superior results obtained when generating knowledge first, helping align generated exemplars with fundamental problem-solving approaches rather than lexical similarities.
+5EXPERIMENTALSETUP 
+5.1TASKS 
+We evaluate the proposed approach in diverse reasoning-intensive tasks, including mathematical problem 
+solving, code generation, and other reasoning tasks like logical and temporal reasoning. 
+Mathematical problem solving.We use popular benchmarks, GSM8K (Cobbe et al., 2021), comprising 
+elementary math word problems, and MATH (Hendrycks et al., 2021b), consisting of advanced math 
+problems from high school math competitions. For each problem, we obtain an output from LLMs using 
+a temperature of 0, and report the accuracy. 
+Code generation.Code generation involves synthesizing programs to solve algorithmic problems. 
+Competitive programming is especially challenging, requiring reasoning about various algorithms like 
+dynamic programming and graphs (Li et al., 2022; Kulal et al., 2019; Yasunaga & Liang, 2020). 
+4 
+Large Language Models as Analogical Reasoners 
+an array. The algorithm works 
+iteration, the current element is 
+keeps track of the product of all 
+the input array. ...... 
+1, and then iterate through 
+target. 
+prefix of the array is equal to 
+about the core concepts in 
+the following conditions are 
+condition, print the smallest. 
+problem, describe the problem, 
+Self-generated Lessons 
+Self-generated Exemplars 
+Your task is to tackle mathematical problems. When presented with a math problem, recall relevant problems as examples. Afterward, 
+proceed to solve the initial problem. 
+# Problem: 
+An airline serves a dinner to all the passengers on an airplane. They get their choice of steak or fish. Three steak meals and three 
+fish meals are set aside for the six-member crew. If the meals are distributed to the crew members randomly, what is the probability 
+that both pilots get the fish? 
+# Instructions: 
+## Relevant Problems: 
+Recall three examples of math problems that are relevant to the initial problem. Your problems should be distinct from each other and 
+from the initial problem (e.g., involving different numbers and names). For each problem: - After "Q: ", describe the problem - After "A: ", explain the solution and enclose the ultimate answer in \boxed{}. 
+## Solve the Initial Problem: 
+Q: Copy and paste the initial problem here. 
+A: Explain the solution and enclose the ultimate answer in \boxed{} here. 
+Relevant Problems: 
+Q: In a bag, there are 5 red balls and 3 blue balls. If two balls are drawn at random without replacement, what is the probability 
+that both balls are red? 
+A: The total number of balls is 8. The probability of drawing a red ball on the first draw is 5/8. After one red ball is drawn, there 
+are 4 red balls left out of 7 total balls. Therefore, the probability of drawing a second red ball is 4/7. The probability of both 
+events happening is the product of the individual probabilities, so the probability of drawing two red balls is (5/8) * (4/7) = 
+\boxed{\frac{5}{14}}. 
+Q: A box contains 10 red marbles and 5 blue marbles. If three marbles are drawn at random without replacement, what is the probability 
+that all three marbles are red? 
+A: The total number of marbles is 15. The probability of drawing a red marble on the first draw is 10/15. After one red marble is 
+drawn, there are 9 red marbles left out of 14 total marbles. Therefore, the probability of drawing a second red marble is 9/14. After 
+two red marbles are drawn, there are 8 red marbles left out of 13 total marbles. Therefore, the probability of drawing a third red 
+marble is 8/13. The probability of all three events happening is the product of the individual probabilities, so the probability of 
+drawing three red marbles is (10/15) * (9/14) * (8/13) = \boxed{\frac{24}{91}}. 
+Q: A bag contains 4 green marbles, 3 red marbles, and 2 blue marbles. If two marbles are drawn at random without replacement, what is 
+the probability that both marbles are green? 
+A: The total number of marbles is 9. The probability of drawing a green marble on the first draw is 4/9. After one green marble is 
+drawn, there are 3 green marbles left out of 8 total marbles. Therefore, the probability of drawing a second green marble is 3/8. The 
+probability of both events happening is the product of the individual probabilities, so the probability of drawing two green marbles 
+is (4/9) * (3/8) = \boxed{\frac{1}{6}}. 
+Let's solve the following math problem: 
+An airline serves a dinner to all the passengers on an airplane. They get their choice of steak or fish. Three steak meals and three 
+fish meals are set aside for the six-member crew. If the meals are distributed to the crew members randomly, what is the probability 
+that both pilots get the fish? 
+A: There are a total of 6 crew members, so the probability of the first pilot getting the fish is 3/6. After one fish meal is given to 
+the first pilot, there are 2 fish meals left out of 5 total meals. Therefore, the probability of the second pilot getting the fish is 
+2/5. The probability of both events happening is the product of the individual probabilities, so the probability that both pilots get 
+the fish is (3/6) * (2/5) = \boxed{\frac{1}{5}}. 
+Our Prompt: Self-generate Exemplars 
+Output by GPT3.5-turbo Self-generated Exemplars 
+Figure 2: Actual example of our prompt (top) and LLM output (bottom) for MATH task. Top: Our prompt 
+supplements the problem statement with instructions to generate relevant exemplars and then solve the 
+problem. Bottom: Exemplars generated by GPT3.5-turbo are indeed relevant to the problem, focusing on 
+probability. It then accurately solves the problem. See ��D.1 for the complete prompt and output. Using ���#��� 
+symbols in the prompt (e.g., ���# Relevant Problems���) helps LLMs structure the response better. 
+As a benchmark, we collected competitive programming problems from codeforces.com (details in ��B). 
+We focus on level-A problems published in 2023 to prevent test set contamination (Magar & Schwartz, 
+2022). Each problem comprises a problem statement, which serves as input to LLMs, and a set of test 
+cases to assess generated code. The correctness of code is determined by whether it passes all test cases. 
+In line with existing work on code generation (Li et al., 2022; Chen et al., 2023), we report the Acc@1 
+and Acc@10 metrics. Acc@kmeasures whether at least one of theksampled model outputs is correct. 
+For each problem, we sample 10 outputs from LLMs, using a temperature of 0.7. 
+Other reasoning tasks.We further evaluate on various reasoning tasks in BIG-Bench (Srivastava et al., 
+2022; Suzgun et al., 2022): word sorting, logical deduction five objects, temporal sequences, reasoning 
+about colored objects, and formal fallacies. These tasks are diverse and may not have dedicated training 
+data, so they align well with our approach of self-generating custom exemplars. For each problem, we 
+obtain an output from LLMs using a temperature of 0, and report the accuracy.
+ChatGPT
+The section describes the experimental setup used to evaluate the proposed analogical prompting approach on diverse reasoning-intensive tasks. Here's a brief overview:
+5.1 Tasks
+The tasks selected for evaluation cover mathematical problem-solving, code generation, and other reasoning tasks, including logical and temporal reasoning:
+Mathematical Problem Solving:
+Data Sets: GSM8K (with elementary math word problems) and MATH (advanced math problems from high school competitions).
+Evaluation Metric: Accuracy, with LLM outputs obtained using a temperature of 0.
+Code Generation:
+Task: Synthesize programs to solve algorithmic problems from competitive programming, focusing on Level-A problems published in 2023 from Codeforces.com. This helps avoid test set contamination.
+Evaluation Metrics: Acc@1 and Acc@10 (measuring if at least one of the k sampled model outputs is correct), with 10 outputs sampled from LLMs per problem using a temperature of 0.7.
+Other Reasoning Tasks:
+Tasks: Various reasoning challenges in BIG-Bench, including word sorting, logical deduction with five objects, temporal sequences, reasoning about colored objects, and identifying formal fallacies.
+Evaluation Metric: Accuracy, with LLM outputs obtained using a temperature of 0.
+Through this diverse set of tasks, the experimental setup aims to thoroughly evaluate the effectiveness and versatility of the proposed analogical prompting approach. The tasks vary in complexity and type, providing a robust test for the LLM's ability to generate relevant exemplars and knowledge for problem-solving.
+6RESULTS 
+6.1MAIN RESULTS 
+Mathematical problem solving.Table 1 presents results for GSM8K and MATH tasks. Our prompting 
+method, which self-generates exemplars, outperforms baselines such as 0-shot CoT and few-shot CoT. 
+The improvement over few-shot CoT is notable for the MATH task, which involves a range of reasoning 
+types, including algebra, probability, and geometry. This aligns with our approach of crafting tailored 
+exemplars for each problem. 
+Figure 1 and 2 provide qualitative examples of GPT3.5-turbo outputs generated using our prompt. In 
+both examples, the LLM indeed generates relevant exemplars (geometry problems in Figure 1. probability 
+problems in Figure 2), and subsequently produces correct solutions. In contrast, in the standard few-shot 
+CoT (Figure 1, middle), the exemplars are math-related (e.g., algebra) but may not always match the test 
+problem (e.g., geometry), as the dataset contains diverse test problems. 
+7 
+Large Language Models as Analogical Reasoners 
+Prompting Method (��� scale down) 
+text-curie-001text-davinci-001text-davinci-002 (scale up ���) 
+text-davinci-003 
+0-shot2%6%13%14% 
+0-shot CoT2%6%22%50% 
+5-shot (fixed) CoT2%10%43%54% 
+5-shot retrieved CoT3%11%47%57% 
+Ours: Self-generated Exemplars2%9%48%61% 
+Table 4:Performance analysis using GSM8K task. Across varied scales/strengths of base LLMs (increasing 
+from left to right), our prompting method outperforms 0-shot CoT and standard few-shot CoT with fixed exemplars. 
+Self-generated exemplars vs. retrieved exemplars: our method, with self-generated exemplars, performs better with 
+larger-scale LLMs, while few-shot CoT with retrieved exemplars performs better with smaller-scale LLMs. 
+Code generation.Table 2 presents results for Codeforces task. Our prompting method outperforms 
+baselinessuchas0-shotCoTandfew-shotCoTinbothGPT3.5-turboandGPT4. Moreover,self-generating 
+knowledge provides additional performance boost over self-generating exemplars, demonstrating its 
+usefulness for the challenging Codeforces task. With our prompting method, GPT3.5-turbo achieves 
+competitive performance with GPT4, with a 15% Acc@1 compared to GPT4���s 16% Acc@1. 
+Figure 3 (more complete version in ��D.3) provides a qualitative example of GPT3.5-turbo output generated 
+using our prompt. The knowledge and exemplars generated by GPT3.5-turbo are indeed relevant to 
+the problem to solve, focusing on the prefix product algorithm. The final code generated by the LLM 
+effectively applies the algorithm to solve the problem. In contrast, in the 0-shot CoT baseline, the LLM 
+output does not recall relevant exemplars and fails to employ the prefix product algorithm, resulting in 
+an incorrect solution (��D.3). 
+BIG-Bench reasoning tasks.Table 3 presents results for BIG-Bench tasks. Our prompting method 
+outperforms baselines like 0-shot CoT, confirming its effectiveness across a wide range of tasks. Our 
+method is also competitive with manual few-shot CoT. ��D.4 offers GPT3.5-turbo output examples for 
+the deductive reasoning task (���BIG-Bench formal fallacies���). Using our prompting method, the LLM 
+generates relevant deductive reasoning exemplars. Conversely, 0-shot CoT, with no relevant exemplars, 
+tends to adopt an incorrect approach to address the deductive reasoning problem.
+ChatGPT
+6 Results
+6.1 Main Results
+Mathematical Problem Solving:
+The results on the GSM8K and MATH tasks are shown in Table 1.
+The proposed prompting method, which self-generates exemplars, outperforms other baseline methods, including 0-shot CoT and few-shot CoT.
+The improvement is especially significant on the MATH task, where the test problems require various reasoning types like algebra, probability, and geometry. This supports the effectiveness of the approach in crafting tailored exemplars for individual problems.
+Qualitative examples of outputs generated using the proposed prompting method are provided in Figures 1 and 2, showing the generation of relevant exemplars and correct solutions.
+Code Generation (Codeforces Task):
+Table 2 presents the results.
+The proposed method surpasses other baseline methods and shows improved performance with the addition of self-generated knowledge.
+GPT3.5-turbo, using the proposed prompting method, achieves competitive performance with GPT4, showing a 15% Acc@1 compared to GPT4���s 16% Acc@1.
+Figure 3 provides an example of how the generated knowledge and exemplars by GPT3.5-turbo are relevant to the given problem (focused on the prefix product algorithm), leading to an effective solution.
+BIG-Bench Reasoning Tasks:
+Results for BIG-Bench tasks are presented in Table 3.
+The proposed method outperforms baseline methods like 0-shot CoT across various tasks, demonstrating its broad effectiveness.
+The approach is competitive even compared to manual few-shot CoT.
+An example provided in ��D.4 shows how the LLM, using the proposed prompting method, generates relevant deductive reasoning exemplars, whereas the 0-shot CoT approach without relevant exemplars tends to employ an incorrect reasoning method.
+In general, the results across various tasks and benchmarks indicate that the proposed analogical prompting approach, particularly the use of self-generated exemplars and knowledge, offers improved performance compared to existing methods. The approach seems to be adaptable and effective across a range of problem types and reasoning tasks, from math problems to code generation to deductive reasoning.
+6.2KNOWLEDGE CAN COMPLEMENT EXEMPLARS 
+Generating knowledge alongside exemplars is particularly useful in Codeforces task (Table 2), where 
+LLMs need to apply nontrivial algorithms for code generation. In our qualitative analysis, we observe two 
+concrete advantages of generating knowledge: (1) knowledge act as high-level takeaways that complement 
+low-level exemplars, which prevents LLMs from overly relying on specific exemplars and helps to 
+generalize to new problems; (2) when generating knowledge, LLMs identify the core concepts of the 
+problem and produce exemplars that align more closely in fundamental problem-solving approaches 
+(e.g., the prefix product algorithm in Figure 3), rather than surface-level lexical similarities (e.g., without 
+knowledge, LLMs tend to produce exemplars on palindromic sequences). 
+The performance gains achieved by generating knowledge are less significant in other tasks like GSM8K 
+and BIG-Bench, however, likely because these tasks are less complex. 
+6.3GENERATING VS RETRIEVING EXEMPLARS 
+A key motivation behind our idea of self-generating exemplars is its ability to offer relevant exemplars 
+for problem solving. An alternative approach is to retrieve relevant exemplars from external data, provided 
+there is a labeled dataset of exemplars (e.g., the training set of GSM8K, which includes solutions labeled 
+with reasoning steps). What trade-offs exist between these two approaches? 
+The advantage of retrieval lies in its reliability. Exemplars retrieved from a labeled dataset are inherently 
+valid and correct, unlike generated exemplars, which lack this guarantee. Nevertheless, retrieval typically 
+needs labeled exemplars and involves a complex additional retrieval step. 
+In contrast, generation is more self-contained and convenient, as it does not rely on external labeled data 
+or retrieval steps. Additionally, generation may yield exemplars better tailored to specific test problems 
+because it can draw upon the entire (pre-)training data the LLM has been exposed to. The downside 
+of generation is that it may fail to produce valid exemplars if the LLMs are weak or have not learned 
+problems related to the ones to be solved. 8 
+Large Language Models as Analogical Reasoners 
+Table 4 shows empirical results for GSM8K task, comparing our self-generated exemplars method (���Ours���) 
+andthefew-shotCoTmethodusingexemplarsretrievedfromtheGSM8Ktrainset(���5-shotretrievedCoT���). 
+We conducted experiments using base LLMs of various scales, from text-curie-001 to text-davinci-003, 
+where scale broadly indicates the amount of training data and parameter count used by the LLM. 
+Our method outperforms the retrieved CoT with larger-scale LLMs, such as text-davinci-003. This is 
+likely because the LLM has effectively learned related tasks during training and can generate useful 
+exemplars. Conversely, with smaller-scale LLMs, the retrieved CoT performs better, and self-generation 
+fails to produce useful or valid exemplars. 
+6.4SCALE OF BASELLMS:ANALOGICAL PROMPTING EXCELS WITH LARGER MODELS 
+Table 4 presents the result of using varying scales and strengths of base LLMs, ranging from text-curie-001 
+to text-davinci-001 to text-davinci-002 and text-davinci-003 (more parameters and training data). Our 
+prompting method surpasses vanilla 0-shot and 0-shot CoT across all scales. When using smaller-scale 
+LLMs (text-curie-001 and text-davinci-001), few-shot CoT leveraging labeled exemplars exhibits 
+superior performance compared to ours. However, as the LLMs are scaled up to text-davinci-002 and 
+text-davinci-003, our method outperforms few-shot CoT. This is due to the LLMs��� enhanced ability to 
+self-generate more relevant and useful exemplars. 
+6.5NUMBER OF EXEMPLARS TO GENERATE # Exemplars to 
+self-generate GSM8KMATH 
+K=176.134.8 
+K=277.036.7 
+K=377.537.3 
+K=477.337.0 
+K=577.837.1 
+Table 5:Analyzing the effect of varying the 
+number of self-generated exemplars (K) in 
+our approach. We assess performance on 
+GSM8K and MATH tasks using GPT3.5- 
+turbo as the base LLM. 
+In Table 5, we analyze the effect of varying the number of 
+self-generated exemplars (K) in our approach. WhenK=1, 
+the LLM underperforms due to excessive reliance on a single 
+exemplar generated. WhenK ��� 3, 
+the LLM demonstrates 
+consistentperformance,withthebestresultsobservedatK=3 
+or5. This observation aligns with the findings in the standard 
+few-shot in-context learning in LLMs (Brown et al., 2020). 
+6.6ERROR ANALYSIS 
+We analyzed 50 problems in GSM8K and MATH where our 
+prompting approach yielded incorrect answers. We categorize these errors as follows: 
+��� (10/50) Generated exemplars are irrelevant 
+��� (12/50) Generated exemplars are relevant but contain incorrect solutions 
+��� (28/50) Generated exemplars are relevant and correct, but LLM fails to solve the new problem: 
+��� (12/50) A generalization gap between the exemplars and the new problem. 
+��� (8/50) Overreliance on specific exemplars, leading to misdirection. 
+��� (8/50) Other issues, such as calculation errors. 
+In most cases, the generated exemplars were somewhat relevant and correct. However, a common failure 
+occurredwhentheLLMcouldnotsolvethenewproblemduetoageneralizationgap(e.g.,thenewproblem 
+is harder than the exemplars). This observation motivates future research to generate exemplars that not 
+only possess relevance but also facilitate generalization for solving new problems.
+ChatGPT
+6.2 Knowledge Complements Exemplars
+Generating knowledge with exemplars is beneficial, especially in the Codeforces task where nontrivial algorithms for code generation are needed. This method:
+Provides high-level insights complementing low-level exemplars, aiding in generalizing to new problems.
+Ensures exemplars align closely with core concepts and fundamental problem-solving approaches.
+6.3 Generating vs. Retrieving Exemplars
+Generating Exemplars:
+Pros: Offers relevance without needing labeled data; is more convenient and potentially yields exemplars better suited to specific problems.
+Cons: May produce invalid exemplars with weaker LLMs or unfamiliar problems.
+Retrieving Exemplars:
+Pros: Reliable since it uses valid and correct exemplars from labeled datasets.
+Cons: Needs labeled data and involves an additional complex retrieval step.
+6.4 Scaling LLMs: Analogical Prompting Excels with Larger Models
+Smaller LLMs:
+Few-shot CoT with labeled exemplars performs better.
+Larger LLMs:
+The proposed method outperforms as it generates more relevant and useful exemplars.
+6.5 Number of Exemplars to Generate
+Table 5 examines the number of self-generated exemplars (K). The findings:
+With
+K
+=
+1
+K = 1
+K
+=
+1
+, performance drops due to overreliance on a single exemplar.
+Consistent performance is noted with
+K
+���
+3
+K \geq 3
+K
+���
+3
+, with optimal results at
+K
+=
+3
+K = 3
+K
+=
+3
+or
+5
+5
+5
+.
+6.6 Error Analysis
+Analysis of 50 problems where errors occurred revealed:
+10/50: Irrelevant exemplars generated.
+12/50: Relevant exemplars with incorrect solutions.
+28/50: Relevant and correct exemplars, but new problem unsolved due to:
+12/50: Generalization gap.
+8/50: Overreliance on specific exemplars, leading to misdirection.
+8/50: Other issues, like calculation errors.
+Future Research Directions
+Most errors occurred when LLMs couldn't solve new problems despite having relevant exemplars. This highlights a need for future research focused on generating exemplars that not only are relevant but also foster better generalization for solving diverse problems.
+7CONCLUSION 
+We introduced analogical prompting, a new language model prompting approach that self-generates 
+relevant reasoning exemplars for solving problems. This approach provides detailed, customized exemplars 
+for individual problems without requiring labeled data, effectively addressing the challenges faced by 
+existing 0-shot CoT and few-shot CoT prompting methods. Experimental results show that our approach 
+outperforms 0-shot CoT and few-shot CoT in various reasoning tasks, including math problem solving, 
+code generation, and other logical/temporal reasoning tasks. 
+Limitations and future research.One limitation of our approach is increased inference computation, as 
+our approach generates more tokens than vanilla 0-shot and 0-shot CoT prompting. Compared to few-shot 
+CoT, we use fewer input tokens and more output tokens, as exemplars are counted as input in few-shot 
+9 
+Large Language Models as Analogical Reasoners 
+CoT and as output in our approach. 
+Another limitation is that self-generation can fail if the LLM lacks sufficient strength or has not learned 
+relevant knowledge to the new problems to solve. Conversely, with a stronger LLM, it can draw upon 
+relevant prior knowledge to tackle slightly more complex problems. Therefore, our approach is better 
+suited for stronger or larger-scale LLMs. 
+Finally, it is known that LLM performance can be influenced by specific prompt phrases used to query the 
+model (Jiang et al., 2020), and our work is also subject to this prompt sensitivity.
+ChatGPT
+7 Conclusion
+The paper introduced
+analogical prompting
+, a novel prompting technique for language models, enhancing their problem-solving abilities by self-generating relevant reasoning exemplars. This method efficiently provides detailed exemplars for each specific problem without the need for labeled data, effectively overcoming challenges seen in both 0-shot CoT and few-shot CoT approaches. Through experiments, the method demonstrated superior performance in various reasoning tasks such as math problem-solving, code generation, and other logical and temporal reasoning tasks.
+Limitations & Future Research
+Increased Inference Computation:
+The approach requires more computational resources as it generates more tokens than the 0-shot and 0-shot CoT prompts.
+Dependency on LLM's Strength:
+The success of self-generation is closely tied to the strength and knowledge of the Large Language Model (LLM). The approach might not perform well if the LLM lacks the requisite strength or knowledge relevant to the problem at hand. Conversely, stronger LLMs capable of tapping into relevant prior knowledge prove to be more efficient at handling complex problems.
+Prompt Sensitivity:
+The performance of LLMs is known to be sensitive to the specific phrases used in prompts, and this approach is not immune to such sensitivity, warranting careful consideration in crafting prompts.
+Future research might focus on addressing these limitations, possibly looking into optimizing computational resources, working with various strengths of LLMs, and understanding the intricacies of prompt sensitivity to improve the robustness and efficiency of the proposed analogical prompting method.
+The main points of the technique
+ChatGPT
+The Analogical Prompting Technique main points are:
+Self-Generating Exemplars:
+The technique encourages Large Language Models (LLMs) to self-generate reasoning exemplars for each specific problem, aiding in problem-solving tasks.
+Customized Exemplars Without Labeled Data:
+It can craft detailed and relevant exemplars for individual problems without the need for labeled data, addressing challenges faced by 0-shot and few-shot Chain-of-Thought (CoT) prompting methods.
+Improved Performance:
+Analogical prompting has demonstrated superior performance in various reasoning tasks including mathematical problem solving, code generation, and logical/temporal reasoning tasks when compared to existing methods.
+Suitable for Strong LLMs:
+The approach is more effective when used with stronger or larger-scale LLMs, as they can better draw upon relevant prior knowledge for problem-solving tasks.
+Increased Inference Computation:
+A limitation of the approach is that it generates more tokens, leading to increased computational demands during inference.
+Prompt Sensitivity:
+The performance of this technique is sensitive to the specific prompt phrasing used to query the model, which is a common characteristic in LLMs.
+Limitations:
+It might not work effectively with weaker LLMs.
+The technique is sensitive to the phrasing of prompts.
+Requires more computational resources due to increased token generation.
+Future Directions:
+The approach opens avenues for future research to optimize computational efficiency, improve performance with various LLM strengths, and better understand and mitigate prompt sensitivity issues.
+Summarize: Mechanisms of Ageing and Development 207 (2022) 111709 
+Available online 20 July 2022 
+0047-6374/�� 2022 The Author(s). Published by Elsevier B.V. This is an open access article under the CC BY license (http://creativecommons.org/licenses/by/4.0/). 
+The damage-independent evolution of ageing by selective destruction 
+James Wordsworth *, Hannah O��� Keefe, Peter Clark, Daryl Shanley* 
+Newcastle University Biosciences Institute, Newcastle University, Newcastle upon Tyne, United Kingdom 
+A R T I C L E I N F O 
+Keywords: 
+Evolution 
+Mutant 
+Selection 
+Theory 
+Damage 
+Growth 
+A B S T R A C T 
+Ageing is widely believed to ref l ect the accumulation of molecular damage due to energetic costs of maintenance, 
+as proposed in disposable soma theory (DST). Here we use agent-based modelling to describe an alternative 
+theory by which ageing could undergo positive selection independent of energetic costs. We suggest that the 
+selective advantage of aberrant cells with fast growth might necessitate a mechanism of counterselection we 
+name selective destruction that specif i cally removes the faster cells from tissues, preventing the morbidity and 
+mortality risks they pose. The resulting survival advantage of slower mutants could switch the direction of se- 
+lection, allowing them to outcompete both fast mutants and wildtype cells, causing them to spread and induce 
+ageing in the form of a metabolic slowdown. Selective destruction could therefore provide a proximal cause of 
+ageing that is both consistent with the gene expression hallmarks of ageing, and independent of accumulating 
+damage. Furthermore, negligible senescence would acquire a new meaning of increased basal mortality. 
+1. Introduction 
+Ageing is a multifactorial process (Kirkwood, 2005; L�� opez-Ot��n et al., 
+2013). However, most proposed mechanisms ultimately require mo- 
+lecular damage to be the initial cause (Kirkwood, 2005). In disposable 
+soma theory (DST) for example, Kirkwood (1977) posited that investing 
+in maintenance is energetically costly, and therefore molecular damage 
+could be allowed to accumulate if that energy could be better utilised in 
+other processes with greater impact on fi tness (e.g. growth and repro- 
+duction). While Kirkwood (2005) suggested multiple molecular mech- 
+anisms were likely to be involved in ageing, including telomere attrition, 
+protein aggregation, and mitochondrial dysfunction, all the suggested 
+mechanisms were based on molecular damage, and ageing would thus 
+ref l ect ���multiple kinds of damage���. This combined damage could then 
+interfere with cell and molecular signalling inducing a level of noise, and 
+damaged cells could undergo cellular senescence inducing inf l ammation 
+and other detrimental effects on the tissue (Nelson et al., 2012), 
+potentially provoking the physical decline we know as ageing. However, 
+if that is true then at its core, ageing ref l ects only one single cause: that 
+organisms do not invest suff i ciently in maintenance to prevent damage 
+accumulation. Indeed, few hypotheses suggest how ageing could result 
+without damage accumulation. 
+The main exceptions are mutation accumulation theory (MAT) and 
+antagonistic pleiotropy (AP). The former suggests that high extrinsic 
+mortality in the wild would allow for ageing-inducing mutations to 
+persist due to the resultant declining force of selection with age (Med- 
+awar, 1952). Initially, the idea was attractive because ageing was not 
+believed to occur in the wild (Medawar, 1952). However, it is now 
+accepted that ageing does occur in the wild, with evidence in multiple 
+species (Nussey et al., 2013) from invertebrates such as dragonf l ies and 
+damself l ies (Sherratt et al., 2011) to long and short-lived mammals such 
+as seals and shrews (Hindle et al., 2009a, 2009b). In contrast to MAT, AP 
+suggests that pro-ageing mutations offer a fi tness advantage earlier in 
+life when selection is stronger (Williams, 1957). As with MAT, there are 
+also multiple single nucleotide polymorphisms (SNPs) in humans that 
+may contribute to early life fi tness at the cost of fi tness later in life 
+(Rodr��guez et al., 2017), and predictably, these mutations have detri- 
+mental effects signif i cantly earlier. However, while such SNPs may 
+Abbreviations: AGE, Advanced glycation end product; AP, Antagonistic Pleiotropy; AR, Aberrantly resistant (to growth stimuli); AS, Aberrantly sensitive (to 
+growth stimuli); ASHM, Autoimmune surveillance of hypersecreting mutants; CFOA, Cancer, fi brosis, and overactivity disorders; CR, Caloric restriction; DST, 
+Disposable soma theory; FRV, Fibrosis risk value; GH, Growth hormone; GM, Growth marker (demonstrating growth rate); IDH1, Isocitrate dehydrogenase 1; IGF-1, 
+Insulin-like growth factor 1; MAT, Mutation accumulation theory; MICA, MHC class I chain-related protein A; mTORC1, Mammalian target of rapamycin complex I; 
+PI3K, Phosphoinositide 3-kinase; RAF, Rapidly Accelerated Fibrosarcoma; SD, Selective destruction; SDT, Selective destruction theory; SNP, Single nucleotide 
+polymorphism; TRV, Tumour risk value; TSC2, Tuberous sclerosis complex 2; UD, Unselective destruction; WT, Wildtype. 
+* Corresponding authors. 
+E-mail addresses: james.wordsworth2@ncl.ac.uk (J. Wordsworth), daryl.shanley@ncl.ac.uk (D. Shanley). 
+Contents lists available at ScienceDirect 
+Mechanisms of Ageing and Development 
+journal homepage: www.elsevier.com/locate/mechagedev 
+https://doi.org/10.1016/j.mad.2022.111709 
+Received 26 May 2022; Received in revised form 14 July 2022; Accepted 17 July 2022 
+Mechanisms of Ageing and Development 207 (2022) 111709 
+2 
+explain the onset of some diseases in some individuals, it is more diff i- 
+cult to identify ancient mutations that are now universal, inducing 
+ageing via a consistent mechanism across species and organisms. As 
+such, these theories currently provide a clearer view of the evolutionary 
+framework that may allow ageing to evolve rather than a comprehensive 
+biological mechanism. 
+Here, we outline an antagonistically pleiotropic biological process 
+that could induce ageing independently of damage accumulation and 
+the energetic costs of maintenance. As such, we believe selective 
+destruction theory (SDT) provides the fi rst comprehensive mechanism 
+providing ageing organisms with a fi tness advantage over similar or- 
+ganisms undergoing negligible senescence without dependence on 
+damage accumulation or energetic costs. However, it is not mutually 
+exclusive with damage-centric theories.
+ChatGPT
+The study proposes an alternative theory to the widely accepted concept that ageing results from the accumulation of molecular damage due to the energetic costs of maintenance (Disposable Soma Theory - DST). Using agent-based modeling, the authors introduce a theory wherein ageing undergoes positive selection, independent of energetic costs. This new theory posits that the selective advantage of abnormal cells with fast growth necessitates a counterselection mechanism termed "selective destruction". This process specifically eliminates faster cells from tissues, mitigating the risks of morbidity and mortality they pose.
+Consequently, slower mutants may gain a survival advantage, allowing them to outcompete both fast mutants and wildtype cells. This dynamic could lead to the slower mutants inducing ageing through a metabolic slowdown. The proposed selective destruction mechanism provides a proximate cause of ageing, aligning with the recognized gene expression hallmarks of ageing while operating independently of accumulated damage.
+This novel perspective could offer insights into the process of negligible senescence, interpreting it as a form of increased basal mortality. The study suggests that this approach to understanding ageing provides a fitness advantage to ageing organisms over those undergoing negligible senescence, without relying on damage accumulation or maintenance energy costs. However, the authors acknowledge that their proposed theory does not necessarily negate existing damage-centric theories of ageing.
+2. Theory outline 
+It is only recently that the plethora of selective forces acting within 
+tissues are becoming appreciated. Just as cancer cells undergo positive 
+selection due to their fast growth and limited response to control, 
+allowing them to spread and ultimately cause death, non-tumour cells 
+can also undergo permanent or semi-permanent changes that give them 
+a selective advantage and allow them to spread at the expense of non- 
+mutant (wildtype) cells (reviewed by Kakiuchi and Ogawa, 2021). 
+This within-tissue selection could therefore affect the fi tness of organ- 
+isms, and inf l uence natural selection. Indeed, an important modelling 
+study by Nelson and Masel (2017) even suggested that such forces might 
+make ageing inevitable. 
+Here we are interested in changes affecting growth and proliferation. 
+These could ref l ect mutations or epigenetic changes, but the altered cells 
+will henceforth be referred to as mutants for simplicity. Such mutants 
+are either aberrantly sensitive (AS) or aberrantly resistant (AR) to 
+growth signals compared with wildtype cells. A number of such mutants 
+have already been identif i ed, including a c-jun null mutation (Johnson 
+et al., 1993) and an insulin-like growth factor 1 (Igf1) receptor knockout 
+both of which make fi broblasts resistant to growth in response to mi- 
+togens (Sell et al., 1994), while cells with mutation in tuberous sclerosis 
+complex 2 (Tsc2) grew faster than their wildtype counterparts under 
+hypoxic conditions (Liu et al., 2006) and cells with a mutation in iso- 
+citrate dehydrogenase 1 (Idh1) grew slower under the same conditions 
+due to an increased reliance on mitochondrial metabolism (Grassian 
+et al., 2014). While both AR and AS mutants reduce tissue functionality 
+by responding incorrectly to environmental cues, AR mutants will grow 
+and proliferate slower than wildtype cells, putting them at a selective 
+disadvantage, whereas AS mutants will grow and proliferate faster, 
+giving them a selective advantage over wildtype cells and AR mutants. 
+AS mutants are therefore a threat to tissue homeostasis in a way that AR 
+mutants are not. If they are not controlled or removed, they will 
+outcompete the wildtype cells and may become the dominant cell type 
+(Fig. 1 A). 
+Even beyond their selective advantage, AS cells represent an 
+increased threat to tissue homeostasis. The accelerated growth and di- 
+vision of AS cells would be associated with a faster mutation rate, as can 
+be seen under extreme examples such as Ras family and Rapidly Accel- 
+erated Fibrosarcoma (Raf) mutations which induce a state of hyper- 
+proliferation associated with high levels of DNA damage (Janda et al., 
+2002). While these extreme mutations induce senescence (Di Micco 
+et al., 2006), for reasons described below, mutations with milder effects 
+on growth cannot autonomously stop their own growth. Therefore, if left 
+uncontrolled, such mutants could undergo successive mutation and 
+transformation, increasing the risk of tumorigenesis, as appears to be 
+happening in multiple studies and cancers (Kakiuchi and Ogawa, 2021). 
+In melanoma, benign lesions harboured mainly BRAF mutations, inter- 
+mediate lesions had additional NRAS and TERT promoter mutations, 
+and mutations in tumour suppressors such as p53 were associated 
+mainly with advanced stage tumours (Shain et al., 2015). In human skin, 
+Martincorena et al. (2015) used ultradeep sequencing to demonstrate 
+that mutations in many cancer cells were already present in physiolog- 
+ically normal skin, and these mutations caused the cells to undergo 
+positive selection. 
+Another potential risk is fi brosis, which is a highly metabolic process 
+requiring activation of growth pathways such as mammalian target of 
+rapamycin complex I (mTORC1) signalling to both induce rapid cell 
+division and produce the large amounts of extracellular matrix proteins 
+(Woodcock et al., 2019). In some mesenchymal cell types, AS mutants 
+with faster metabolism and more active growth pathways could there- 
+fore be expected to increase the risk of fi brosis. For example, IGF-1 is a 
+key growth factor inducing growth and proliferation, which also stim- 
+ulates the survival and activation of fi broblasts, causing differentiation 
+to highly fi brotic myof i broblasts (Choi et al., 2009; Hung et al., 2013). 
+AS mutants with more active IGF-1 signalling would therefore prolif- 
+erate and activate in response to weaker signals, making it more likely 
+that they would reach the critical mass required for fi brosis (Adler et al., 
+2020). Patients with systemic sclerosis and idiopathic pulmonary 
+fi brosis both have high levels of serum IGF-1 (Hamaguchi et al., 2008), 
+indicating that these lethal diseases involve increased activation of 
+pathways associated with AS mutants. Notably, around 45% of all 
+deaths in the developed world are ascribed to chronic fi broproliferative diseases (Wynn, 2007). 
+There are also many other examples where cell function might be 
+upregulated in AS mutants as many cell types link their specif i c func- 
+tional output (such as hormones or metabolites) to growth pathways. 
+This ref l ects that growth and proliferation are usually part of the 
+mechanism to increase long-term production/activity so pathways 
+which increase one will increase the other (Karin and Alon, 2017). For 
+example, �� cells proliferate and produce insulin when blood glucose is 
+high, and trigger apoptosis and inhibit insulin production when glucose 
+is low. The insulin production pathway is therefore intertwined with the 
+growth and proliferation pathways (Rhodes and White, 2002) so both 
+can be up or downregulated together in response to stimulus. However, 
+as the human body requires blood glucose to remain at around roughly 
+5 mM, Karin and Alon (2017) identif i ed that mutants sensing blood 
+glucose at an incorrectly high level would quickly cause death if they 
+were allowed to spread. This would happen for two reasons. Firstly, 
+these mutants hypersecreting insulin can lower blood glucose below the 
+point at which the rest of the body���s tissues can sustain respiration. 
+Secondly, the wildtype cells sensing the correct level of glucose would 
+undergo apoptosis to reduce insulin production, hastening the spread of 
+mutants and the lethal drop in blood glucose. Thus, any cell type that 
+utilises cell growth and division as mechanisms to regulate functional 
+output, and whose functional output relies on keeping metabolites, 
+proteins, and even other cell types within a certain range, is threatened 
+by AS mutants. Even if the outcomes are not lethal, as they are for 
+fi brosis, insulin production, and other pathways such as calcium ho- 
+meostasis, they will not promote good health or bodily function. 
+AS mutants will therefore promote morbidity and mortality through 
+cancer, fi brosis, and overactivity (CFOA). From this, we conclude that 
+organisms would gain a fi tness advantage from controlling AS mutants 
+through maintaining better tissue homeostasis. The stricter the control 
+mechanisms, the longer an organism could hope to retain wildtype 
+functionality and avoid CFOA. By contrast, AR mutants provide little 
+threat to tissue function. Their slow growth will make them naturally 
+outcompeted, but even if they accumulated, their reduced metabolic 
+function would not induce the same threat as AS mutants because they 
+would produce less of their own specif i c output, merely requiring 
+wildtype cells to work harder to maintain tissue function. We suggest 
+that this asymmetry between the threat posed by AS and AR mutants 
+might necessitate a control mechanism tailored toward removing AS 
+cells and the immediate threat they pose. 
+There are two possible mechanisms of controlling mutants with a 
+selective advantage, both requiring a marker of phenotypic change: as 
+here we are concerned with sensitivity to growth, we have termed this a 
+growth marker (GM). 
+Firstly, cells could autonomously recognise that the absolute con- 
+centration of the GM they are expressing is too high and induce their 
+own apoptosis. Oncogenic mutations in Ras, Akt, phosphoinositide 3-ki- 
+nase (Pi3k), and multiple other mitogenic molecules have been shown 
+to induce senescence and apoptosis depending on cell type and severity 
+(Liu et al., 2018). Hypersecreting �� cell mutants also undergo apoptosis 
+(termed glucotoxicity) (Karin and Alon, 2017). 
+Importantly, autonomous mechanisms allow both AS and AR mu- 
+tants to be removed with equal eff i ciency, as cells recognise their own 
+absolute value of GM (Fig. 1 B). However, such mechanisms are 
+intrinsically dangerous: in the case of �� cells, glucotoxicity in hunter 
+gatherers would have removed only dangerous mutant cells producing 
+too much insulin, but modern diets rich in calories and ref i ned sugars are 
+inducing glucotoxicity in wildtype cells which are producing high levels 
+of insulin to remove the high levels of glucose in the blood, thus 
+resulting in pancreatic destruction and type II diabetes (Karin and Alon, 
+2017). The danger arises because autonomous mechanisms are inca- 
+pable of distinguishing between aberrant cells and aberrant conditions, 
+so any autonomous mechanism must only activate in conditions that are 
+highly unlikely to occur in nature. Consistently, type II diabetes was 
+likely a rare condition before the introduction of ref i ned sugars (Johnson 
+et al., 2017). 
+Secondly, mutants could be controlled via a non-autonomous 
+method via comparison with the surrounding tissue. For example, 
+tumour cells are distinguished from surrounding tissue by natural killer 
+cell recognition of MHC class I chain-related protein A (MICA) levels 
+(M��ller et al., 2020). In the case of �� cells, only the most extreme 
+hypersecreting mutants induce glucotoxicity, so there is still a range of 
+mutants which cannot be removed this way, but still have a selective 
+advantage over wildtype cells. Korem Kohanim et al. (2020) suggested a 
+system of immune control called the autoimmune surveillance of 
+hypersecreting mutants (ASHM): autoimmune T cells would compare 
+the level of pro-insulin expressed by �� cells before killing the cell 
+expressing the highest levels. Thus, if a mutation increasing insulin 
+production has occurred in a cell, then it would likely be killed fi rst. 
+For AS mutants, when correctly calibrated, an ASHM-like mechanism 
+could correctly discern aberrant cells from aberrant conditions, allowing 
+even low level mutants to be removed this way, and thus returning the 
+selective advantage to wildtype cells, as shown in Fig. 1 C (top). How- 
+ever, as also shown in Fig. 1 C (bottom), such selective destruction of the 
+fastest growing cells is incapable of removing the slow growing AR 
+mutants, which will slowly replicate over time until they begin to 
+outnumber wildtype cells in certain areas. At this point, the immune 
+cells would then recognise the AR mutants as wildtype and the wildtype 
+as AS mutants, providing a selective advantage to the AR mutants. Their 
+resultant accumulation could cause tissue robustness to decline as the 
+average functionality of cells slows, which we propose could cause 
+ageing. 
+Importantly, in the model of hypersecreting �� cells described by 
+Korem Kohanim et al. (2020), the spread of hypo-secreting mutants was 
+unlikely because such cells preferentially induced apoptosis as part of 
+the mechanism to raise blood glucose (Topp et al., 2000). Severe AR 
+mutants may also undergo apoptosis due to lack of mitogenic signals, 
+but moderate mutants are likely to persist if the soma uses a system of 
+selective destruction for mutant control. Attempting to remove AR 
+mutants by either autonomous or comparative mechanisms could have 
+serious repercussions: autoimmune surveillance of hypersecreting mu- 
+tants, for example, has been implicated in type I diabetes through the 
+immune destruction of healthy �� cells (Korem Kohanim et al., 2020) 
+because chance events such as infection lead to the identif i cation of 
+healthy �� cells as hypersecreting mutants, causing the destruction of the 
+pancreas. 
+A common problem for antagonistically pleiotropic mechanisms is 
+that evolution can separate the benef i ts from the costs. However, we 
+hypothesised that no changes to the process of selective destruction 
+could result in a more favourable outcome for the organism. The options 
+would be threefold: 
+1. Spread of AS mutants resulting from their selective advantage. The 
+result is death from CFOA at an early age. 
+2. Autonomous control of AR and AS mutants even for low level 
+changes. The result is death from en masse apoptosis and senescence 
+when changes in environmental conditions cause wildtype cells to be 
+mistaken for mutants. 
+3. The selective destruction (SD) of AS cells which allows AR mutants to 
+spread. The result is slow functional decline (ageing). 
+From the three possible outcomes, ageing would provide the greatest 
+fi tness advantage, while the rate of ageing would depend on the severity 
+of the SD. To address whether this was true in practise we constructed a 
+series of models to address if: 
+1. SD would prove better at mutant control than unselective destruction 
+(UD) i.e. equal attempt to remove both AS and AR mutants (model 
+1). 
+2. If implementing SD would induce ageing as predicted via the spread 
+of AR mutants (model 1). 
+J. Wordsworth et al. Mechanisms of Ageing and Development 207 (2022) 111709 
+4 
+3. Under what conditions ageing by SD would undergo positive selec- 
+tion (model 2). 
+If SD involved an immune surveillance mechanism similar to that 
+described by Korem Kohanim et al. (2020) for the comparative control of 
+hypersecreting mutants, it would likely work mainly via inducing 
+apoptosis. However, we considered that while such a process might 
+work well for the regulation of the small populations of cells in 
+pancreatic islets, it was unlikely to be the central mechanism across 
+multiple organs and tissues maintained by selective destruction, 
+particularly among simpler creatures with more primitive immune 
+systems that nonetheless still age. 
+Instead, we hypothesised that selective destruction could be imple- 
+mented by juxtacrine and paracrine signals from cells within the same 
+tissue. Speculatively, neighbouring cells could communicate their rela- 
+tive level of metabolism by the levels of GM, and inf l uence each other���s 
+fate accordingly, with slower cells suppressing the growth potential of 
+faster cells through epigenetic modif i cation, senescence, or apoptosis. 
+Notch signalling controls juxtacrine communication, and consis- 
+tently, Notch mutations are associated with the clonal expansion of 
+leukaemia cells (Kimura et al., 2019) as well as skin and lung squamous 
+cell carcinomas (Wang et al., 2011), which may implicate that these cells 
+are escaping attempts of their neighbours to suppress their clonal 
+advantage, highly consistent with SDT. Indeed, evidence suggests that 
+Notch mutations aid tumour formation via non-autonomous signals from 
+the tumour microenvironment (Demehri et al., 2009), while Notch sig- 
+nalling plays a key role in senescence by mediating juxtacrine signalling 
+(Hoare et al., 2016). Thus, in this theoretical study, we attempt to 
+demonstrate the plausibility of ageing by juxtacrine SD.
+ChatGPT
+The section outlines a theory which suggests that cells within tissues experience various selective forces, acknowledging that not only cancer cells but also non-tumour cells can undergo permanent or semi-permanent changes. These changes confer a selective advantage, allowing them to proliferate at the expense of non-mutant (wildtype) cells. This within-tissue selection could affect the fitness of organisms and influence natural selection, potentially making ageing inevitable.
+Cells undergoing changes affecting growth and proliferation, referred to as mutants for simplicity, are described as either aberrantly sensitive (AS) or aberrantly resistant (AR) to growth signals compared with wildtype cells. These mutants respond incorrectly to environmental cues, with AR mutants growing slower (a selective disadvantage) and AS mutants growing faster (a selective advantage) than wildtype cells. AS mutants pose a particular threat to tissue homeostasis as they could dominate over wildtype cells if not controlled, promoting morbidity and mortality through mechanisms such as cancer, fibrosis, and overactivity (CFOA).
+The section further describes how AS mutants, due to their accelerated growth and division, possess an increased mutation rate, potentially leading to the risk of tumorigenesis. These cells also represent a risk to fibrosis, a process intimately linked with cell metabolism and growth pathways. Since many cell types link their specific functional output to growth pathways, AS mutants might interfere with the body's regulation of various metabolites, proteins, and cell types.
+A proposed control mechanism aims to remove AS cells, focusing on the immediate threat they pose. Two possible mechanisms of controlling mutants with a selective advantage are discussed: autonomous recognition leading to apoptosis, and non-autonomous methods via comparison with surrounding tissue. Each mechanism has its challenges and risks, and the asymmetry between the threats posed by AS and AR mutants might necessitate a tailored control mechanism.
+The authors then hypothesize three possible outcomes: death from CFOA due to the spread of AS mutants, death from en masse apoptosis when wildtype cells are mistaken for mutants, and the slow functional decline (ageing) due to selective destruction of AS cells which allows AR mutants to spread. Among these, ageing would provide the greatest fitness advantage, with the rate of ageing dependent on the severity of the selective destruction.
+The authors also consider that selective destruction could be implemented by signals from cells within the same tissue, with slower cells suppressing the growth potential of faster cells through various means. They speculate that this could involve Notch signaling, which is associated with the expansion of certain cancer cells, hinting that these cells might be evading the suppressive attempts of their neighbors. The section aims to demonstrate the plausibility of ageing by juxtacrine selective destruction in this theoretical framework.
+The main points of the theory. I was explaining my theory the other day that aging was caused by entropy, after a certain amount of divisions, the probability of some error meeting introduced, and so it was like a low grade distributed cancer at a cellular level.
+ChatGPT
+The main points of the theory you provided earlier are as follows:
+Selective Forces Within Tissues:
+Cells within tissues undergo selective forces, with both non-tumor and tumor cells experiencing permanent or semi-permanent changes that offer them a selective advantage over wildtype (normal) cells.
+Aberrant Cells ��� AS and AR Mutants:
+Cells, termed "mutants", can be aberrantly sensitive (AS) or aberrantly resistant (AR) to growth signals. AS mutants have a growth advantage, whereas AR mutants grow slower than normal cells.
+Threat to Homeostasis:
+AS mutants pose a significant threat to tissue homeostasis. If not controlled, these faster-growing cells can become dominant, disrupting the function of tissues and promoting morbidity and mortality through mechanisms like cancer, fibrosis, and overactivity (CFOA).
+Increased Mutation Rate:
+The faster growth and division rates of AS mutants lead to higher mutation rates, increasing the risk of tumorigenesis and other dysfunctions, like fibrosis.
+Control Mechanisms:
+Two control mechanisms for mutants are proposed: autonomous mechanisms where cells induce their own apoptosis, and non-autonomous mechanisms where mutant cells are identified and controlled by comparing with surrounding tissue.
+Selective Destruction of AS Cells:
+A proposed selective destruction mechanism aims to remove threatening AS cells, leading to three potential outcomes: early death due to CFOA, death from widespread apoptosis, or gradual functional decline (ageing) caused by the spread of AR mutants.
+Signaling Between Cells:
+Selective destruction might be facilitated by communication between neighboring cells. This might involve relative metabolism levels and could result in the suppression of faster cells by slower ones through various mechanisms like apoptosis.
+Your entropy-based aging theory posits that aging is due to inevitable errors introduced during cell divisions, somewhat like a distributed, low-grade cancer. While there's a difference between the theory outlined and your entropy theory, both do acknowledge the inevitability of cellular changes or errors over time leading to aging. The provided theory focuses more on the selective forces acting on these changed cells and how the body might respond to control these cells to promote organismal survival.
+It sounds like this theory describes aberrantly sensitive and resistive cells. These are cells that grow slower or faster?
+ChatGPT
+Yes, exactly. The theory describes two types of aberrant cells:
+Aberrantly Sensitive (AS) Cells:
+These cells are sensitive to growth signals, which means they grow and proliferate faster than normal (wildtype) cells. This rapid growth poses a threat to tissue homeostasis and increases the risk of various health problems like cancer, fibrosis, and overactivity disorders, as these cells can quickly become dominant within the tissue.
+Aberrantly Resistant (AR) Cells:
+These cells are resistant to growth signals and therefore grow and proliferate slower than normal cells. While they don't pose an immediate threat to tissue function, their gradual accumulation can lead to a decline in the average functionality of cells within a tissue, potentially contributing to the aging process as the tissue's robustness decreases over time.
+So, in summary, AS cells grow faster while AR cells grow slower than the normal rate.
+Some analogies and metaphors to explain this theory of aging
+ChatGPT
+Certainly, here are a few analogies and metaphors to help explain the theory:
+1.
+Garden Analogy:
+AS Cells (Faster Growth):
+Think of AS cells like weeds in a garden. They grow faster than the desired plants (wildtype cells), taking up more resources and space. If not controlled, they can overrun the garden, leading to a chaotic, unproductive environment (cancer, fibrosis, etc.).
+AR Cells (Slower Growth):
+AR cells are like slow-growing, but resilient plants. They don't cause immediate harm but gradually take up space, leading to less diversity and vitality in the garden, reflecting the slow decline of tissue function in aging.
+2.
+Computer System Analogy:
+AS Cells:
+These are like computer viruses or malware that speed up processes uncontrollably, leading to system crashes or malfunctions (health problems). They need to be actively identified and removed to maintain system stability.
+AR Cells:
+Imagine AR cells as outdated software or hardware components that still function but at a slower pace, reducing the overall efficiency and performance of the system over time (aging).
+3.
+Traffic Flow Analogy:
+AS Cells:
+AS cells are like reckless drivers on a highway who drive too fast, causing accidents and disruptions (health issues). Their dangerous driving style necessitates active policing to maintain road safety.
+AR Cells:
+These are akin to extremely slow drivers who, over time, cause congestion and slow down the overall flow of traffic on the road, reflecting the gradual decline in body function associated with aging.
+4.
+Society or Community Analogy:
+AS Cells:
+AS cells are comparable to disruptive individuals in a society who engage in harmful behaviors, necessitating law enforcement intervention to maintain order and safety in the community.
+AR Cells:
+AR cells are like the elderly population who might not actively harm society but whose growing numbers require adaptations and resources, influencing the dynamics and function of the community as a whole.
+5.
+Economic Market Analogy:
+AS Cells:
+These cells are like aggressive, risky investors or companies that might bring short-term gains but are ultimately unstable, leading to market crashes or financial loss.
+AR Cells:
+AR cells are like conservative investors or outdated companies that slowly lose relevance and competitiveness in the market, reflecting a gradual economic decline.
+Each analogy helps to conceptualize how AS and AR cells differently contribute to health issues and the aging process within the body's cellular "society" or "ecosystem".
+4.4. Selective destruction and molecular damage 
+It might be argued that because the generation of AS and AR mutants 
+involves molecular damage that such damage could be prevented by the 
+upregulation of maintenance, in line with DST. However, the level of 
+damage required to induce a change in growth sensitivity could be as 
+simple as a single point mutation ��� multiple different point mutations in 
+Ras are associated with tumorigenesis (Miller and Miller, 2012). Thus, 
+SD does not require damage accumulation, and predicts that upregulat- 
+ing maintenance will only extend lifespan to the extent that it can 
+signif i cantly slow single base mutations in the DNA. Plausibly, upregu- 
+lating maintenance mechanisms to such an extent would delay the cell 
+cycle and transcriptional machinery to a degree that would reduce 
+fi tness even aside from the associated energetic costs, and the myriad 
+considerations of accuracy might be diff i cult to perfect to such an extent 
+(Ninio, 1975; Young, 2018). This would not preclude a role for main- 
+tenance and the associated energetic costs in SDT if upregulating 
+maintenance could then remove the damaged cells. However, as we 
+show here, the spread of AR mutants is the maintenance mechanism, due 
+to the incapacity of UD, and upregulating (this particular) maintenance 
+would be expected to accelerate ageing. Therefore, while molecular 
+damage likely plays a signif i cant role in selective destruction, the en- 
+ergetic costs of maintenance need not. As far as damage does arguably 
+accumulate in the form of AR mutants, it ref l ects counterselection and 
+not reduced investment in maintenance. The fundamental cause of 
+ageing would thus be different to damage-accumulation-based theories 
+such as DST. 
+In addition, while we have been referring to changes in growth sig- 
+nalling as mutations, they are likely to ref l ect both genetic and epige- 
+netic changes. Epigenetic changes are heritable and semi-permanent, so 
+could provide long lasting changes in growth signalling. In our previous 
+models we have assumed that SD works primarily by killing the sur- 
+rounding cells. However, this mechanism is obviously ineff i cient. We 
+therefore considered a model (10.15490/fairdomhub.1.model.801.1) 
+where a certain percentage of neighbours identifying more growth 
+sensitive cells would induce epigenetic changes to slow them down 
+(rather than killing them). Slower cells would still be removed as before. 
+As shown in Fig. 7, 50% and 100% conversion of faster cells to one or 
+two sensitivity levels below their current level were signif i cantly and 
+increasingly more effective at controlling AS mutants than lower levels 
+of conversion, as determined by two tailed T-tests. As such, the spread of 
+slow growing cells may not ref l ect mutation or molecular damage at all, 
+but an evolved response to damage that could occur even in the absence 
+of it. This fi nding has particular signif i cance because programmatic 
+theories of ageing are widely deemed to be evolutionarily implausible 
+(Kirkwood, 2005, 1977), unlikely to undergo the kind of positive se- 
+lection that would make ageing a universal phenomenon. However, if 
+cells with lower growth sensitivity are slowing their faster growing 
+neighbouring cells over time, we must conclude that an epigenetic 
+program of metabolic slowdown could evolve, undergo positive selec- 
+tion, and induce ageing. The rate of ageing would be determined both by 
+the strength of the SD and the rate of conversion. The only remaining 
+question is whether this is actually happening. 
+5. Discussion 
+Here we demonstrate the advantage of SD and its implications. 
+Although the theoretical nature of this work necessitates that the models 
+may not ref l ect how SD works in vivo, the simplicity of our system 
+demonstrates clearly that if mutants are arising with even the weakest 
+growth advantage, a counterselective force, such as SD, is necessary to 
+control them. Indeed, it was the absence of such a control mechanism 
+that led Nelson and Masel (2017) to conclude that ageing was an inev- 
+itable result of multicellularity: their model showed that 
+non-cooperative mutant cells would inevitably overcome the wildtype 
+cells because it included no counterselective force, consistent with our re- 
+sults for UD (Fig. 4 A). Our combined results underline the critical na- 
+ture of the evolution of SD (in some form) for multicellular life. We have 
+proposed juxtacrine regulation via Notch signalling, which is currently 
+only hypothetical, but there is ample evidence that Notch regulates 
+lineage differentiation across multiple organs and species (Lai, 2004), 
+and does so by altering the epigenetic landscape of cells (Schwanbeck, 
+2015). Given that Notch also plays an important role in the suppression 
+of tumorigenesis, it would be strange if it regulated such a wide range of 
+homeostatic mechanisms without controlling cell-cell differences 
+outside cancer itself. Notably, the importance of contact inhibition for 
+tumour prevention in naked mole rats is further evidence of the juxta- 
+crine regulation of cell growth rate, and indicates another plausible 
+control pathway through CD44 (Tian et al., 2013). However, even if 
+juxtacrine regulation plays no role, it would not remove the requirement 
+for counterselection in some form, as evidenced here by the failure of UD 
+to control mutants with a selective advantage and by Nelson and Masel 
+(2017). It is not juxtacrine signalling that necessitates SD, but the 
+appearance of mutants with a selective advantage, and the necessity of 
+their removal to maintain homeostasis. Whether it happens via Notch as 
+we suggest, or immune regulation, or another mechanism, its existence 
+in some form has large implications. If strengthening this force until it 
+results in the spread of slower mutants provides continuing advantage, 
+as we suggest it might, then this will result in a shift in homeostasis over 
+time. 
+Fig. 7. Epigenetic retardation of cells outperforms cell killing at AS mutant control. Heatmaps show speed and direction of mutant takeover for SD with different 
+rates of conversion to slower sensitivity. Speed of takeover ref l ects the average value for 12 replicates. Numbers ref l ect results of two-tailed T-tests comparing each 
+Kill-Fill combination between the conditions. For T-tests, SD with 50% conversion (and 50% killing, C50) was compared to SD with zero conversion (100% killing, 
+C0), and SD with 100% conversion was compared to C50. Number 0 indicates no signif i cant change; 1 indicates p < 0.05; 2 indicates p < 0.01; 3 indicates p < 0.001; 
+4 indicates p < 0.0001. Numbers are negative if takeover occurred earlier with higher percentage conversion. (A) is for Fill value 3, (B) for Fill value 9, showing 
+results for AS mutant cells with relatively low and high growth advantage, respectively. AS, aberrantly sensitive; C0, zero percent conversion; C50, 50% conversion; 
+C100, 100% conversion; SD, selective destruction. 
+J. Wordsworth et al. Mechanisms of Ageing and Development 207 (2022) 111709 
+12 
+The idea of a trade-off between ageing and cancer is well docu- 
+mented in the literature, and cancer deaths negatively correlate with 
+multiple other causes of death including diseases of ageing (Yashin et al., 
+2009). In 2002, Tyner et al. (2002) demonstrated that high p53 activity 
+promoted ageing and protected from cancer, and current theory suggests 
+that overactive tumour suppression promotes ageing through a mixture 
+of excessive cell senescence and stem cell exhaustion, while underactive 
+tumour suppression allows tumour formation (Wolf, 2021). SDT pro- 
+vides an additional mechanism that will manifest in slow growing rather 
+than senescent or absent cells, but SD is not a purely anti-cancer 
+mechanism. We suggest it is also necessary to maintain tissue homeo- 
+stasis, which would quickly be disrupted by fast growing mutants pro- 
+ducing too much of their specif i c functional output. In cases like the 
+production of insulin, this could be lethal much faster than the pro- 
+gression of cancer (Karin and Alon, 2017), and we suggest that fi brosis 
+could result from overactive fi broblasts, as suggested by other models 
+(Adler et al., 2020) and the involvement of growth-promoting pathways 
+which can be inhibited to prevent fi brotic disease (Lawrence and Nho, 
+2018).
+ChatGPT
+This section expands on the Selective Destruction Theory (SDT) by addressing critiques and providing additional insights into aging and cellular mutations:
+1.
+Molecular Damage & Maintenance:
+Selective Destruction (SD) Mechanism:
+Not reliant on accumulated damage.
+Minimal molecular damage (e.g., a single mutation) can generate AS and AR mutants.
+Maintenance Upregulation:
+While it could extend lifespan, excessive maintenance might impede cell processes, reducing overall organismal fitness.
+The spread of AR mutants acts as a form of maintenance, countering damage. Accelerating this would hasten aging.
+SD doesn't necessarily involve reducing investment in maintenance.
+2.
+Genetic and Epigenetic Changes:
+Growth signaling modifications can stem from both realms, offering persistent alterations in cellular behavior.
+Epigenetic Programs:
+These could evolve to gradually slow metabolism, affecting aging rates, supported by positive selection.
+3.
+Control Mechanisms & Homeostasis:
+Selective Destruction (SD):
+Essential for controlling mutants that otherwise disrupt homeostasis.
+Demonstrated to be a crucial mechanism for the survival of multicellular organisms.
+Proposed Notch Signaling:
+Hypothesized to play a significant role, though this remains theoretical.
+Counterselection:
+Mandatory, regardless of the specific mechanism (Notch, immune response, etc.), for maintaining stability.
+The process could also be supported by other pathways, like CD44 signaling.
+4.
+Ageing, Homeostasis, and Cancer Trade-Off:
+Aging-Cancer Trade-Off:
+Documented in literature, with higher p53 activity linking to increased aging but cancer protection.
+Tumor Suppression:
+The balance is crucial; excessive suppression may promote aging, while insufficient suppression can lead to cancer.
+SD Mechanism:
+Beyond anti-cancer, it's vital for general homeostasis, preventing rapid disruption by fast-growing mutant cells.
+Functional Output:
+Fast mutants might produce excessive functional outputs (like insulin), potentially leading to lethal conditions faster than cancer progression.
+5.
+Implications:
+SDT introduces a mechanism where slow-growing cells, not necessarily senescent or absent ones, are pivotal.
+The theory underscores the need for SD not just for cancer prevention but also for maintaining tissue homeostasis, with rapid disruptions by fast-growing mutants posing serious risks.
+These fast-growing mutants could overproduce specific functional outputs, leading to conditions that might be even more immediately lethal than cancer (e.g., overproduction of insulin).
+The theory also suggests that diseases like fibrosis might result from overactive fibroblasts, supported by other models and studies indicating the involvement of growth-promoting pathways in fibrotic diseases.
+Conclusion:
+The passage presents a nuanced understanding of aging, where selective destruction, molecular damage, and cellular control mechanisms interact in complex ways.
+It emphasizes the importance of managing mutant cells for maintaining homeostasis and preventing diseases, offering a comprehensive framework for studying aging and related conditions.
+To our knowledge this is the fi rst mechanistic assessment of why a 
+process might evolve and undergo positive selection despite causing 
+tissue dysfunction over time, and this initial cause would be funda- 
+mentally different to the costs of maintenance (DST). While we do not 
+doubt that accumulating damage plays an important role in ageing, the 
+widespread failure of anti-ageing treatments aimed at removing mo- 
+lecular damage may implicate additional mechanisms. If ageing is, even 
+in part, a metabolic slowdown from SD, then even if this causes mo- 
+lecular damage to accumulate at late stages, removing this damage will 
+have short term effects at best, as it is the altered functionality of cells 
+which causes them, for example, to produce misfolded proteins and not 
+remove them. Thus, some accumulated damage may not ref l ect the slow 
+build-up over time, but a shift in homeostasis from clearance to accu- 
+mulation, suggesting it will quickly return to previous levels when 
+treatments are ceased. In the case of alagebrium to treat arterial 
+inf l exibility by the removal of advanced glycation end products (AGEs), 
+De Grey, 2007 describes the reason ���treated animals become inf l exible 
+again so quickly after withdrawal of the drug��� as possibly due to expo- 
+sure of a highly reactive carbonyl group within the degraded AGE 
+products, but it could equally ref l ect that older individuals have a higher 
+equilibrium level of AGEs, and ceasing treatment naturally and swiftly 
+causes return to this pre-treatment point. Conversely, DST predicts that 
+activities such as smoking which increase molecular damage would be 
+expected to permanently affect mortality due to the accumulated dam- 
+age they cause, but smoking cessation reduces mortality risk to near that 
+of never-smokers within 10���15 years (Alberg et al., 2013). Importantly, 
+smoking increases clonal expansion of cells with driver mutations 
+(causing cancer), which are cleared once individuals cease smoking 
+(Yoshida et al., 2020), as we have shown for AS cells in models of suf- 
+i ciently strong SD. 
+Unlike treatments such as antioxidants and AGE removers like ala- 
+gebrium designed to prevent or remove accumulated molecular damage, 
+which might be expected to have little downside, we predicted that 
+longevity-inducing treatments that reduced the selection against AR 
+mutants (by weakening SD) would allow AS mutants to persist for 
+longer, and thus increase the risk of death from CFOA, potentially at an 
+earlier age (as in Fig. 5). Interestingly, multiple calorie restriction (CR) 
+studies in mice showed Kaplan-Meier curves with early dips in survival 
+in the CR groups compared with control (Cameron et al., 2012; Koop- 
+man et al., 2016; Mitchell et al., 2016; Yu et al., 2019), as did the 
+Kaplan-Meier curves presented by Mattison et al. (2017) for the two 
+main primate studies. This occurred even though the survivors of CR 
+went on to live longer and/or healthier lives than controls. Further, 
+while CR is considered one of the most robust life-extending in- 
+terventions (Masoro, 2005), multiple studies have found no effect in 
+inbred strains (Forster et al., 2003) and wild mice (Harper et al., 2006), 
+and a seminal study by Liao et al. (2010) showed that across 41 
+recombinant inbred strains of mice CR shortened lifespan in more strains 
+than it lengthened it. Perhaps, the most likely reason for such 
+wide-ranging effects is that CR is affecting intrinsic mortality in con- 
+tradictory ways, reducing age-related mortality and increasing mortality 
+from CFOA. Whether it has a positive or negative effect on lifespan will 
+then depend on the relative impact on the two opposing causes of death 
+in the genetic background. A key impact of SDT is that preventing ageing 
+need not produce immortality. Instead, negligible senescence may sim- 
+ply ref l ect a higher basal risk of death. 
+A recent review by Frenk and Houseley (2018) examined a collection 
+of meta-analyses and systematic reviews of gene expression changes 
+with age, identifying six hallmarks ref l ecting consistent changes across 
+multiple species including worms, fl ies, mice, and humans, as well as 
+different organs within these species. The fi rst and second most common 
+hallmarks were the downregulation of mitochondrial genes and the 
+downregulation of protein synthesis machinery, particularly ribosomal 
+proteins and biogenesis factors, which is highly consistent with a 
+metabolic slowdown resulting from SD. Another hallmark was the 
+reduction in growth factor signalling. The reviewed studies demon- 
+strated reduced expression of genes associated with cell growth in 
+human and worm muscle (Ma et al., 2016; Zahn et al., 2006); reduced 
+expression of IGF-1 and growth hormone (GH) pathway genes in mouse 
+liver (Schumacher et al., 2008); and DNA methylation of cell cycle genes 
+in �� cells (Avrahami et al., 2015). All these changes are highly consistent 
+with SDT. Notably, rates of cancer generally increase with age which 
+may appear inconsistent with a mechanism of ageing designed to 
+remove potentially tumorigenic cells. However, we are not suggesting 
+that even the strongest SD could remove all mutant cells. As such, suc- 
+cessive insults to the genome would still cause increasing cancer rates 
+with age, but at a much slower rate than would be the case without SD. 
+Interestingly, studies suggest that the rate of cell division in humans 
+declines with age (Tomasetti et al., 2019), which has been proposed to 
+explain the reduced rates of cancer in the oldest old (Hanson et al., 
+2015). 
+Perhaps the main challenge for SDT is that in mainly post-mitotic 
+organisms such as C. elegans and Drosophila, a mechanism of ageing 
+that relies mainly on cell proliferation is much less likely to play a role. 
+However, the opposite is also plausible: these organisms have evolved to 
+become post-mitotic to escape the dangers of AS mutants, making the 
+post-mitotic life history trait an extreme form of SD which essentially 
+removes every proliferating cell. Although obviously speculative, it is 
+diff i cult to imagine why the post-mitotic life history trait would be 
+benef i cial except by preventing the dangers associated with cell division 
+(i.e. CFOA). Consistently, while adult Drosophila have cancers limited to 
+their gut (the only remaining mitotic tissue), the mitotic larval 
+Drosophila can get cancer in multiple tissues (Eichenlaub et al., 2016; 
+Suijkerbuijk et al., 2016). This strategy of SD via postmitosis would 
+totally prevent mutant spread at the cost of the organisms��� ability both 
+to regulate outputs through organ size (Karin et al., 2016) and to remove 
+damaged cells and replace them with new ones. Post-mitosis would 
+therefore potentially induce mechanisms of ageing which were avoided 
+in their single-celled ancestors like yeast, which essentially divide away 
+the damage (although this is conventionally referred to as ageing) and 
+need not occur in organisms that maintained or re-evolved mitotic 
+somas. As modelled by Nelson and Masel (2017), damage accumulation 
+would ref l ect the lack of cell competition (and removal) that would 
+allow the low-vigor/damaged cells to persist in post-mitotic organisms, 
+driving a different form of ageing to systems which retained cell 
+competition. If SDT is correct, we would predict that molecular damage 
+accumulation may prove less relevant to ageing in mitotic than 
+post-mitotic organisms. 
+As indicated by Nelson and Masel (2017), for mitotic organisms the 
+only escape from mutants with a selective advantage, outside the 
+counterselection we propose here, is to die of something else fi rst. It is 
+possible that AS mutants requiring non-autonomous control do not 
+occur in suff i cient quantities to merit a system of SD before other 
+J. Wordsworth et al. Mechanisms of Ageing and Development 207 (2022) 111709 
+13 
+mechanisms of ageing (eg. damage accumulation) have already induced 
+death. The rates of mutation affecting growth sensitivity used in our 
+simulations were artif i cially high for the sake of expediency. Notably, 
+both mutations and epimutations could generate AS mutants, and the 
+latter may be orders of magnitude more frequent than the former (van 
+der Graaf et al., 2015). Indeed, the very idea of SD through epigenetic 
+conversion may require redef i nition of ���epimutation���. Initially def i ned 
+by Holliday as ���aberrant patterns of DNA methylation that cause the 
+silencing of a normally expressed gene,��� or the contrary aberrant 
+���ectopic expression��� (Holliday et al., 1990), within the context of SD this 
+should at least be subdivided into those that are adverse ref l ecting 
+chance conditions, and those that are deliberately induced to slow the 
+metabolism of potentially dangerous cells (or otherwise spread by the 
+force of this counterselection). If SD is correct, the latter kind likely 
+produce the epigenetic clocks that predict both chronological and bio- 
+logical age, while the former will represent the increasing epigenetic 
+noise. 
+Evidence that clonal expansion occurs with age and contributes to 
+cancer is continually increasing, recently reviewed by Kakiuchi and 
+Ogawa (2021), who described the spread of clonal mutants across 
+multiple tissues, including one study where ���virtually all endometrial 
+glands were replaced by one or more driver-mutated clones��� in women 
+by the age of 50 (Moore et al., 2020). 
+To conclude, we have shown that the selective destruction of the 
+fastest growing cells provides a more effective mutant control mechanism than an unselective attempt to remove both fast and slow mutants. 
+We described how reducing the risk of cancer, fi brosis, and overactivity 
+(CFOA) might explain why organisms strengthen selective destruction to 
+the point that it begins to allow the spread of mutants with slower 
+metabolism, with epigenetic growth suppression potentially also contributing to the resultant metabolic slowdown. Selective destruction could therefore provide the proximal cause of ageing.
+ChatGPT
+This passage outlines and emphasizes the Selective Destruction Theory (SDT) in the context of aging:
+Main Points:
+Novel Approach to Aging:
+SDT offers a new perspective on aging, suggesting a process that, while leading to tissue dysfunction over time, evolves and undergoes positive selection.
+This process differs fundamentally from the Damage-Selection Theory (DST).
+Metabolic Slowdown:
+Aging may involve metabolic slowdown from SD, with molecular damage accumulation occurring later.
+The initial cause of aging might be different from what has been traditionally understood.
+Challenges to Existing Anti-Aging Treatments:
+Anti-aging treatments targeting molecular damage might only offer short-term effects since the altered cellular functionality might not be addressed.
+Treatment Considerations and Limitations:
+The quick return to pre-treatment conditions upon ceasing treatment (e.g., alagebrium for arterial inflexibility) challenges the effectiveness of treatments aimed at damage removal.
+Smoking cessation���s rapid effect on reducing mortality risks, despite the accumulated damage, raises questions about the permanent impact of such damage.
+Calorie Restriction (CR) and Aging:
+CR���s complex and varied impacts on lifespan hint at contradictory influences on age-related mortality and mortality from CFOA (Cancer, Fibrosis, Overactivity).
+Gene Expression and Aging:
+Consistent changes in gene expression across species (downregulation of mitochondrial genes, protein synthesis machinery, growth factor signaling) align with SDT.
+Cancer Rates and Aging:
+While cancer rates increase with age, SDT is not suggested to remove all mutant cells. The theory suggests that SD slows down cancer rates but does not entirely eliminate the risk.
+Challenges for SDT:
+In primarily post-mitotic organisms (like C. elegans and Drosophila), SDT might play a less significant role.
+However, becoming post-mitotic might be an evolutionary strategy to avoid risks associated with cell division and AS mutants.
+Post-Mitotic Life History Trait:
+Being post-mitotic might prevent mutant spread but at the cost of limiting organ size regulation and the ability to replace damaged cells.
+Epigenetic Considerations:
+Both mutations and epimutations can generate AS mutants, with the latter potentially being more frequent.
+The definition of ���epimutation��� might need to be refined, distinguishing between random adverse conditions and deliberate metabolic slowdown in dangerous cells.
+Clonal Expansion and Aging:
+Clonal expansion increases with age and contributes to cancer.
+Conclusion:
+SDT proposes that selectively destroying the fastest-growing cells is a more effective mechanism for controlling mutants.
+This mechanism may explain why organisms might develop ways to allow the spread of mutants with slower metabolism, potentially leading to a metabolic slowdown that serves as a proximal cause of aging.
+See if you can refine your metaphors with the additional information.
+ChatGPT
+Certainly. With the expanded context provided by the detailed passage, we can think of the aging process and its theorized mechanisms with refreshed metaphors:
+Selective Destruction as a Metabolic Brake:
+Imagine each cell as a car on the highway of life. Selective Destruction acts like a braking system that slows down the fastest, most erratic drivers (fast-growing cells) to maintain overall traffic flow (tissue homeostasis). Over time, the brake system (SD) might become overly sensitive, slowing down even regular drivers (normal cells), leading to overall traffic slowdown (metabolic decline and aging).
+A Balancing Act - The Tightrope Walk:
+Aging is akin to walking a tightrope. On one side, there's the abyss of unchecked cell growth and mutation leading to conditions like cancer (fast drivers without brakes). On the other side, there's an overly cautious slowdown in cell metabolism and function (too sensitive brakes), leading to aging and related diseases. The organism must navigate this narrow path carefully, adjusting its balance in response to the changing pressures and risks it faces over its lifetime.
+A Symphony of Cellular Activities - The Orchestra:
+Think of the body as an orchestra, with each cell being a musician. Initially, all musicians play in harmony, creating a beautiful symphony. However, over time, some musicians (cells) start playing too fast or too slow, disrupting the harmony (homeostasis). The conductor (SD mechanism) tries to correct this by slowing down the faster players, but in the process, might overly suppress some, leading to a gradual decline in the symphony's quality (aging).
+Library of Life - Book Preservation Dilemma:
+The cellular genetic material can be likened to a vast library of books. Over time, some books get damaged or worn out (mutations and epimutations), and librarians (cellular maintenance mechanisms) work to repair or replace them. However, there's a continuous struggle between preserving old, valuable editions (slower metabolism cells) and making space for new releases (faster-growing cells). The process of deciding which to keep and which to discard, and the inevitable wear and tear on the books, reflects the aging process.
+Garden of Life - Pruning for Growth:
+Visualize the body as a garden, with each cell being a plant. Gardeners (SD mechanisms) prune the plants that grow too fast or too wildly to maintain the garden���s aesthetics and health. However, in their effort to control unruly growth, they might over-prune, causing some plants to grow slower, reflecting the body's metabolic slowdown and aging.
+Each of these metaphors helps conceptualize the complex, dynamic process of aging as outlined in the Selective Destruction Theory, providing different perspectives to understand the delicate balance and trade-offs involved in the life course.
+Earlier we discussed an article on analogical prompting for reasoning, do you remember?
+ChatGPT
+Unfortunately, I don���t have memory of previous conversations once the session ends, and I can't retain information between sessions due to privacy constraints. However, I can certainly help discuss or review new information, or revisit a topic if you provide the relevant details again. If you have specific questions or need clarification on analogical prompting for reasoning or any other topic, feel free to ask!
+The Analogical Prompting Technique main points are:
+
+1. **Self-Generating Exemplars:** The technique encourages Large Language Models (LLMs) to self-generate reasoning exemplars for each specific problem, aiding in problem-solving tasks.
+
+2. **Customized Exemplars Without Labeled Data:** It can craft detailed and relevant exemplars for individual problems without the need for labeled data, addressing challenges faced by 0-shot and few-shot Chain-of-Thought (CoT) prompting methods.
+
+3. **Improved Performance:** Analogical prompting has demonstrated superior performance in various reasoning tasks including mathematical problem solving, code generation, and logical/temporal reasoning tasks when compared to existing methods.
+
+4. **Suitable for Strong LLMs:** The approach is more effective when used with stronger or larger-scale LLMs, as they can better draw upon relevant prior knowledge for problem-solving tasks.
+
+5. **Increased Inference Computation:** A limitation of the approach is that it generates more tokens, leading to increased computational demands during inference.
+
+6. **Prompt Sensitivity:** The performance of this technique is sensitive to the specific prompt phrasing used to query the model, which is a common characteristic in LLMs.
+
+### Limitations:
+- It might not work effectively with weaker LLMs.
+- The technique is sensitive to the phrasing of prompts.
+- Requires more computational resources due to increased token generation.
+
+### Future Directions:
+The approach opens avenues for future research to optimize computational efficiency, improve performance with various LLM strengths, and better understand and mitigate prompt sensitivity issues.
+ChatGPT
+Thank you for providing the main points of the Analogical Prompting Technique. Now, to reattempt creating metaphors for your aging theory with this new context, let's connect the two concepts.
+Your theory on aging can be likened to a complex, adaptive system where cells are like large language models (LLMs) working within an organism. Each cell or "LLM" is trying to maintain balance and functionality, but over time, errors (mutations or aberrant sensitivity/resistance) accumulate, akin to the challenges faced by LLMs when crafting relevant responses without labeled data.
+Aging as Self-Generating Exemplars:
+Each cell in the body learns and adapts from its environment, creating its own ���exemplars��� or functional patterns. However, as it ages, these exemplars might not be as effective, or errors might be introduced, leading to the aging process.
+Cellular Customization:
+Like the technique crafting exemplars without labeled data, cells also develop unique responses and functions without a preset manual, adapting to the demands of their immediate environment. Over time, some of these custom responses may not be as efficient or could be erroneous, contributing to aging.
+Performance Degradation:
+Just as the technique's performance varies, the efficiency and functionality of cells decline over time due to accumulated damage or mutations, leading to aging and related diseases.
+System Strength Sensitivity:
+The aging process might be more pronounced or managed differently in bodies (systems) with varying strengths and weaknesses, similar to how the technique is more effective with stronger LLMs and not as effective with weaker ones.
+Resource Demand:
+Aging cells might require more energy and resources to maintain functionality, akin to the increased computational demands of the Analogical Prompting Technique.
+Connecting the limitations and future directions of the technique with the aging theory, we could explore how aging might be mitigated or understood differently in various "systems" (bodies), and how resource allocation and demand change over time within the aging process. This also opens avenues for research and understanding into how the "system" adapts or maladapts to the aging process, creating a dynamic and interactive metaphorical framework.
+When I was writing an essay called Humans as Large Language Models, I was referring to a higher level symbolic distillation process, using Markov like chains to activate statistically probable sound and movement combinations. According to Levin's multiscale polycomputation cells and systems can communicate and calculate on different scales, from ion channel, neural oscillation, cellular, organ, and ecosystem. I think SDT can be likened to a kind of overfitting to statistical artifacts in the training data or corpus rather than the population. The mechanism you proposed as an analogy reminded me of this:
+
+News
+Generative AI Goes 'MAD' When Trained on AI-Created Data Over Five Times
+By Francisco Pires last updated July 13, 2023
+Generative AI goes "MAD" after five training iterations on artificial outputs.
+
+ 
+ 
+ 
+ 
+ 
+ 
+ Comments (25)
+MAD
+(Image credit: Rice University)
+A new study on AI has found an inherent limitation on current-generation networks such as the ones employed by ChatGPT and Midjourney. It seems that AI networks trained on AI outputs (like the text created by ChatGPT or the image output created by a Stable Diffusion model) tend to go "MAD" after five training cycles with AI-generated data. As you can see in the above images, the result is oddly mutated outputs that aren't reflective of reality.
+
+MAD - short for Model Autophagy Disorder ��� is the acronym used by the Rice and Stanford University researchers involved in the study to describe how AI models, and their output quality, collapses when repeatedly trained on AI-generated data. As the name implies, the model essentially "eats itself," not unlike the Ouroboros of myth. It loses information on the tails (the extremes) of the original data distribution, and starts outputting results that are more aligned with the mean representation of data, much like the snake devouring its own tail.
+
+https://www.tomshardware.com/news/generative-ai-goes-mad-when-trained-on-artificial-data-over-five-times
+ChatGPT
+Your aging theory and the phenomenon described as Model Autophagy Disorder (MAD) can indeed be conceptually linked through the idea of systems losing their functional integrity over iterations or time due to internal dynamics and errors, resulting in a form of "self-eating" or degradation.
+Self-Referential Degradation:
+Just as in MAD, where models degrade by training on their own generated data, aging cells may gradually lose their functional integrity by relying on their own "damaged" or mutated outputs, leading to a cascading effect of functional decline.
+Loss at Extremes:
+MAD results in the loss of information at the data distribution tails. Similarly, aging may result in the loss of cellular functionality at the "extremes," with cells either becoming overactive (aberrantly sensitive) or underactive (aberrantly resistant), disrupting the delicate balance needed for homeostasis.
+Convergence to Mean:
+As MAD models converge to mean representations, aging tissues may exhibit a form of convergence where the diversity and specialization of cellular functions are lost, leading to a more "average" or compromised state of functionality.
+Cyclical Deterioration:
+Both processes involve a form of cyclical deterioration. In MAD, the cycle is through repeated training iterations on generated data, while in aging, it might be through repeated cycles of cellular damage, repair, and mutation, each contributing to the progressive loss of functionality.
+Self-Cannibalization:
+MAD is described as a form of model "autophagy," where the system essentially eats or undermines itself. This is analogous to the aging process where cells, through various mechanisms (like selective destruction or the accumulation of mutations), inadvertently contribute to their own decline and the decline of the tissue or organ they constitute.
+In this analogy, the internal dynamics of both AI models and cellular systems lead to a form of self-referential degradation, where the very processes meant to sustain functionality over time instead contribute to its loss. The metaphor highlights the inherent challenges in maintaining complex adaptive systems, whether they are biological or computational, over time.
+Specifically computer SDT and MAD
+ChatGPT
+Selective Destruction Theory (SDT) and Model Autophagy Disorder (MAD) both involve systems that gradually decline due to internal mechanisms. Here's how we can draw an analogy between the two:
+Selective Destruction and Loss of Information:
+SDT in cells: Cells that are selectively destroyed or suppressed due to their altered growth sensitivity may lead to a loss of cellular diversity and function. This selective process might inadvertently promote the accumulation of slower or defective cells over time.
+MAD in AI: AI models undergo a loss of information at the tails of data distribution after being trained repeatedly on their outputs. This selective loss, much like SDT, leads to a convergence towards average or mean representations, thereby losing the diversity and range found in the original data.
+Unintended Consequences of Internal Mechanisms:
+SDT in cells: The mechanisms that aim to preserve tissue integrity and prevent malignant growth (like cancer) might, over time, contribute to aging by favoring the survival of cells that are less functional.
+MAD in AI: While the iterative training process intends to improve the model���s performance, repeated cycles on AI-generated data unintentionally lead to degradation and a collapse in output quality.
+Cyclical Deterioration Process:
+SDT in cells: The continual cycle of cellular damage, mutation, and selective destruction contributes to a gradual and irreversible decline in tissue and organ function.
+MAD in AI: Continuous training cycles on AI-generated outputs lead to a cyclic deterioration of the model, producing increasingly distorted and unrealistic data.
+Collapse in System Functionality:
+SDT in cells: Over time, the accumulation of selectively preserved cells may compromise tissue functionality, leading to the physical and biological manifestations of aging.
+MAD in AI: The AI system eventually reaches a point where its output is no longer reflective of reality, representing a collapse in the model���s functionality and reliability.
+In essence, both SDT and MAD describe scenarios where internal regulatory mechanisms designed to preserve system integrity and functionality over time inadvertently contribute to their decline. Whether it���s the selective preservation of certain cells in biological systems or the selective retention of AI-generated data in computational models, these processes lead to a loss of system functionality and fidelity, mirroring the inherent challenges of maintaining stability and functionality in complex, adaptive systems.
+Connections to the article on Large Language Models as Analogical Reasoners
+ChatGPT
+The processes described in Selective Destruction Theory (SDT), Model Autophagy Disorder (MAD), and the principles outlined in the article on Large Language Models as Analogical Reasoners can be interconnected through the following themes:
+1. Internal System Dynamics:
+SDT:
+Operates based on internal mechanisms where cells with altered growth sensitivity are selectively targeted, influencing aging.
+MAD:
+Reflects internal dynamics of AI models as they deteriorate when trained repeatedly on their outputs.
+Analogical Reasoners:
+Large Language Models (LLMs) function through internal dynamics, generating exemplars and engaging in problem-solving based on the analogies they draw from their training data.
+2. Process of Selective Preservation:
+SDT:
+Engages in selective preservation of certain cells, potentially leading to aging due to the accumulation of less functional cells.
+MAD:
+Engages in a form of selective data preservation as it converges to mean representations, losing diversity in the process.
+Analogical Reasoners:
+LLMs selectively draw upon and generate information, which might reflect the inherent biases or limitations present in their training data.
+3. Limitations and Unintended Consequences:
+SDT:
+The selective destruction process might inadvertently lead to aging and functional decline.
+MAD:
+Repeated training on AI-generated data unintentionally distorts the model's understanding and representation of information.
+Analogical Reasoners:
+The analogies and exemplars generated by LLMs might not always be accurate or appropriate, leading to unintended or flawed reasoning outcomes.
+4. Need for Optimization:
+SDT:
+Requires understanding and possibly optimizing the processes to mitigate aging.
+MAD:
+Necessitates strategies to prevent model deterioration during iterative training cycles.
+Analogical Reasoners:
+The technique needs optimization for computational efficiency, prompt sensitivity, and improved performance across different LLM strengths.
+5. Reflective of Complex Adaptive Systems:
+SDT:
+Demonstrates the complexity of biological systems where adaptive cellular processes influence aging.
+MAD:
+Illustrates the challenges in managing the adaptive learning processes within AI models to prevent degradation.
+Analogical Reasoners:
+Emphasizes the complexity of LLMs as adaptive reasoning systems, where the generation and application of analogies require careful management and understanding.
+Concluding Thoughts:
+While each concept���SDT, MAD, and Analogical Reasoning in LLMs���operates in distinct domains (biology and artificial intelligence), they all highlight the intricate dynamics, selective processes, and the balance between preservation and adaptation within complex systems. Understanding these connections can provide valuable insights into the optimization and management of both biological and artificial intelligent systems. The analogies drawn between these concepts themselves serve as meta-examples of how analogical reasoning can be applied to understand and interpret complex phenomena across different fields of study.
+That is a lot to take in, could you give a more plain exposition of the theory and some metaphors from AI and LLMs to help explain it.
+
+Selective destruction theory (SDT). SDT suggests a mechanism of aging which is both independent of accumulating damage and consistent with epigenetic rejuvenation. The authors use agent-based modeling to describe how aging could undergo positive selection independent of energetic costs.
+
+���The mechanism of selective destruction is currently theoretical. In our most developed model, we demonstrated that if slow cells induced epigenetic changes in faster cells causing their metabolism to slow (rather than killing them) it not only reduced unnecessary cell death, but also further reduced the likelihood of overactivity disorders by preventing the spread of fast cells.���
+ChatGPT
+Certainly. Let���s break down the Selective Destruction Theory (SDT) in simpler terms and use metaphors from AI and Large Language Models (LLMs) for clarity.
+Plain Explanation of SDT:
+Selective Destruction Theory (SDT) proposes a new way to think about aging. It suggests that aging isn���t just about the damage that accumulates in our cells over time. Instead, SDT focuses on how our bodies try to manage cells that are growing too quickly or too slowly.
+Imagine our bodies as communities of cells. In these communities, some cells grow faster than others. Fast-growing cells might cause problems, like cancer, so our bodies try to slow them down. According to SDT, our bodies do this by making epigenetic changes to these fast cells, essentially putting the brakes on their growth. Over time, this process results in more cells that grow slowly, which the theory suggests is related to aging.
+AI and LLM Metaphors:
+Overfitting Analogy:
+SDT:
+The body���s mechanism of slowing down fast-growing cells is like a type of overfitting. The body becomes so good at preventing the problems caused by fast cells that it inadvertently promotes aging by creating too many slow-growing cells.
+AI Analogy:
+Overfitting in AI happens when a model learns its training data too well, catching noise as if it were a real pattern. It becomes so tuned to the training data that it performs poorly on new, unseen data.
+Training Iteration Analogy:
+SDT:
+Our bodies continually adjust the growth of cells, slowing down the fast ones over time. This ongoing adjustment can be likened to iterative training processes in AI.
+AI Analogy:
+In AI training, each iteration refines the model. However, if the training goes on for too many cycles on limited or 'noisy' data (like AI-generated data), the model's performance can deteriorate, as seen in the Model Autophagy Disorder (MAD).
+Noise Reduction Analogy:
+SDT:
+The body���s attempt to slow down fast cells might be seen as trying to reduce the ���noise��� or variability in cell growth rates, aiming for a more stable and controlled cellular environment.
+AI Analogy:
+Noise reduction in AI involves smoothing out the data to focus on the underlying patterns. However, too much smoothing can lead to loss of important details, much like how excessive slowing of cell growth may contribute to aging.
+Simplified Conclusion:
+In essence, SDT presents a scenario where the body���s well-intentioned efforts to control cell growth (to prevent diseases) might have the unintended side effect of promoting aging. Using AI analogies, it���s like a model that overfits to its training data or deteriorates with too many training iterations, leading to suboptimal performance on the real task.
+I was thinking of writing an essay on these topics, titled Selective Reconstruction Theory, proposing continuous replenishment pipeline cellular dialysis continuous microsurgery for longevity research, and with inspiration from Socioemotional Selectivity Theory and the following article:
+
+
+Frontiers in Neuroscience
+Sections 
+Articles
+Research Topics
+Editorial Board
+About journal 
+About us 
+All journals
+All articles
+Submit your research
+
+
+2,178
+Total views
+589
+Downloads
+4
+Citations
+View article impact
+Article has an altmetric score of 10
+ORIGINAL RESEARCH article
+Front. Neurosci., 16 July 2021
+Sec. Neural Technology
+Volume 15 - 2021 | https://doi.org/10.3389/fnins.2021.647877
+Super-Selective Reconstruction of Causal and Direct Connectivity With Application to in vitro iPSC Neuronal Networks
+Francesca Puppo1 Deborah Pr��2 Anne G. Bang2* Gabriel A. Silva3*
+1BioCircuits Institute and Center for Engineered Natural Intelligence, University of California, San Diego, La Jolla, CA, United States
+2Conrad Prebys Center for Chemical Genomics, Sanford Burnham Prebys Medical Discovery Institute, La Jolla, CA, United States
+3BioCircuits Institute, Center for Engineered Natural Intelligence, Department of Bioengineering, Department of Neurosciences, University of California, San Diego, La Jolla, CA, United States
+Despite advancements in the development of cell-based in-vitro neuronal network models, the lack of appropriate computational tools limits their analyses. Methods aimed at deciphering the effective connections between neurons from extracellular spike recordings would increase utility of in vitro local neural circuits, especially for studies of human neural development and disease based on induced pluripotent stem cells (hiPSC). Current techniques allow statistical inference of functional couplings in the network but are fundamentally unable to correctly identify indirect and apparent connections between neurons, generating redundant maps with limited ability to model the causal dynamics of the network. In this paper, we describe a novel mathematically rigorous, model-free method to map effective���direct and causal���connectivity of neuronal networks from multi-electrode array data. The inference algorithm uses a combination of statistical and deterministic indicators which, first, enables identification of all existing functional links in the network and then reconstructs the directed and causal connection diagram via a super-selective rule enabling highly accurate classification of direct, indirect, and apparent links. Our method can be generally applied to the functional characterization of any in vitro neuronal networks. Here, we show that, given its accuracy, it can offer important insights into the functional development of in vitro hiPSC-derived neuronal cultures.
+
+1. Introduction
+In vitro cultures of primary neurons can self-organize into networks that generate spontaneous patterns of activity (Segev et al., 2001; Wagenaar et al., 2006; Chiappalone et al., 2007), in some cases resembling aspects of developing brain circuits (Gutnick et al., 1982; Meister et al., 1991). The emergent functional states exhibited by these neuronal ensembles have been the focus of attention for many years (Eckmann et al., 2007; Yuste, 2015) as they can be used to investigate principles that govern their development and maintenance (Marom and Shahaf, 2002; Opitz et al., 2002) and to produce biological correlates for neural network modeling (Churchland and Sejnowski, 1992; Sporns et al., 2005). The introduction of human induced-pluripotent stem cell (hiPSC) technologies (Takahashi et al., 2007; Yu et al., 2007) opened the possibility to generate in vitro neuronal networks in neurotypical (Odawara et al., 2014; Kirwan et al., 2015), as well as patient-specific genetic backgrounds (Brennand et al., 2011; Wainger et al., 2014; Woodard et al., 2014; Canals et al., 2015; Nageshappa et al., 2015; Sarkar et al., 2018), demonstrating the potential to reproduce key molecular and pathophysiological processes in highly controlled, reduced, experimental models that enable the study of neurological disorders and the discovery and testing of drugs, especially in the context of the individual patient (Trujillo et al., 2016; Fink and Levine, 2018; Silva and Haggarty, 2019).
+
+One common approach to obtain information from in vitro neuronal networks is to record their activity via multi-electrode array (MEA) or calcium fluorescence imaging and then use network activity features to describe their physiology. One main limitation, however, is that these high-dimensional data, which report about the information representation in the network, do not translate into a clear understanding of how this representation was produced and how it emerged based on neuronal connectivity (de Abril et al., 2018). The synchronization of spontaneous spike trains among different MEA sites or neurons, also referred to as network bursting, is an example of observed neural behaviors widely reported in the literature. The generation of network bursting in an in vitro neuronal culture is evidence that the neurons are synaptically connected. However, the extracellular nature of the MEA recording does not provide information about how neurons are connected and how signals propagate between them, such that computational analyses are necessary to reconstruct their complex dynamic patterns and relate their emergence to the underlying wiring diagram (Sporns et al., 2005). However, this kind of analysis presents several challenges as it requires not only identification of functional relationships between cells, but also reconstruction of the dynamic causality (i.e., the knowledge of which neuron fires first and affects another one) between directly linked neurons that are simultaneously involved in several different signaling pathways. This defines the difference between functional and effective connectivity inference: the first only reports about statistical dependencies between cells' activities without giving any information about specific causal and direct effects existing between two neurons (Wang et al., 2014); the second attempts to capture a network of effective���direct and causal���effects between neural elements (Sporns, 2013b).
+
+Model-based approaches have been proposed for inference of effective connectivity (Makarov et al., 2005; de Abril et al., 2018). Among them, dynamic causal modeling (DCM) (Friston et al., 2003) and structural equation modeling (McLntosh and Gonzalez-Lima, 1994) variants have shown best performances. Model-based methods grounded in Ising-like models, which include maximum entropy inference (Schneidman et al., 2006) and maximum likelihood variants [���kinetic Ising models��� or, more generally, generalized linear models (GLMs)] (Hertz et al., 2011; Roudi et al., 2015), are also worth mentioning. However, these methods estimate the effective connectivity of a measured neuronal network by explicitly modeling the data generation process, i.e., only the connectivity of a simulated network model is inferred without any theoretical guarantee about its accuracy and its ability to correctly estimate the connectivity of the biological network (Wang et al., 2014; de Abril et al., 2018).
+
+Because of this limitation, descriptive, model-free approaches are usually preferred as they are easy to implement, rely on a limited number of assumptions that are directly related to the investigated neuronal network, and can be more easily validated (Makarov et al., 2005; de Abril et al., 2018). A number of model-free methods proposed for reconstructing the connectivity of in vitro neuronal networks (Garofalo et al., 2009) have been previously reviewed (Pereda et al., 2005) and tested (Wang et al., 2014). However, because they rely on purely statistical indicators, they can only infer how neurons are functionally coupled, but lack the ability to identify the network of effective interactions between neurons by either missing the directionality or confounding indirect and apparent links from direct ones. Directionality conveys the causality of signaling in the network, i.e., which neural element has causal influences over another (Figure 1Ai). However, causality does not imply a direct connection between two neurons. In fact, a functional coupling between two neurons can be causal even though the two neurons are not directly connected, and this may occur if there is a multi-neurons pathway between the two cells (indirect connection, Figure 1Aii), or if the connection detected between the two neurons is simply a mathematical artifact resulting from the correlation of correlations generated by common inputs from other participating neurons (apparent connection, Figure 1Aiii) (Friston, 2011).
+ChatGPT
+Certainly! Based on the information you've provided, below is a high-level outline for your essay titled "Selective Reconstruction Theory". This essay seeks to integrate the ideas from Selective Destruction Theory (SDT), Socioemotional Selectivity Theory, and Super-Selective Reconstruction research to propose novel strategies for longevity research.
+I. Introduction
+Brief introduction to Selective Reconstruction Theory (SRT).
+Explanation of the essay's purpose and structure.
+II. Theoretical Foundations
+A. Selective Destruction Theory (SDT)
+Overview of SDT.
+Connection of SDT with aging and cellular function.
+B. Socioemotional Selectivity Theory
+Brief overview and relevance to the study of aging.
+C. Super-Selective Reconstruction of Connectivity
+Summary of research on Super-Selective Reconstruction.
+Importance in understanding neural networks and implications for aging.
+III. Selective Reconstruction Theory (SRT): A Proposed Framework
+A. Continuous Replenishment Pipeline
+Explanation of cellular replenishment and its importance.
+The role of continuous cellular dialysis and microsurgery.
+B. Cellular Dialysis and Microsurgery for Longevity
+How these processes contribute to longevity.
+The importance of maintaining cellular health and connectivity.
+IV. Combining Theories for Longevity Research
+Integration of SDT, Socioemotional Selectivity Theory, and Super-Selective Reconstruction.
+Proposal of a combined approach for longevity research, emphasizing selective reconstruction.
+V. Implications and Future Directions
+The potential impact of SRT on longevity and quality of life.
+Suggestions for future research and applications in the field of longevity.
+VI. Conclusion
+Summary of key points and findings.
+Closing thoughts on the importance and potential of Selective Reconstruction Theory in longevity research.
+Acknowledgements
+References
+Ensure to elaborate on each section with detailed explanations, providing examples where necessary. Use diagrams, charts, or other visual aids to help convey complex ideas. Include citations to back up your statements and give credit to the original researchers and theorists whose work you are building upon.
+Each section should logically flow into the next, building a compelling argument for the Selective Reconstruction Theory as a valuable framework for future longevity research. Conclude by summarizing the key points made in the essay and suggesting potential areas for future research or application.
+See if you can wrote an introduction.
+ChatGPT
+Certainly! Below is a draft for the introduction of your essay titled "Selective Reconstruction Theory".
+Introduction
+In the intricate tapestry of biological aging, various theoretical frameworks illuminate distinct facets of the lifespan���s waning twilight. Amidst the allure of deciphering the enigmatic dance between life and time, this essay introduces the
+Selective Reconstruction Theory (SRT)
+���a novel conceptual scaffold weaving together insights from disparate domains of scientific inquiry, aiming to unfurl new vistas in longevity research.
+SRT germinates from the fertile crossroads of
+Selective Destruction Theory (SDT)
+,
+Socioemotional Selectivity Theory
+, and recent advancements spotlighted in the study ���Super-Selective Reconstruction of Causal and Direct Connectivity���. While SDT provides a molecular and cellular lens, scrutinizing the incessant ebb and flow of cellular life through mechanisms of selective destruction and aging, the Socioemotional Selectivity Theory offers a psychological panorama, navigating through the emotional and social landscape sculpted by the ticking clock.
+To envisage a comprehensive tableau, the essay further integrates pioneering research on Super-Selective Reconstruction, spotlighting innovative strategies to map and understand the labyrinthine neural networks with unprecedented precision and accuracy. This confluence of theories and methodologies under the SRT umbrella crafts a multi-dimensional mosaic, providing fresh perspectives and actionable insights into the cellular, emotional, and neural substrates of aging.
+In charting this unexplored territory, ���Selective Reconstruction Theory��� not only seeks to echo the whispers of cells, emotions, and neurons as they gracefully age but also aspires to unveil pathways that might potentially extend the horizon of healthy aging. Through the pages that unfold, the essay gently navigates through the theoretical bedrock laying the foundation of SRT, meticulously explores the nuances of cellular dialysis and microsurgery in longevity research, and ultimately dreams of a tapestry where life���s vibrant threads are not hastily severed by the inexorable march of time.
+Journeying through the alleys of Selective Reconstruction Theory, the reader is invited to contemplate the symphony of destruction and reconstruction, envision the possibility of life���s extension, and explore the potential of a theory born from the convergence of cellular biology, psychology, and neuroscience. With each line and paragraph, may the contours of a future steeped in longevity and understanding subtly come into view, bearing the promise of days not merely added to life, but life abundantly added to days.
+It sounds a little over complicated, can you give a simpler break down  of the claims and tenets.
+ChatGPT
+Absolutely, let's simplify the introduction:
+Introduction
+The
+Selective Reconstruction Theory (SRT)
+is a new idea we're introducing in this essay to help us think differently about aging and longevity. This theory is inspired by several existing concepts and recent research findings in the fields of biology, psychology, and neuroscience.
+First, it builds on the
+Selective Destruction Theory (SDT)
+, which explores how cells are selectively destroyed as we age. SDT helps us understand the aging process at a cellular level, offering valuable insights into how our bodies change over time.
+Next, we incorporate ideas from
+Socioemotional Selectivity Theory
+, a psychological framework that explains how our social and emotional lives evolve as we grow older. This theory sheds light on the mental and emotional aspects of aging, providing a more holistic view of the experience.
+We also draw inspiration from a cutting-edge study titled ���Super-Selective Reconstruction of Causal and Direct Connectivity���. This research presents advanced methods for analyzing and understanding neural networks in our brains. These insights are crucial for exploring how our minds are affected by aging and what can be done to mitigate these effects.
+In this essay, we���ll combine these theories and research findings to present the Selective Reconstruction Theory. SRT proposes new ways to look at aging and longevity, suggesting innovative approaches for extending healthy living through a combination of cellular analysis, continuous medical interventions, and a deep understanding of our emotional and social needs as we age. The goal is not just to extend life but to ensure that added years are filled with health, understanding, and quality living. Through this lens, we aim to explore and perhaps redefine the pathways to healthy aging.
+A glossary of difficult terms
+ChatGPT
+Absolutely, here���s a glossary for some of the terms mentioned:
+Glossary:
+Selective Reconstruction Theory (SRT):
+A proposed theory that combines various research findings and theoretical frameworks to offer a holistic understanding of aging, longevity, and healthy living.
+Selective Destruction Theory (SDT):
+A theory explaining the mechanism of aging at the cellular level, focusing on the selective destruction of cells over time.
+Socioemotional Selectivity Theory:
+A psychological theory describing how individuals��� social and emotional goals and behaviors change with age, affecting their life choices and relationships.
+Super-Selective Reconstruction:
+A method for analyzing and understanding the connectivity and interaction within neural networks, useful for deciphering the complex patterns in brain function.
+Causal and Direct Connectivity:
+Refers to the direct relationships and influences that neurons have on one another within a network, essential for understanding how information is processed and transmitted in the brain.
+In Vitro:
+Latin for ���in the glass���; refers to experiments conducted outside of living organisms, often in a controlled, artificial environment like a petri dish or test tube.
+Induced Pluripotent Stem Cells (iPSC):
+Cells that are engineered in the lab to function like stem cells, capable of developing into various cell types necessary for specific research or therapeutic purposes.
+Multi-Electrode Array (MEA):
+A device used to measure electrical activity within a network of cells or tissue, often used in neuroscience research.
+Effective Connectivity:
+Describes the influence one neural unit exerts over another; it helps in understanding the directional flow of information within the brain.
+Functional Connectivity:
+Describes the statistical dependencies between neural units without necessarily implying a direct interaction or influence.
+Cell-Based In-Vitro Neuronal Network Models:
+Lab-created networks of neurons used for research, derived from cells and designed to mimic the properties and functions of living neural networks for study purposes.
+Feel free to ask for clarification or definitions of any other terms you encounter!
+SRT might incorporate transhumanist themes from my essay Bracketing Phylogenetic Trees:
+
+Nova Organa
+
+The conversation began with organizing a list of species by the percentage of DNA shared with humans, followed by discussing the Last Universal Common Ancestor (LUCA) and considering its possible genetic makeup. A discussion ensued about estimating the time of divergence from a common ancestor for different species, serving as a basis for phylogenetic bracketing.
+
+In a creative twist, the conversation imagined explaining various species to a space alien, inspired by the 'piggies' from Orson Scott Card���s novel "Speaker for the Dead", who has an affinity for trees. This led to brainstorming appropriate titles for documenting the conversation, with ���Bracketing Phylogenetic Trees��� being selected for inclusion in a repository named "Technobabble".
+
+The dialogue then explored speculative biology, envisioning cities and ecosystems modeled after trees and contemplating the introduction of new, fictional organs into the human body. These hypothetical organs included the ���hepastitium��� (a distributed version control system for genetic data), the ���xyloid gland��� (producing xylem-like materials for internal support and waste management), the "Fractal Brain Keel" (increasing cortical surface area), the "Endoscopium Relay" (an internal health monitoring system), and the "Subglottal Lidar" (facilitating subvocalized speech).
+
+These imaginative concepts, while fictional, offer a fascinating glimpse into potential future intersections of biology, technology, and speculative fiction, providing rich material for further creative or theoretical exploration.
+ChatGPT
+Certainly. Here's an introduction draft that attempts to weave in the themes from "Bracketing Phylogenetic Trees" into the framework of Selective Reconstruction Theory (SRT).
+Introduction:
+"Selective Reconstruction Theory (SRT)" traverses through the intricate tapestry of life���s evolution, aging processes, and the tantalizing prospects of longevity research, drawing inspiration from the transhumanist nuances artfully explored in "Bracketing Phylogenetic Trees". This narrative embarks upon a voyage from the primal roots of life, encapsulated within the Last Universal Common Ancestor (LUCA), extending its branches towards the manifold expressions of life, sharing the common thread of DNA with humans.
+Through the lens of SRT, the essay sheds light upon the ceaseless dance of construction and deconstruction within our cellular frameworks, a delicate balance maintaining the rhythm of life, echoing through various species delineated through phylogenetic bracketing. It contemplates not merely the shared genetic heritage but ventures beyond, into the realms of speculative biology and imaginative transhumanism, glimpsed through the introduction of fictional organs within the human anatomy as envisioned in "Bracketing Phylogenetic Trees".
+Each speculative organ, from the Hepastitium to the Subglottal Lidar, embodies a vision where biology and technology meld seamlessly, presenting not just metaphors but potential harbinger of a future where life reconstructs itself selectively for preservation, enhancement, and perhaps, transcendence. These hypothetical additions to the human anatomy, while residing in the realm of fiction today, resonate with the SRT���s proposition of continuous cellular dialysis and microsurgery facilitating longevity, offering a canvas where fiction might just intertwine with reality.
+In this landscape, "Selective Reconstruction Theory" serves as both a mirror reflecting the intricate dance of life���s processes and a window opening towards possibilities unfathomable, inviting readers to explore, question, and envision the tapestry of life reconstructed, enhanced, and reimagined.
+Feel free to modify, expand, or refine as you see fit!
+I am thinking of extending the human lifespan with these technologies although it might necessitate the development of external tissue and organ farms as the technologies are researched and microsized.
+ChatGPT
+Certainly! It seems you are envisioning a future where technology not only enhances and extends human life but also fundamentally transforms the way we understand and engage with our own biology. In your introduction, you might want to hint at these groundbreaking possibilities while also acknowledging the challenges and ethical considerations that come with them. Here���s a revised introduction to reflect these themes:
+Introduction:
+"Selective Reconstruction Theory (SRT)" meticulously explores the frontier where biology���s ancient dance meets the brisk, innovative steps of technology, crafting a narrative that is as much about preservation as it is about transformation. Drawing inspiration from the speculative and transhumanist elements presented in "Bracketing Phylogenetic Trees", this exploration delves into the depths of our cellular machinery, envisaging a future where life is not merely sustained but selectively reconstructed for enhanced longevity and capability.
+In this symphony of life, each cell, each strand of DNA plays a role, contributing to the majestic tapestry that is life, with echoes of our shared ancestry reverberating through the corridors of genetic codes. The speculative organs conceptualized previously, ranging from Hepastitium to Subglottal Lidar, are not mere flights of fantasy but represent the potential epitomes of future biological and technological convergence. These theoretical constructs present a glimpse into a future where continuous cellular rejuvenation and microsurgery are not just plausible but integral to human life extension.
+However, the odyssey towards realizing this vision is far from straightforward. It beckons the development of unprecedented technologies, perhaps necessitating external tissue and organ farms as stepping stones during this grand endeavor. As we inch closer to miniaturizing and implementing these life-extending technologies, we also wade through a sea of ethical, moral, and existential questions, each demanding careful contemplation and resolution.
+The canvas of "Selective Reconstruction Theory" is vast, painting a future where life can be extended, quality enhanced, and the human experience redefined. Yet, it also casts shadows of challenges and dilemmas that we, as a species, need to navigate with wisdom and foresight. Through the pages of this essay, we invite you to join us on this exploration of life���s potential magnificence and the labyrinthine path leading to it, with the promise of discovery, reflection, and perhaps, revelation awaiting at each turn.
+This introduction aims to encapsulate the promise, challenges, and depth of the journey you are inviting your readers to undertake with you through the essay. Adjust as you see fit!
+A new outline for the book.
+ChatGPT
+Absolutely! Here's a possible outline for your book, based on the information and themes you've provided:
+I. Introduction
+Brief Overview
+Purpose of the Book
+Explanation of Key Terms
+II. The Foundation
+Overview of Selective Reconstruction Theory (SRT)
+Discussion on the Human Body and Cellular Biology
+Review of Current Longevity Research
+III. Inspiration and Vision
+Exploration of ���Bracketing Phylogenetic Trees���
+Introduction to Transhumanist Themes
+Hypothetical Organs and Their Functions
+IV. Bridging Biology and Technology
+Analyzing Super-Selective Reconstruction
+Insights from AI and Large Language Models (LLMs)
+Introduction to External Tissue and Organ Farms
+V. Theoretical Frameworks and Models
+Detailed Discussion on Selective Destruction Theory (SDT)
+Exploring the Mechanics of Aging
+Insights from Computer Science: MAD and Overfitting
+VI. Speculative Biology and Future Technologies
+Incorporation of Fictional Organs into Human Biology
+Prospects of Cellular Dialysis and Continuous Microsurgery
+Integrating Technologies for Health Monitoring and Data Management
+VII. Ethical and Philosophical Considerations
+Ethical Challenges in Longevity and Enhancement Technologies
+The Philosophy of Life Extension and Enhancement
+Reflections on Humanity and the Nature of Life
+VIII. Potential Applications and Implications
+Future of Medicine and Healthcare
+Impacts on Society and Human Life
+Considerations for Implementing New Technologies
+IX. Challenges and Limitations
+Technical Challenges and Limitations
+Addressing Ethical and Moral Dilemmas
+Mitigating Risks and Unintended Consequences
+X. Conclusion and Future Directions
+Summary of Key Findings and Insights
+Reflections on the Journey and Exploration
+A Glimpse into the Future of Human Life and Technology
+XI. Glossary
+Explanation of Technical Terms and Jargons Used in the Book
+XII. References
+List of Books, Articles, and Other Resources Referenced
+XIII. Index
+Alphabetical Listing of Important Terms and Their Page Numbers
+Feel free to modify, add, or remove sections as you see fit. This is a comprehensive structure intended to cover all the themes and topics you've mentioned, providing a roadmap for your writing process. Each section should logically flow into the next, building a compelling narrative that takes the reader on a journey through the fascinating intersection of biology, technology, and speculative fiction.
+Write some of section II. Academic tone.
+ChatGPT
+II. The Foundation
+2.1 Overview of Selective Reconstruction Theory (SRT)
+Selective Reconstruction Theory (SRT) posits a novel approach towards comprehending and possibly extending human longevity through a meticulous analysis and reconstruction of cellular dynamics. The theory amalgamates a unique set of biological principles and cutting-edge technological interventions, providing an innovative framework for understanding aging and longevity.
+2.2 Understanding the Human Body and Cellular Biology
+2.2.1 Cellular Components and Functions
+The human body, an intricate assembly of approximately 37.2 trillion cells, represents a complex, multifaceted biological system. Each cell is equipped with distinct components serving specific functions essential for maintaining cellular homeostasis. This section elucidates the crucial cellular components and delineates their respective roles, laying a foundational understanding pivotal for grasping the premises of SRT.
+2.2.2 Cellular Aging and Senescence
+Cellular aging and senescence represent inevitable, natural biological processes. Senescent cells exhibit a permanent state of cell cycle arrest, often associated with aging and age-related diseases. Understanding these processes is crucial for developing strategies aimed at counteracting their effects, thereby potentially extending human lifespan.
+2.3 Review of Current Longevity Research
+2.3.1 Molecular Mechanisms of Aging
+Various theories seek to explain the mechanisms of aging at the molecular level. These include the Telomere Shortening Theory, the Mitochondrial Theory of Aging, and the Free Radical Theory, among others. This section will scrutinize these mechanisms, providing an insightful exploration into the molecular aspects influencing aging.
+2.3.2 Longevity Interventions
+Current longevity research espouses a myriad of interventions aimed at slowing down the aging process or reversing aspects of senescence. Interventions range from dietary and lifestyle changes to more sophisticated approaches like gene therapy and pharmaceuticals designed to target specific aging pathways.
+2.4 Implications of SRT in Longevity Research
+2.4.1 Cellular Rejuvenation and Reconstruction
+SRT introduces an innovative perspective, suggesting the possibility of selectively reconstructing cellular components to counteract the effects of aging. Through interventions at the cellular and molecular level, it may be plausible to rejuvenate cells, thereby contributing to increased longevity and improved health during aging.
+2.4.2 Addressing the Aging Process
+By integrating principles from various biological and technological domains, SRT provides a robust framework for addressing aging's multifaceted nature. The theory���s applications may range from preventative healthcare measures to interventions aiming at reversing age-related cellular and molecular damage.
+2.5 Summary
+This section laid the groundwork for understanding the Selective Reconstruction Theory by exploring the human body's cellular biology and current longevity research landscape. Subsequent sections will delve deeper into the intricacies of SRT, offering insight into its potential implications and applications in the field of longevity and life extension.
+A list of all of the topics we've discussed.
+ChatGPT
+Below is a list of topics that have been discussed:
+Analogical Prompting Technique:
+Self-generating exemplars by LLMs
+Creating customized exemplars without labeled data
+Improved performance in various reasoning tasks
+Increased inference computation and prompt sensitivity
+Selective Destruction Theory (SDT):
+Mechanism of aging independent of accumulating damage
+Positive selection of aging process
+Selective destruction of fastest-growing cells
+Relationship with epigenetic rejuvenation and homeostasis
+Agent-based modeling
+Model Autophagy Disorder (MAD):
+AI networks going "MAD" after training iterations on AI-generated data
+Loss of information on data distribution tails
+Altered, non-reflective outputs of reality
+Super-Selective Reconstruction of Causal and Direct Connectivity:
+Application to in vitro iPSC neuronal networks
+Effective connectivity mapping
+Novel method for inferring direct and causal connectivity from MEA data
+Super-selective rule for accurate classification
+Selective Reconstruction Theory (SRT) Conceptualization:
+Incorporation of transhumanist themes
+Connection to Socioemotional Selectivity Theory
+Proposal for continuous cellular replenishment and microsurgery for longevity
+Inspired by Super-Selective Reconstruction research
+Creative Biological Concepts and Speculative Biology:
+Introduction of fictional organs
+Exploration of intersections of biology, technology, and speculative fiction
+Hypothetical concepts like hepastitium, xyloid gland, Fractal Brain Keel, Endoscopium Relay, Subglottal Lidar
+Phylogenetic Bracketing and Related Topics:
+DNA shared with humans
+Last Universal Common Ancestor (LUCA)
+Time estimation of divergence from common ancestors
+Phylogenetic bracketing
+Explaining species to hypothetical space aliens
+Imaginative biological concepts
+Essay Writing and Book Outline Creation:
+Preparation for essays like ���Humans as Large Language Models���
+Outlining for the book on Selective Reconstruction Theory
+Creation of academic tone sections for the book
+Human Longevity and Life Extension Technologies:
+Exploration and speculation on extending human lifespan
+Discussion on the development and necessity of external tissue and organ farms
+Ideas for incorporating new technologies for longevity research
+Miscellaneous:
+Glossary creation for difficult terms in discussed theories
+Simplification and breakdown of complex theories for better understanding
+This list covers the main topics discussed, providing a structured overview of the conversation's content.
+A final summary.
+ChatGPT
+Certainly! Our discussion navigated through various interconnected topics related to advanced technology, biology, and aging theories:
+Analogical Prompting Technique
+: We explored this approach that enhances Large Language Models (LLMs)��� problem-solving ability by self-generating exemplars without the need for labeled data, particularly beneficial for stronger LLMs.
+Selective Destruction Theory (SDT)
+: This theoretical aging mechanism operates independently from accumulated cellular damage and undergoes positive selection. The theory suggests that cells with slower metabolism induce changes in faster cells, reducing both unnecessary cell death and the risk of overactivity disorders.
+Model Autophagy Disorder (MAD)
+: Discussed the phenomenon where AI networks, after being repeatedly trained on AI-generated data, tend to produce altered outputs that drift away from reflecting reality.
+Super-Selective Reconstruction & Selective Reconstruction Theory (SRT)
+: Explored a novel method for mapping the connectivity of in vitro neuronal networks and conceptualized SRT, inspired by both SDT and Socioemotional Selectivity Theory. SRT proposes continuous cellular replenishment and microsurgery for enhancing longevity.
+Creative Biological Concepts
+: Engaged in speculative biology, envisioning fictional organs and technologies that could potentially extend human lifespan and improve functionality.
+Essay and Book Writing
+: Planned and outlined essays and a book incorporating the discussed theories and concepts, with a focus on academic tone and structure for certain sections.
+Phylogenetic Bracketing and Transhumanist Themes
+: Discussed the concept of phylogenetic bracketing and incorporated transhumanist ideas, including the introduction of hypothetical organs and technologies for life extension and enhancement.
+Human Longevity
+: Considered the potential of the discussed technologies and concepts in extending human lifespan, acknowledging the possible need for external organ farms and other supporting technologies during the development phase.
+Throughout, the conversation seamlessly integrated factual information with speculative and creative ideas, forming a basis for essays and book sections aiming to explore the boundaries of current understanding and imagine future possibilities in biology, technology, and longevity research.
+ChatGPT may produce inaccurate information about people, places, or facts.
+ChatGPT September 25 Version
+?
+Selective Reconstruction Theory
+
+
+
+
+
