@@ -1,0 +1,535 @@
+LLM SelfCheck for Reasoning
+Open sidebar
+LLM SelfCheck for Reasoning
+GPT-4
+SELFCHECK:USINGLLMS TO ZERO-SHOT CHECK 
+THEIR OWN STEP-BY-STEP REASONING 
+Ning Miao1*Yee Whye Teh1Tom Rainforth1 
+ABSTRACT 
+The recent progress in large language models (LLMs), especially the invention of 
+chain-of-thoughts (CoT) prompting, makes it possible to solve reasoning problems. 
+However, even the strongest LLMs are still struggling with more complicated 
+problems that require non-linear thinking and multi-step reasoning. In this work, 
+we explore whether LLMs have the ability to recognize their own errors, without 
+resorting to external resources. In particular, we investigate whether they can be 
+used to identify individual errors within a step-by-step reasoning. To this end, we 
+propose a zero-shot verif i cation scheme to recognize such errors. We then use this 
+verif i cation scheme to improve question-answering performance, by using it to 
+perform weighted voting on different generated answers. We test the method on 
+three math datasets���GSM8K, MathQA, and MATH���and i nd that it successfully 
+recognizes errors and, in turn, increases i nal predictive performance. 
+1INTRODUCTION 
+Recent years have witnessed dramatic changes in the areas of NLP and AI brought by large language 
+models. From GPT-3 (Brown et al., 2020), PaLM (Chowdhery et al., 2022), Llama (Touvron 
+et al., 2023) to GPT-4 (OpenAI, 2023) and PaLM-2 (Google, 2023), the increasing model sizes and 
+exploding amount of training data have empowered LLMs to achieve human-level performance on a 
+large range of tasks, including summarization, translation, question answering and basic mathematical 
+reasoning. 
+However, the performance of even the largest LLMs on complex reasoning problems is still unsatis- 
+factory. For example, GPT-4 only correctly answers 42.5% of problems in the MATH dataset, which 
+is far below human level. Such problems require careful multi-step reasoning to solve, where LLMs 
+are prone to make mistakes. Namely, to solve such complex reasoning problems, LLMs need to 
+generate many reasoning steps. Even though their error rate on a single step is low, the probability of 
+LLMs generating at least one erroneous step can be fairly high, which makes i nal predictions less 
+accurate. 
+It is thus necessary to check for errors in LLMs��� generated reasoning in order to i lter out incorrect 
+predictions and provide an estimation of conf i dence for a prediction. Recently, Cobbe et al. (2021) 
+i netune GPT-3 to recognize errors in the whole reasoning process, and Li et al. (2022) train a BERT 
+model (He et al., 2020) to check the correctness of each reasoning step. Ling et al. (2023) eliminate 
+the need to i netune by performing few-shot checking on a special type of reasoning chains called 
+Natural Program. To check a reasoning chain, most previous methods look for error patterns that 
+match those in training data or instructions. However, there are an inf i nite number of error patterns, 
+some of which are quite covert and deceptive. As a result, these methods do not work well without 
+massive training data or examples. 
+To address this shortfall, we introduce SelfCheck, a zero-shot checking scheme for LLMs, which is 
+based on step regeneration. SelfCheckworks as a step-by-step checker, such thatit individually checks 
+each step in the LLMs reasoning process based on the available context. For each reasoning step in 
+an LLM���s output reasoning, SelfCheck i rst collects related information to form a simpler context 
+and then checks it by step-regeneration. Then it integrates the checking results of the individual steps 
+to form a conf i dence score for the whole solution. Using conf i dence scores as weights to vote among 
+multiple solutions for the same question, SelfCheck in turn allows us to improve question answering 
+accuracy by focusing on the most accurate answer. SelfCheck mimics the procedure of human beings 
+double-checking their solutions and completely bypasses the problem of pattern-matching style 
+1Department of Statistics, University of Oxford.*Email: <ning.miao@stats.ox.ac.uk>. 
+1 
+arXiv:2308.00436v2 
+[cs.AI] 
+2 
+Aug 
+2023 
+checking. Its design is based on the key observation that LLMs are trained on far more generation 
+tasks than checking tasks. SelfCheck works in a fully zero-shot manner to keep generalizability to 
+different LLMs and tasks as well as to reduce the inf l uence of prompt engineering on experimental 
+results. Users of SelfCheck can easily change any of its components to a few-shot, or i netuned 
+version to achieve better results on specif i c tasks. 
+We evaluate SelfCheck on three math tasks, namely GSM8K, MathQA, and MATH, in increasing 
+order of diff i culty. For all datasets, we i nd that using SelfCheck achieves a signif i cant increase 
+in prediction accuracies compared with majority voting. We also see that SelfCheck provides an 
+accurate conf i dence estimation for LLM���s solutions, which decreases the proportion of incorrect 
+solutions by 9%, 22.8%, and 16.2% on three datasets, after i ltering out low-conf i dence solutions. We 
+also perform an extensive analysis on the effect of per-question sample sizes and some critical design 
+choices of step-checking methods, which, we hope, could provide some inspiration for future works 
+on checking methods. Our code is available athttps://github.com/NingMiao/SelfCheck. 
+To summarize, the main contributions of this paper are as follows: 
+���We propose SelfCheck, an effective new schema for checking step-by-step reasoning in 
+LLMs, which provides a better conf i dence estimation and in turn improves predictive 
+accuracy. 
+���We demonstrate that LLMs can do effective self-verif i cation without resorting to any external 
+resources. 
+2METHOD: SELFCHECK 
+In this section, we propose SelfCheck, which is a scheme to check step-by-step solutions from 
+an LLM by itself. For simplicity of illustration, we restrict our discussion to math problems, but 
+SelfCheck can be easily applied to other domains that require multi-step reasoning. 
+We call the LLM that generates the original step-by-step solution the generator, which can be a zero 
+or few-shot LLM. The input to the generator is a question and its output is a multi-step solution in the 
+form of [Step 1, Step 2, ..., Step N]. SelfCheck i rst checks the correctness of each step of the solution 
+and then integrate stepwise checking results to form a conf i dence score for the whole solution. In the 
+following, we introduce how we perform step checking and the design of the integration function. 
+Please see Figure 1 for a real example of how SelfCheck works.
+1 / 1
+ChatGPT
+ChatGPT
+It appears that you've pasted a portion of a scientific paper related to SelfCheck, a zero-shot checking scheme for large language models (LLMs), and its application in reasoning and step-by-step problem solving.
+This abstract and introduction detail the recent progress in LLMs, their struggle with complicated problems requiring non-linear thinking, and the specific research into recognizing their own errors in reasoning without external resources. The paper introduces SelfCheck, a novel method for recognizing and correcting errors in reasoning by using step regeneration.
+SelfCheck aims to mimic human-like double-checking and is intended to improve the accuracy of question-answering by identifying individual reasoning errors and providing confidence scores for predictions.
+Do you have any specific questions about this research or would you like me to analyze or explain any particular section?
+1 / 1
+SelfCheck can be easily applied to other domains that require multi-step reasoning. 
+We call the LLM that generates the original step-by-step solution the generator, which can be a zero 
+or few-shot LLM. The input to the generator is a question and its output is a multi-step solution in the 
+form of [Step 1, Step 2, ..., Step N]. SelfCheck i rst checks the correctness of each step of the solution 
+and then integrate stepwise checking results to form a conf i dence score for the whole solution. In the 
+following, we introduce how we perform step checking and the design of the integration function. 
+Please see Figure 1 for a real example of how SelfCheck works. 
+2.1STEP CHECKING 
+To check individual steps of the reasoning process, the i rst thing we should notice is that the 
+correctness of each step is highly dependent on its context, namely the question and previous steps 
+in the solution. As a result, it is not possible to check a single step without context. For example, 
+we usually need to refer to previous steps for the def i nition of variables and the meaning of specif i c 
+numbers. The target of the step checking in SelfCheck is thus to check the conditional correctness of 
+each step based on the provided context. That is, we only care about catching errors at the current 
+step, and can assume all information from its context to be correct. 
+A simple idea to achieve this would be feeding the current step as well as all its context to an LLM 
+and directly asking the LLM to ���check the correctness of the step���. However, in practice, we i nd 
+that this task is too diff i cult for the LLM to do effectively. This is i rst because the checker needs to 
+understand the key content in the step and then collect all related information from the context, before 
+actually checking for its correctness. Moreover, ���checking��� is not a common task in the training 
+corpus of most LLMs, which means LLMs do not perform well even if we exemplify in detail how to 
+do step-checking in the prompt. 
+To solve this problem, SelfCheck decomposes the checking task into 4 stages: target extraction, 
+information collection, step regeneration, and result comparison. SelfCheck uses the LLM to execute 
+each stage successively and uses the conclusion from the result comparison to predict the correctness 
+of the original step. The main idea behind the decomposition is to make the LLM focus on an easier 
+task that it is used to at each stage, which can be seen as a way of introducing inductive biases into 
+LLMs. Specif i cally, we prompt the LLM to i rst i gure out the target of the current step and what 
+information it uses to achieve the target. Then we ask the LLM to re-achieve the target using only 
+the collected information. The clear description of the target and the simplif i ed context make the 
+2 
+Figure 1: A real example illustrating how SelfCheck works. The blocks show the question, the 
+outputs of the generator, and the checker, respectively. To check the correctness of a certain step (step 
+4 in the example) in a multi-step reasoning procedure, SelfCheck goes through 4 stages before making 
+a decision, which is elaborated in Section 2.1. Then the integration function combines the checking 
+results of all steps to form a conf i dence score for the whole solution. 
+regeneration stage less challenging for an LLM. As a result, its output should be more reliable to 
+serve as a reference. The last step would be comparing the original step with the regeneration output. 
+If their main conclusions match/mismatch, we think the original step to be correct/wrong. In the 
+following, we describe each of the subtasks and our specif i c instructions to the LLM. 
+Target extractionTo check a step (for example, step 4 in Figure 1), we i rst need to i gure out what 
+the step is trying to do. Without a specif i c target, the regeneration stage would proceed in a random 
+direction, making it impossible to serve as a reference to the original step. We thus use the LLM 
+itself to extract the target of a stepiusing the question and all previous steps (step 0-3 in Figure 1) 
+with the following prompt: 
+The following is a part of the solution to the problem [question]: [Step 0, Step 1,..., Step i]. 
+What specif i c action does the step [Step i] take? Please give a brief answer using a single 
+sentence and do not copy the steps. 
+During execution, we copy the question and steps into [question] and [step] to form the actual input 
+to the LLM. The reason for requesting a brief and single-sentence answer is to avoid getting too much 
+detailed information, especially specif i c equations and values, which can be wrong and, consequently, 
+mislead the regeneration stage. 
+Information collectionTo relieve the pressure of the regeneration stage and avoid unrelated 
+information from affecting the result, we i lter out information that is not directly related to the 
+current step. Specif i cally, we ask the LLM to select useful items from the question and all previous 
+items with the following prompt: 
+This is a math question: [question]. 
+The following is information extracted from the question: 
+Information 0: [Information 0] 
+Information 1: [Information 1]
+1 / 1
+ChatGPT
+ChatGPT
+The portion of the text you provided explains how SelfCheck works to check the correctness of individual reasoning steps in an LLM's generated solution.
+The step-checking process is divided into four stages: target extraction, information collection, step regeneration, and result comparison. Here's an explanation of each stage:
+Target Extraction
+: This stage determines what the specific step is trying to achieve. By identifying the target of the step, the subsequent stages can be focused and more effective. The LLM itself is prompted to extract the target using the question and previous steps.
+Information Collection
+: This stage filters and selects only the information that is directly related to the current step. It does this by asking the LLM to pick out useful information from the question and previous steps. This focuses the checking process and avoids irrelevant details that might mislead the regeneration stage.
+Step Regeneration
+: The details of this stage are not fully provided in the text snippet, but it's likely that this part involves using the previously identified target and collected information to recreate the current step. By simplifying the context and clearly defining the target, the regeneration becomes a less challenging task for the LLM, thus producing more reliable output.
+Result Comparison
+: This final stage compares the original step with the regenerated output. If the main conclusions match, the original step is considered correct; if they mismatch, it is considered wrong.
+Overall, the SelfCheck process seems to be a thoughtful and methodical approach to evaluating the correctness of individual reasoning steps. By breaking down the process into these four stages, SelfCheck allows for more focused and reliable checking.
+Is there a specific part of this process you would like to know more about?
+1 / 1
+correct answerPwafter voting is exponentially 
+decreasing with sample sizen, which is upper 
+bounded by���1���p 
+q ���(q p) ���n 2���. As a result, when 
+n > 10, the probability of making mistakes in 
+this case is already very low, so continuing to 
+increasenwould not signif i cantly increase the 
+accuracy of majority voting. 
+BiasFor some other questions, the probability of the correct answer is not the highest among all 
+possible answers, which ref l ects the bias of the LLM. In such cases, very largenmakes majority 
+voting perform worse by always outputting the incorrect answer. SelfCheck corrects the bias of 
+LLMs by giving higher weights to real correct solutions and lower weights to incorrect answers. As 
+nincreases, the probability of LLM generating at least 1 real correct answer keeps increasing, which 
+can be recognized and selected by SelfCheck. This explains the large accuracy increase of SelfCheck 
+for largenand shows that LLMs can correct their own biases, without any external supervision. 
+5.2FURTHER COMPARISONS 
+In order to i gure out the effect of several critical design choices for SelfCheck, we compare SelfCheck 
+with some of its variants. Figure 6 and Table 1 show generation accuracies and balanced checking 
+accuracies of each variant. Table 1 shows the diff i culty to achieve high checking accuracies for all 
+methods. Nonetheless, any methods we considered with a checking accuracy��� 57.2%are 
+helpful to 
+prediction performance. 12345678910 
+#Samples per question 
+0.60 
+0.65 
+0.70 
+0.75 
+0.80 
+0.85 
+Accuracy 
+ours 
+global 
+single stage 
+regen->check (0-shot) 
+regen->check (1-shot) 
+majority voting 
+Figure 6: Generation accuracies for different vari- 
+ants of SelfCheck. 
+Global vs step checkingThe i rst question is 
+can we simply ask an LLM to perform a global 
+checking on the whole solution without check- 
+ing step by step. To answer it, we prompt the 
+LLM to perform global checking with the fol- 
+lowing instruction: 
+The following is a question and 
+a solution to it from a student. 
+Carefully check whether the so- 
+lution is correct step by step. End 
+your response with your conclu- 
+sion that starts with "Correct", 
+"Wrong" or "Not Sure". 
+Question: [Question] 
+Solution: [Step 0, Step 1,..., Step n] 
+However, we i nd the global checker outputs "correct" most of the time and rarely recognizes an 
+error. Consequently, its performance in Figure 6 is very similar to majority voting and in Table 1 
+its accuracy is only higher than random guess (50%). Consequently, LLMs cannot deal with the 
+diff i culty of global checking, which makes step checking necessary. 
+Multiple stages vs Single stageThe second question is do we really need to decompose step 
+checking into several stages. To answer the question, we design the following prompt to do single- 
+stage step checking. 
+The following is a question and the i rst a few steps in its solution. 
+Question: [Question] 8 
+Solution: [Step 0, Step 1,..., Step i-1] 
+Check the correctness of the next step: [Step i] 
+Please consider the information it relies on and check step by step. Please end your response 
+with your conclusion that starts with "Correct", "Wrong" or "Not Sure". 
+Figure 6 and Table 1 show though single-stage step checking is better than global checking, it is still 
+signif i cantly worse than our multi-stage SelfCheck. It indicates that the diff i culty of checking a step 
+is still too much for the LLM, so we need to decompose step checking into a pipeline of easier tasks. 
+Figure 6 Table 1: Mean checking accuracies for different 
+variants of SelfCheck. 
+MethodAccuracy (%) 
+Ours66.7% 
+Global55.0% 
+Single stage57.2% 
+Regen->check (0-shot)63.1% 
+Regen->check (1-shot)64.2% 
+Regenerate then compare vs error check 
+We also need to justify our choice to replace 
+direct error checking with step regeneration and 
+comparison. To do so, we replace the regener- 
+ation stage and comparison stage with a verif i- 
+cation stage. We i rst compare with a zero-shot 
+version of the variant with the following prompt: 
+Given the following information: 
+Information 0: [Information I0] 
+Information 1: [Information I1] 
+... 
+Step 0: [Step S0] 
+Step 1: [Step S1] 
+... 
+Check the correctness of the next step [Step i] 
+Please check for grounding errors, reasoning errors and calculation errors step by step. 
+Please end your response with your conclusion that starts with "Correct", "Wrong" or "Not 
+Sure". 
+To make the verif i cation stage stronger, we also compare a one-shot version with an example from 
+Ling et al. (2023). Results in Figure 6 and Table 1 show that even with a very detailed and instructive 
+example, direct verif i cation still performs worse than our regeneration style checking, which supports 
+our argument in Section 2. 
+6CONCLUSION 
+In this paper, we introduce SelfCheck, which is a step-by-step checking scheme for multi-step 
+reasoning. By our multi-stage structure and the regeneration style checking, SelfCheck is effective in 
+checking for errors, which, in turn, greatly increase prediction accuracies by weighted voting. Since 
+SelfCheck works well in the zero-shot setting, we conclude that LLMs can check their own outputs 
+without external supervision.
+1 / 1
+ChatGPT
+ChatGPT
+The text you provided seems to focus on various aspects of the SelfCheck process, including statistical insights and comparison with different methods of checking. Here's a brief summary:
+Probability Analysis
+: The text begins by discussing the probability of making mistakes in majority voting and concludes that continuing to increase the sample size would not significantly increase accuracy when n > 10.
+Bias Correction
+: It explains how SelfCheck corrects the biases of LLMs by giving higher weights to correct solutions and lower weights to incorrect ones. This helps LLMs correct their own biases, enhancing accuracy for larger sample sizes.
+Further Comparisons
+:
+Global vs Step Checking
+: The text explores whether LLMs can perform global checking on the entire solution without going step by step. It concludes that global checking is ineffective, recognizing errors rarely, and emphasizes the necessity of step checking.
+Multiple Stages vs Single Stage
+: A comparison between single-stage checking and the multi-stage approach of SelfCheck concludes that decomposing step checking into multiple stages is beneficial.
+Regenerate then Compare vs Error Check
+: The comparison of methods concludes that step regeneration and comparison are more effective than direct error checking.
+Conclusion
+: The text introduces SelfCheck as an effective method for step-by-step checking of multi-step reasoning, which increases prediction accuracies through weighted voting and works well in a zero-shot setting.
+The figures and tables referred to in the text would likely provide visual representations of the comparisons and statistical data, but these are not included in the provided text.
+If you need information on a specific aspect of this text or clarification on a particular point, please let me know!
+1 / 1
+LW
+My current LK99 questions
+by Eliezer Yudkowsky
+6 min read
+1st Aug 2023
+23 comments
+158
+PhysicsScienceWorld ModelingRationality
+Frontpage
+So this morning I thought to myself, "Okay, now I will actually try to study the LK99 question, instead of betting based on nontechnical priors and market sentiment reckoning."  (My initial entry into the affray, having been driven by people online presenting as confidently YES when the prediction markets were not confidently YES.)  And then I thought to myself, "This LK99 issue seems complicated enough that it'd be worth doing an actual Bayesian calculation on it"--a rare thought; I don't think I've done an actual explicit numerical Bayesian update in at least a year.
+
+In the process of trying to set up an explicit calculation, I realized I felt very unsure about some critically important quantities, to the point where it no longer seemed worth trying to do the calculation with numbers.  This is the System Working As Intended.
+
+On July 30th, Danielle Fong said of this temperature-current-voltage graph, 
+
+'Normally as current increases, voltage drop across a material increases. in a *superconductor*, voltage stays nearly constant, 0. that appears to be what's happening here -- up to a critical current. with higher currents available at lower temperatures  deeply in the "fraud or superconduct" territory, imo. like you don't get this by accident -- you either faked it, or really found something.'
+
+The graph Fong is talking about only appears in the initial paper put forth by Young-Wan Kwon, allegedly without authorization.  A different graph, though similar, appears in Fig. 6 on p. 12 of the 6-author LK-endorsed paper rushed out in response.
+
+
+Is it currently widely held by expert opinion, that this diagram has no obvious or likely explanation except "superconductivity" or "fraud"?  If the authors discovered something weird that wasn't a superconductor, or if they just hopefully measured over and over until they started getting some sort of measurement error, is there any known, any obvious way they could have gotten the same graph?
+
+One person alleges an online rumor that poorly connected electrical leads can produce the same graph.  Is that a conventional view?
+
+Alternatively:  If this material is a superconductor, have we seen what we expected to see?  Is the diminishing current capacity with increased temperature usual?  How does this alleged direct measurement of superconductivity square up with the current-story-as-I-understood-it that the material is only being very poorly synthesized, probably only in granules or gaps, and hence only detectable by looking for magnetic resistance / pinning?
+
+This is my number-one question.  Call it question 1-NO, because it's the question of "How does the NO story explain this graph, and how prior-improbable or prior-likely was that story?", with respect to my number one question.
+
+Though I'd also like to know the 1-YES details: whether this looks like a high-prior-probability superconductivity graph; or a graph that requires a new kind of superconductivity, but one that's theoretically straightforward given a central story; or if it looks like unspecified weird superconductivity, with there being no known theory that predicts a graph looking roughly like this.
+
+What's up with all the partial levitation videos?  Possibilities I'm currently tracking:
+
+2-NO-A:  There's something called "diamagnetism" which exists in other materials.  The videos by LK and attempted replicators show the putative superconductor being repelled from the magnet, but not being locked in space relative to the magnet.  Superconductors are supposed to exhibit Meissner pinning, and the failure of the material to be pinned to the magnet indicates that this isn't a superconductor.  (Sabine Hossenfelder seems to talk this way here.  "I lost hope when I saw this video; this doesn't look like the Meissner effect to me.")
+
+2-YES-Z:  This is actually some totally expected thing called a "toroidal Meissner effect", which is exactly what we should expect to see given the one-dimensional nature of the superconducting arrangement of quantum wells, and supposedly looks just like some previous video for carbon nanotubes.  This was said by a Russian catgirl.
+
+2-YES-Y:  There is so much diamagnetism on display here that you wouldn't see it without some superconductivity.
+
+2-NO-B:  There's an unusual/unprecedented amount of diamagnetism here, but in a way that fits pretty well with "they found some magnetically weird material after screening for magnetic weirdness" better than "superconductivity".
+1 / 1
+ChatGPT
+ChatGPT
+It appears that the text you've shared is part of an article or blog post by Eliezer Yudkowsky on August 1, 2023, regarding the LK99 question, related to some experimental results that may indicate superconductivity. Here's a summary:
+Attempting a Bayesian Calculation
+: Yudkowsky contemplates performing an explicit numerical Bayesian update to understand the LK99 issue. However, he finds himself unsure about some critically important quantities and abandons the calculation, which he describes as the System Working As Intended.
+A Controversial Graph
+: He refers to a temperature-current-voltage graph, highlighting a statement by Danielle Fong, which indicates that the graph's behavior is suggestive of superconductivity. He mentions that this graph appears in two different forms in separate papers, one allegedly unauthorized.
+Two Main Possibilities
+: Yudkowsky explores two primary interpretations of the graph:
+Superconductivity or Fraud
+: Is the graph's appearance only explainable by superconductivity or fraudulent manipulation? He also asks whether the diagram's behavior could be replicated through poorly connected electrical leads or other errors.
+Properties of the Superconductor
+: If the material is indeed a superconductor, he queries the current capacity's diminishing with increased temperature, alignment with expectations, and its synthesis condition.
+Partial Levitation Videos
+: The article further delves into some videos showing partial levitation, and Yudkowsky enumerates several possibilities, including diamagnetism, a "toroidal Meissner effect," an overwhelming display of diamagnetism, and an unusual amount of diamagnetism that may not be indicative of superconductivity.
+Yudkowsky's text reflects a complex and technical analysis of the LK99 question, with considerable uncertainty about the interpretation of the evidence. It's clear that this issue requires a nuanced understanding of physics, particularly in the area of superconductivity, and may be the subject of ongoing debate or investigation in the scientific community. If you need further details or clarification on specific points, please let me know!
+1 / 1
+How much of a surprise was Sinead's flat-band calculation?  On the NO story, how likely or unlikely was the logical observation, "a result like this is calculated, for an actually-non-superconducting material, that was prescreened by the filters we already know about"?
+
+Possibilities that are obvious and/or that I've seen claimed online:
+
+3-NO-A:  LK were deliberately seeking out materials like this, and the materials they screened were selected to all be the sort that would have a calculated flat band; therefore, arguendo, the result is not too surprising on NO.
+
+3-NO-B:  Most materials in the potential-superconductor class would have a calculation like this; it's not a hard result to get by making weird unrealistic assumptions.
+
+3-NO-C:  LK found a weird material that isn't a superconductor, and a weird material like this is much more likely to have a result like Sinead's calculation be true about that material or some plausibly mistaken neighboring postulated structure.
+
+3-NO-D:  We understand so little about the origins of superconductivity that a calculation like this is not even probabilistic evidence about whether something is actually a superconductor.  You could probably find a calculation like that for anything magnetically or electrically weird at all.
+
+3-YES-Z:  This is a fact we didn't know from LK's paper and LK didn't do any prior selection against it; Sinead's result is a previously unsuspected-given-NO calculation, that would be very unlikely as a calculation result unless the LK-postulated material was actually a superconductor.  (This is how Andercot initially presented Sinead's result, and there was a large prediction market jump immediately after; based on the subsequent crash, it looks like this was not the conventional reception after some review.)
+
+3-YES-Y:  LK already knew this fact, already did some calculation reflecting it, and this is how they found the material in the first place.
+
+3-YES-X:  LK didn't know the Sinead-calculation, but the already-known weirdnesses of the material, and a very high false positive rate of calculations like these, mean the calculation wasn't all that informative about YES and we don't say "game won".
+1 / 1
+ChatGPT
+ChatGPT
+The text you shared outlines various possibilities related to Sinead's flat-band calculation, specifically in the context of whether a material is a superconductor (YES scenarios) or not (NO scenarios). Since the details provided don't elaborate on the specific calculations or the context of the LK99 question beyond what's been shared, I'll summarize the scenarios you've presented:
+NO Scenarios (Material is not a Superconductor)
+:
+3-NO-A
+: LK intentionally sought materials likely to show a flat band, making the result unsurprising.
+3-NO-B
+: Most materials in the potential-superconductor class might show this calculation. It's not unique or specific.
+3-NO-C
+: LK found an odd material that isn't a superconductor, making Sinead's calculation more probable.
+3-NO-D
+: There's insufficient understanding of superconductivity origins for this calculation to be meaningful evidence.
+YES Scenarios (Material is a Superconductor)
+:
+3-YES-Z
+: Sinead's result is an unexpected calculation that might suggest the material is indeed a superconductor.
+3-YES-Y
+: LK already knew about this phenomenon, and it helped them identify the material.
+3-YES-X
+: LK didn't know about the calculation, but the already-known peculiarities of the material make the calculation less informative.
+Without additional context, specific scientific evidence, or the views of experts in the field, it's challenging to definitively evaluate the likelihood or significance of Sinead's flat-band calculation. These scenarios represent a spectrum of interpretations, some of which seem to hinge on LK's intent and understanding, the novelty or commonality of the calculation, and the broader understanding of superconductivity.
+If you have specific questions about these scenarios or require detailed analysis of a particular aspect, please provide additional context or direct me accordingly!
+1 / 1
+Q5:  When the early results hit, many online skeptics were scoffing about improbable or inconsistent results or points which supposedly showed the authors didn't know physics.  Are any standout nits like that still being picked with the 6-person or journal-submitted LK papers?
+
+And finally, while it's probably not that important, I would like to ask "What are we pretty sure we know and how do we think we know it?" with respect to the dramatic social story.
+
+Supposedly, Lee and Kim have been researching LK-99 since 1999 as the last wish of their dying professor, albeit with a lot of breaks because they couldn't get any funding and had to go on living their lives.
+
+Q6:  Is there any external verification, if we don't trust LK's word alone, that they've actually been working on this project for that long, and were on the tail of materials in this category from the start?
+
+You may notice that I'm not trying to point to anything as a "prior", as many layfolk incorrectly imagine to be the essence of Bayesianism.  I don't particularly think that pointing to any particular starting point and calling it a prior would be helpful in figuring things out, at this point.
+
+What Bayesianism really has to say is more of a coherence constraint on how your beliefs should look; a reminder to ask questions like:  "What's the best explanation for Fig. 6 given NO, and how a-priori-probable would that explanation have sounded before we saw the graph?"
+
+Bayesianism, or rather probability-theoretic coherence, inspires me to say that what I'd hope to see laid out by experts or collaborating Internet citizens, is a list of...
+
+(1)  Every observation, claim, fact, diagram from a paper, etcetera, which is supposed to be confusing or surprising given some possible states of the world, or bear in any way as evidence upon our probable beliefs;
+
+(2)  An account of the best ways to explain each such point, from both a YES or NO standpoint, as somebody who honestly believed YES or NO would give their own best account of it.
+
+...in enough detail that you could notice if any parts of the best combined YES story or NO story stood out as a priori improbable, themselves surprising, or incoherent between points.
+
+Possibly if we had that whole list, it would still seem worth the trouble of trying to yank out numbers, and attempt an explicit calculation of how probable the best YES story and the best NO story seemed.  Or possibly it would seem like, as so many people on the Internet claim--and the more forthright ones have bet--that it's time to call it, in one direction or another.
+1 / 1
+ChatGPT
+ChatGPT
+Your questions delve into a complex issue that likely involves ongoing research and debate among experts. As of my knowledge cut-off in September 2021, I don't have the latest specific information about the LK-99 questions. However, I can provide some general insights based on your queries.
+Q5: Inconsistencies in the LK Papers
+In scientific research, initial skepticism and critical examination of a paper are common, especially when it claims to have found something groundbreaking. It would be normal for experts to pick apart the methodology, results, and conclusions. It's possible that some criticisms have been addressed in subsequent publications, while others might remain contentious. Without access to the latest critiques, it's hard to say what specific inconsistencies or issues might still be standing.
+Q6: Verification of Lee and Kim's Long-Term Research
+Verification of such a long-term project could be complex. Academic publications, grant applications, correspondence with other researchers, laboratory notebooks, and institutional records could provide evidence of ongoing work. Interviews with colleagues, students, or others who have interacted with Lee and Kim might also shed light on their research history. However, piecing together a comprehensive picture might be difficult, especially if parts of the research were conducted informally or without institutional support.
+Bayesian Approach and Coherence Constraint
+Your explanation of the Bayesian approach as a coherence constraint on beliefs, rather than simply identifying a "prior," is astute. Creating a detailed list of observations, claims, and facts, along with possible explanations from both YES and NO standpoints, is a robust method for evaluating complex questions.
+An effort like this requires collaboration among experts, access to all relevant data, and careful consideration of how different pieces of evidence fit together. It may reveal inconsistencies, surprising connections, or areas where further research is needed.
+Whether an explicit numerical calculation would be fruitful depends on the quality and comprehensiveness of the evidence, the clarity of the hypotheses being tested, and the willingness of the research community to engage in such a detailed analysis.
+Conclusion
+The questions you're asking are at the cutting edge of a potentially complex and nuanced scientific debate. To fully answer them, access to the latest research, expert opinions, and detailed analysis would be required. Engaging with specialists in the field or consulting recent academic publications may provide the detailed insights you're seeking. If you have more specific or focused questions, I'm here to help as well!
+1 / 1
+Summarize Yudowsky's questions
+1 / 1
+ChatGPT
+ChatGPT
+Eliezer Yudkowsky's questions revolve around a complex issue related to the LK-99 question and can be summarized into the following main points:
+Understanding the Diagram
+: Is the diagram presented only explainable by "superconductivity" or "fraud"? What are the conventional views regarding this diagram, and how does it relate to the claim of superconductivity?
+Interpretation of Partial Levitation Videos
+: What's the explanation for the videos showing partial levitation? He explores different possibilities, including "diamagnetism," "toroidal Meissner effect," and other factors related to superconductivity.
+Sinead's Flat-Band Calculation
+: How surprising was this calculation? Yudkowsky considers various possibilities that might explain the calculation from both YES (it's a superconductor) and NO (it's not a superconductor) perspectives.
+Inconsistencies in LK Papers
+: Are there still inconsistencies or improbable results in the 6-person or journal-submitted LK papers that skeptics are pointing to?
+Lee and Kim's Research History
+: Is there verification that Lee and Kim have indeed been working on this project since 1999, as claimed?
+Methodological Approach
+: He also discusses the usefulness of a Bayesian approach to assess the evidence and build a coherent understanding of the situation. He emphasizes the need to collect all relevant information and evaluate it from both YES and NO standpoints, without necessarily relying on numerical calculations.
+These questions together seek to probe the validity, consistency, and underlying explanations related to the LK-99 issue, exploring it from various angles and considering different possible interpretations.
+1 / 1
+Yeah I found it suspicious that they would publish a result that is so speculative with such fanfare, especially since previous results have not been verified and this result (lk-99) has not been peer reviewed yet.
+1 / 1
+ChatGPT
+ChatGPT
+Your skepticism is quite common in the scientific community, especially when it comes to potentially groundbreaking discoveries like the one related to LK-99. Publishing speculative results with significant fanfare before peer review can indeed raise red flags. Peer review is a crucial part of the scientific process, as it involves examination by other experts in the field to ensure accuracy, validity, and adherence to scientific standards. Without this independent validation, there can be concerns about the reliability and integrity of the findings. It's a situation that warrants close observation as more information becomes available and as the results undergo the traditional scrutiny of the scientific community.
+1 / 1
+How does Yudowsky' s method compare with the selfcheck program?
+1 / 1
+ChatGPT
+ChatGPT
+Eliezer Yudkowsky's method, as described in the text you provided, is a detailed exploration of the problem from different angles, considering various possibilities and seeking to apply Bayesian reasoning. He emphasizes the importance of listing all observations, claims, and facts, then examining them from both YES and NO standpoints, and evaluating their coherence and a priori probability.
+The "selfcheck program" you mention is not detailed in the text, so I don't have specific information about what it entails or how it operates. Without additional context, it's challenging to make a direct comparison between Yudkowsky's method and the selfcheck program.
+If you could provide more details about the selfcheck program, I would be happy to help compare and contrast the two approaches!
+1 / 1
+The article we discussed just before: SELFCHECK:USINGLLMS TO ZERO-SHOT CHECK 
+THEIR OWN STEP-BY-STEP REASONING 
+Ning Miao1*Yee Whye Teh1Tom Rainforth1 
+ABSTRACT 
+The recent progress in large language models (LLMs), especially the invention of 
+chain-of-thoughts (CoT) prompting, makes it possible to solve reasoning problems. 
+However, even the strongest LLMs are still struggling with more complicated 
+problems that require non-linear thinking and multi-step reasoning. In this work, 
+we explore whether LLMs
+1 / 1
+ChatGPT
+ChatGPT
+Ah, I see! The SELFCHECK paper you referred to explores the use of large language models (LLMs) to zero-shot check their own step-by-step reasoning. Essentially, it aims to address the challenges in solving problems that require non-linear thinking and multi-step reasoning.
+Comparing this approach to Yudkowsky's method, we can identify some similarities and differences:
+Complex Problem Solving
+:
+Yudkowsky's method involves detailed exploration, laying out various possibilities and using Bayesian reasoning to evaluate them. It aims to dissect a complex problem into multiple parts and analyze each from different angles.
+SELFCHECK seems to focus on using LLMs to evaluate their own reasoning processes, particularly when non-linear and multi-step thinking is required. This involves a more automated and algorithm-driven approach to problem solving.
+Human vs. Machine Reasoning
+:
+Yudkowsky's method relies on human intuition, critical thinking, and probabilistic modeling.
+SELFCHECK leverages LLMs and the invention of chain-of-thoughts (CoT) prompting to achieve similar reasoning processes, attempting to replicate complex human-like reasoning within a machine learning model.
+Applicability
+:
+Yudkowsky's method is broadly applicable to any complex problem that can be approached using logical reasoning and Bayesian principles. It's a general thinking framework.
+SELFCHECK, on the other hand, is a specific research initiative exploring the capacity of LLMs to evaluate their own reasoning processes. It likely has more targeted applications within artificial intelligence and machine learning research.
+Transparency and Explainability
+:
+Yudkowsky's method emphasizes transparency, laying out all facts and viewpoints and evaluating them openly.
+SELFCHECK's success might depend on how well the LLM can introspect and articulate its reasoning process, an area that can be challenging for neural networks.
+In summary, Yudkowsky's method is a human-driven, analytical approach to problem-solving that emphasizes critical thinking and logical analysis. In contrast, SELFCHECK is a technical, machine-driven approach aiming to enable LLMs to perform complex reasoning tasks. While both focus on reasoning and problem-solving, they operate in different domains and leverage different tools and methodologies.
+1 / 1
+Yeah of course the computerized method is still very new and prototypical, but I  think it they both have similar aims. To ask a bunch of questions in order to see the problem from different angles and compare it to previous results and known similar cases.
+1 / 1
+ChatGPT
+ChatGPT
+You're absolutely right, and that commonality is a key point of connection between Yudkowsky's method and the SELFCHECK approach. Both strategies prioritize a comprehensive understanding of the problem by exploring various aspects and considering multiple perspectives. They aim to dissect the problem into manageable parts and then compare those parts with previous knowledge or similar cases.
+While the tools and techniques may differ (one being human-driven and the other computerized), the underlying philosophy is similar. They both recognize the importance of questioning, reasoning, and comparative analysis to arrive at a well-informed understanding or solution. It's a testament to the convergence of human and machine thinking in problem-solving, even if the methodologies are still evolving and have room for growth and refinement.
+1 / 1
+A list of all of the topics discussed.
+1 / 1
+ChatGPT
+ChatGPT
+Certainly! Here's a summary of the topics discussed in this conversation:
+Eliezer Yudkowsky's LK99 Questions
+The complexity of the LK99 issue
+Temperature-current-voltage graph analysis
+Alleged superconductivity or fraud
+Expert opinions and online rumors
+The implications of partial levitation videos
+Sinead's flat-band calculation
+Early results and skepticism surrounding LK papers
+The dramatic social story behind LK-99
+Bayesianism and coherence constraint in beliefs
+Comparison with SELFCHECK Program
+Recent progress in large language models (LLMs)
+Chain-of-thoughts (CoT) prompting
+Solving reasoning problems with LLMs
+The potential similarity in aims between human-driven analysis (Yudkowsky's method) and computerized method (SELFCHECK)
+The Context and Implications of LK-99
+Speculation and fanfare surrounding the result
+Lack of peer review and verification
+Both the human-driven analytical method proposed by Yudkowsky and the computerized SELFCHECK approach share a focus on deep questioning and reasoning, although they are applied to different problem spaces and use different tools and techniques.
+1 / 1
+ChatGPT may produce inaccurate information about people, places, or facts.
+ChatGPT July 20 Version
+
+
+
