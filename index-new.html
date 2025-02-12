@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Explorer Starfield</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const bubbles = [];
+
+    function fetchFiles() {
+        fetch('http://localhost:8000/')
+            .then(response => response.text())
+            .then(data => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data, 'text/html');
+                const links = doc.querySelectorAll('a');
+                links.forEach(link => {
+                    const fileName = link.getAttribute('href');
+                    if (fileName && fileName !== '../') {
+                        bubbles.push({
+                            x: Math.random() * canvas.width,
+                            y: Math.random() * canvas.height,
+                            size: 30,
+                            file: fileName
+                        });
+                    }
+                });
+                draw();
+            });
+    }
+
+    function draw() {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        bubbles.forEach(bubble => {
+            context.beginPath();
+            context.arc(bubble.x, bubble.y, bubble.size, 0, Math.PI * 2);
+            context.fillStyle = '#ffffff';
+            context.fill();
+            context.closePath();
+            context.fillStyle = '#000000';
+            context.fillText(bubble.file, bubble.x - bubble.size, bubble.y - bubble.size - 5);
+        });
+    }
+
+    canvas.addEventListener('click', (event) => {
+        const clickX = event.clientX;
+        const clickY = event.clientY;
+        bubbles.forEach(bubble => {
+            const dx = clickX - bubble.x;
+            const dy = clickY - bubble.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < bubble.size) {
+                window.open(`http://localhost:8000/${bubble.file}`, '_blank');
+            }
+        });
+    });
+
+    fetchFiles();
+</script>
+</body>
+</html>

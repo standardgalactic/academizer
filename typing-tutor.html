@@ -4,9 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Galactic Typing Tutor</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Galactic Typing Tutor - Enhance your typing skills with this fun and engaging typing game.">
+    <meta name="keywords" content="Typing Tutor, Galactic Typing Tutor, Typing Game, Learn Typing, Typing Skills">
+    <meta name="author" content="Your Name">
+
+    <!-- Social Media Sharing Meta Tags -->
+    <meta property="og:title" content="Galactic Typing Tutor">
+    <meta property="og:description" content="Enhance your typing skills with this fun and engaging typing game.">
+    <meta property="og:image" content="preview.png">
+    <meta property="og:url" content="https://yourwebsite.com">
+    <meta property="og:type" content="website">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Galactic Typing Tutor">
+    <meta name="twitter:description" content="Enhance your typing skills with this fun and engaging typing game.">
+    <meta name="twitter:image" content="preview.png">
+
+    <!-- Favicon -->
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+
     <style>
         @font-face {
-            src: url('fonts/Sga-Regular.ttf') format('truetype');
+            src: url('fonts/Sga-Regular.woff2') format('woff2'),
+                 url('fonts/Sga-Regular.woff') format('woff'),
+                 url('fonts/Sga-Regular.ttf') format('truetype');
             font-weight: normal;
             font-style: normal;
             font-family: 'Sga Regular';
@@ -33,100 +56,50 @@
             z-index: 0;
         }
 
-        #tutor {
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 2;
+            font-size: 32px;
+            color: #00ff00;
+        }
+
+        #bubble-pop-game {
             position: relative;
             z-index: 1;
             background-color: rgba(0, 0, 0, 0.8);
             padding: 20px;
             text-align: center;
             width: 80%;
-            max-width: 600px;
+            max-width: 800px;
+            height: 80%;
+            max-height: 600px;
             box-shadow: 0 0 20px #00ff00;
             border: 2px solid #00ff00;
         }
-
-        #current-lesson {
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-
-        #input-field {
-            width: 100%;
-            padding: 10px;
-            font-size: 18px;
-            background-color: black;
-            color: #00ff00;
-            border: 2px solid #00ff00;
-            box-sizing: border-box;
-        }
-
-        #status {
-            margin-top: 20px;
-        }
-
-        #toggle-sga, #toggle-keyboard {
-            margin-top: 10px;
-        }
-
-        #file-input-label {
-            display: inline-block;
-            margin-top: 10px;
-            cursor: pointer;
-        }
-
-        #file-input {
-            display: none;
-        }
-
-        button {
-            background-color: black;
-            color: #00ff00;
-            border: 2px solid #00ff00;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        button:hover {
-            background-color: #00ff00;
-            color: black;
-        }
     </style>
-    <!-- Meta tags for social media sharing -->
-    <meta property="og:title" content="Galactic Typing Tutor">
-    <meta property="og:description" content="Learn to type in Standard Galactic!">
-    <meta property="og:image" content="galactic-typing-tutor.png">
-    <meta property="og:url" content="http://yourwebsite.com/galactic-typing-tutor">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Galactic Typing Tutor">
-    <meta name="twitter:description" content="Learn to type in Standard Galactic!">
-    <meta name="twitter:image" content="galactic-typing-tutor.png">
+    <script src="planets.js"></script>
 </head>
 <body>
     <canvas id="starfield"></canvas>
-    <div id="tutor">
-        <div id="current-lesson">Press Start to Begin</div>
-        <input type="text" id="input-field" disabled />
-        <div id="status"></div>
-        <button id="start-button">Start</button>
-        <div>
-            <label for="toggle-sga">Toggle to Latin</label>
-            <input type="checkbox" id="toggle-sga">
-        </div>
-        <div>
-            <label for="toggle-keyboard">Toggle to QWERTY</label>
-            <input type="checkbox" id="toggle-keyboard">
-        </div>
-        <label id="file-input-label" for="file-input">Choose File</label>
-        <input type="file" id="file-input" accept=".txt">
-        <div id="file-status">No File Selected</div>
+    <div id="loading-screen">Click any key to start</div>
+    <div id="bubble-pop-game" style="display: none;">
+        <canvas id="bubbleCanvas" width="800" height="600"></canvas>
     </div>
 
     <script>
-        const canvas = document.getElementById('starfield');
-        const context = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        // Starfield background
+        const starCanvas = document.getElementById('starfield');
+        const starContext = starCanvas.getContext('2d');
+        starCanvas.width = window.innerWidth;
+        starCanvas.height = window.innerHeight;
 
         let stars = [];
         const numStars = 1000;
@@ -134,9 +107,9 @@
 
         for (let i = 0; i < numStars; i++) {
             stars.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                z: Math.random() * canvas.width
+                x: Math.random() * starCanvas.width,
+                y: Math.random() * starCanvas.height,
+                z: Math.random() * starCanvas.width
             });
         }
 
@@ -144,163 +117,281 @@
             for (let star of stars) {
                 star.z -= speed;
                 if (star.z <= 0) {
-                    star.x = Math.random() * canvas.width;
-                    star.y = Math.random() * canvas.height;
-                    star.z = canvas.width;
+                    star.x = Math.random() * starCanvas.width;
+                    star.y = Math.random() * starCanvas.height;
+                    star.z = starCanvas.width;
                 }
             }
         }
 
         function drawStars() {
-            context.clearRect(0, 0, canvas.width, canvas.height);
+            starContext.clearRect(0, 0, starCanvas.width, starCanvas.height);
             for (let star of stars) {
-                const x = (star.x - canvas.width / 2) * (canvas.width / star.z);
-                const y = (star.y - canvas.height / 2) * (canvas.width / star.z);
-                const size = (canvas.width / star.z) * 0.5; // Reduce size multiplier for smaller stars
-                context.beginPath();
-                context.arc(x + canvas.width / 2, y + canvas.height / 2, size, 0, Math.PI * 2);
-                context.fillStyle = '#ffffff';
-                context.fill();
-                context.closePath();
+                const x = (star.x - starCanvas.width / 2) * (starCanvas.width / star.z);
+                const y = (star.y - starCanvas.height / 2) * (starCanvas.width / star.z);
+                const size = (starCanvas.width / star.z) * 0.5;
+                starContext.beginPath();
+                starContext.arc(x + starCanvas.width / 2, y + starCanvas.height / 2, size, 0, Math.PI * 2);
+                starContext.fillStyle = '#ffffff';
+                starContext.fill();
+                starContext.closePath();
             }
         }
 
-        function animate() {
+        function animateStars() {
             updateStars();
             drawStars();
-            requestAnimationFrame(animate);
+            requestAnimationFrame(animateStars);
         }
 
-        animate();
+        animateStars();
 
-        // Typing tutor functionality
-        const lessonsQwerty = [
-            "asdf jkl;",
-            "dada sad fad",
-            "sasa fafa dad",
-            "fads lads",
-            "sad lads",
-            "ask salad",
-            "dada's salad",
-            "fall dad's salad",
-            "fake lads"
-        ];
+        // Bubble pop typing tutor functionality
+        const bubbleCanvas = document.getElementById('bubbleCanvas');
+        const context = bubbleCanvas.getContext('2d');
+        bubbleCanvas.width = 800;
+        bubbleCanvas.height = 600;
+        context.font = "40px 'Sga Regular'";
 
-        const lessonsDvorak = [
-            "aoeu htns",
-            "dada sad fad",
-            "sasa fafa dad",
-            "fads lads",
-            "sad lads",
-            "ask salad",
-            "dada's salad",
-            "fall dad's salad",
-            "fake lads"
-        ];
+        let isUsingCustomFont = true;
+        let isGameStarted = false;
+        let score = 0;
 
-        let currentLessonIndex = 0;
-        let lessons = lessonsDvorak; // Default to Dvorak
-        let useSga = true; // Default to Standard Galactic
-
-        const currentLessonElement = document.getElementById('current-lesson');
-        const inputField = document.getElementById('input-field');
-        const statusElement = document.getElementById('status');
-        const startButton = document.getElementById('start-button');
-        const toggleSgaCheckbox = document.getElementById('toggle-sga');
-        const toggleKeyboardCheckbox = document.getElementById('toggle-keyboard');
-        const fileInput = document.getElementById('file-input');
-        const fileInputLabel = document.getElementById('file-input-label');
-        const fileStatus = document.getElementById('file-status');
-
-        const galacticStandardAlphabet = {
-            a: '', b: '', c: '', d: '', e: '',
-            f: '', g: '', h: '', i: '', j: '',
-            k: '', l: '', m: '', n: '', o: '',
-            p: '', q: '', r: '', s: '', t: '',
-            u: '', v: '', w: '', x: '', y: '', z: ''
+        let spaceship = {
+            x: bubbleCanvas.width / 2,
+            y: bubbleCanvas.height / 2,
+            angle: 0
         };
 
-        startButton.addEventListener('click', startLesson);
-        toggleSgaCheckbox.addEventListener('change', toggleSga);
-        toggleKeyboardCheckbox.addEventListener('change', toggleKeyboard);
-        fileInput.addEventListener('change', handleFileUpload);
+        let words = [
+            "inference", "predictive", "coding", "hierarchical", "assembly", "theory", "active",
+            "model", "representation", "perception", "prediction", "error", "minimization",
+            "feedback", "feedforward", "information", "processing", "Bayesian", "framework",
+            "cognition", "learning", "adaptation", "dynamics", "probabilistic", "state",
+            "estimation", "entropy", "surprise", "precision", "weighting", "neuronal",
+            "circuit", "computational", "brain", "function", "sensory", "motor", "system",
+            "control", "action", "policy", "generation", "belief", "update", "context",
+            "situation", "awareness", "decision", "making", "free", "energy", "principle",
+            "Markov", "blanket", "affordance", "embodied", "enactive", "interoception",
+            "exteroception", "self", "organization", "autopoiesis", "plasticity", "synaptic",
+            "connectivity", "neurotransmitter", "modulation", "stochastic", "gradient",
+            "descent", "optimization", "attention", "salience", "mapping", "prior", "posterior",
+            "predictor", "residual", "variance", "confidence", "interval", "signal", "noise",
+            "ratio", "temporal", "spatial", "resolution", "ensemble", "dynamics", "complex",
+            "system", "nonlinear", "chaos", "fractal", "structure", "scaling", "laws", "emergent",
+            "property", "integration", "segmentation", "binding", "inference", "loop", "recurrence",
+            "autonomy", "homeostasis", "equilibrium", "disequilibrium", "perturbation", "transformation",
+            "modelling", "simulation", "virtual", "reality", "extended", "multisensory", "fusion",
+            "neural", "oscillation", "synchrony", "desynchronization", "phase", "locking",
+            "entrainment", "coherence", "transient", "persistent", "activation", "threshold",
+            "modulatory", "inhibitory", "excitatory", "balance", "homeodynamic", "regulation"
+        ];
 
-        function startLesson() {
-            if (currentLessonIndex >= lessons.length) {
-                currentLessonIndex = 0;
+        let bubbles = [];
+        let typedWord = '';
+        let level = 1;
+        let maxBubbles = 3;
+        let isGameOver = false;
+        let isLoading = false;
+
+        function createBubbles() {
+            bubbles = [];
+            for (let i = 0; i < maxBubbles; i++) {
+                let word = words[Math.floor(Math.random() * words.length)];
+                let bubbleSize = 20;
+                let wordLength = word.length * 20; // Approximate width based on font size
+
+                // Ensure bubbles are not too close to edges
+                let x = Math.random() * (bubbleCanvas.width - wordLength - bubbleSize * 2) + wordLength / 2 + bubbleSize;
+                let y = Math.random() * (bubbleCanvas.height - bubbleSize * 2) + bubbleSize;
+
+                bubbles.push({
+                    x: x,
+                    y: y,
+                    size: bubbleSize,
+                    speed: 0.05, // Adjusted speed for slower expansion
+                    word: word,
+                    typed: ''
+                });
             }
-            updateLessonText();
-            inputField.value = '';
-            inputField.disabled = false;
-            inputField.focus();
-            statusElement.textContent = '';
-            inputField.addEventListener('input', checkInput);
         }
 
-        function toggleSga() {
-            useSga = !useSga;
-            updateLessonText();
-        }
+        function draw() {
+            context.fillStyle = "#000000";
+            context.fillRect(0, 0, bubbleCanvas.width, bubbleCanvas.height);
 
-        function toggleKeyboard() {
-            lessons = toggleKeyboardCheckbox.checked ? lessonsQwerty : lessonsDvorak;
-            currentLessonIndex = 0; // Restart from the first lesson
-            updateLessonText();
-        }
-
-        function updateLessonText() {
-            let lessonText = lessons[currentLessonIndex];
-            if (useSga) {
-                currentLessonElement.textContent = translateToSGA(lessonText);
-            } else {
-                currentLessonElement.textContent = lessonText;
+            if (isGameOver) {
+                context.fillStyle = "#FF0000";
+                context.fillText("Planetary Crash Warning! Game Over!", bubbleCanvas.width / 2 - 200, bubbleCanvas.height / 2);
+                return;
             }
-        }
 
-        function checkInput() {
-            let lessonText = lessons[currentLessonIndex];
-            const userInput = inputField.value;
+            if (isLoading) {
+                context.fillStyle = "#FFFFFF";
+                context.fillText("Loading next level...", bubbleCanvas.width / 2 - 150, bubbleCanvas.height / 2);
+                return;
+            }
 
-            if (userInput === lessonText) {
-                currentLessonIndex++;
-                inputField.removeEventListener('input', checkInput);
-                inputField.disabled = true;
-                statusElement.textContent = 'Correct! Press Start for the next lesson.';
-                if (currentLessonIndex < lessons.length) {
-                    currentLessonElement.textContent = 'Great! Press Start for the next lesson.';
-                } else {
-                    currentLessonElement.textContent = 'Congratulations! You have completed all lessons.';
+            context.fillStyle = "#FFFFFF";
+            context.fillText("Level: " + level, 10, 50);
+            context.fillText("Score: " + score, 10, 90);
+            context.fillText(isUsingCustomFont ? "Control+Z: Toggle Latin" : "Control+Z: Toggle SGA", bubbleCanvas.width - 350, 50);
+
+            for (let bubble of bubbles) {
+                let scale = bubble.size / 20;
+                let x = bubble.x;
+                let y = bubble.y;
+
+                context.strokeStyle = "#ffffff";
+                context.beginPath();
+                context.arc(x, y, bubble.size * scale, 0, Math.PI * 2);
+                context.fillStyle = "#000";
+                context.fill();
+                context.closePath();
+                context.stroke();
+
+                // Draw word with correct letters in green
+                for (let i = 0; i < bubble.word.length; i++) {
+                    context.fillStyle = (i < bubble.typed.length) ? "#00FF00" : "#ffffff";
+                    context.fillText(bubble.word[i], x - bubble.word.length * 20 / 2 + i * 20, y + 10);
                 }
-            } else if (lessonText.startsWith(userInput)) {
-                statusElement.textContent = 'Keep typing...';
-            } else {
-                statusElement.textContent = 'Incorrect, try again!';
             }
         }
 
-        function translateToSGA(text) {
-            return text.split("").map(char => galacticStandardAlphabet[char.toLowerCase()] || char).join("");
-        }
+        function update() {
+            for (let bubble of bubbles) {
+                bubble.size += bubble.speed;
 
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const contents = e.target.result;
-                    lessons = contents.split('\n');
-                    currentLessonIndex = 0;
-                    updateLessonText();
-                    fileStatus.textContent = translateToSGA("File Loaded");
-                };
-                reader.readAsText(file);
-            } else {
-                fileStatus.textContent = translateToSGA("No File Selected");
+                if (bubble.size > bubbleCanvas.height) {
+                    isGameOver = true;
+                    return;
+                }
             }
         }
 
-        fileInputLabel.textContent = translateToSGA("Choose File");
-        fileStatus.textContent = translateToSGA("No File Selected");
+        document.addEventListener("keydown", function(event) {
+            if (!isGameStarted) {
+                startGame();
+                return;
+            }
+
+            if (event.ctrlKey && event.key === 'z') {
+                toggleFont();
+                return;
+            }
+
+            if (!isGameOver && !isLoading) {
+                handleTyping(event.key);
+            }
+        });
+
+        document.addEventListener("click", function() {
+            if (!isGameStarted) {
+                startGame();
+            }
+        });
+
+        bubbleCanvas.addEventListener("click", function(event) {
+            if (!isGameStarted) return;
+            
+            let rect = bubbleCanvas.getBoundingClientRect();
+            let x = event.clientX - rect.left;
+            let y = event.clientY - rect.top;
+
+            handleTap(x, y);
+        });
+
+        function handleTap(x, y) {
+            let tappedBubble = bubbles.find(bubble => {
+                let scale = bubble.size / 20;
+                let bubbleX = bubble.x;
+                let bubbleY = bubble.y;
+                let bubbleRadius = bubble.size * scale;
+                return Math.hypot(bubbleX - x, bubbleY - y) < bubbleRadius;
+            });
+
+            if (tappedBubble) {
+                explodeBubbles([tappedBubble.word]);
+            }
+        }
+
+        function handleTyping(key) {
+            typedWord += key;
+            let matchingBubbles = bubbles.filter(bubble => bubble.word.startsWith(typedWord));
+
+            if (matchingBubbles.length > 0) {
+                for (let bubble of matchingBubbles) {
+                    bubble.typed = typedWord;
+                }
+
+                let completeBubbles = matchingBubbles.filter(bubble => bubble.word === typedWord);
+
+                if (completeBubbles.length > 0) {
+                    explodeBubbles(completeBubbles.map(bubble => bubble.word));
+                }
+            } else {
+                typedWord = '';
+                for (let bubble of bubbles) {
+                    bubble.typed = '';
+                }
+            }
+        }
+
+        function explodeBubbles(words) {
+            bubbles = bubbles.filter(bubble => !words.includes(bubble.word));
+            typedWord = '';
+            score += words.length;
+
+            if (bubbles.length === 0) {
+                isLoading = true;
+                setTimeout(() => {
+                    level++;
+                    maxBubbles++;
+                    createBubbles();
+                    isLoading = false;
+                }, 2000);
+            }
+        }
+
+        function resetGame() {
+            level = 1;
+            maxBubbles = 3;
+            isGameOver = false;
+            score = 0;
+            createBubbles();
+        }
+
+        function toggleFont() {
+            if (isUsingCustomFont) {
+                document.body.style.fontFamily = "sans-serif";
+                context.font = "40px sans-serif";
+                isUsingCustomFont = false;
+            } else {
+                document.body.style.fontFamily = "Sga Regular";
+                context.font = "40px 'Sga Regular'";
+                isUsingCustomFont = true;
+            }
+        }
+
+        function startGame() {
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('bubble-pop-game').style.display = 'block';
+            isGameStarted = true;
+            resetGame();
+            loop();
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
     </script>
+<!-- 
+    Concept Note: In this game, each bubble represents an expanding alien civilization, akin to the theoretical "grabby aliens" in astrobiology.
+
+These civilizations (bubbles) expand continuously and can eventually dominate the entire screen if not 'popped' (addressed). 
+This mirrors the hypothesized behavior of highly aggressive and expansive alien civilizations that might rapidly spread across the galaxy, overtaking other civilizations and becoming the dominant force in their vicinity.
+-->
 </body>
 </html>

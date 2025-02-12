@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prismatic Macroscope</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        #legend {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        h1 {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <h1>Prismatic Macroscope</h1>
+    <div id="legend">
+        Pluto: <span id="posX">0</span><br>
+        Orpheus: <span id="posY">0</span><br>
+        Swerve: <span id="posZ">0.00</span><br>
+    </div>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let posX = 0, posY = 0, posZ = 0, scale = 1, rotation = 0, saturation = 100;
+        const noiseScale = 0.02;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(scale, scale);
+            ctx.rotate(rotation);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            const data = imageData.data;
+
+            for (let x = 0; x < canvas.width; x++) {
+                for (let y = 0; y < canvas.height; y++) {
+                    const index = (x + y * canvas.width) * 4;
+                    const value = Math.floor(255 * (Math.random() + Math.sin((x + posX) * noiseScale + posZ) * 0.5 + Math.cos((y + posY) * noiseScale + posZ) * 0.5));
+                    const color = Math.floor(value * saturation / 100);
+                    data[index] = color; // Red
+                    data[index + 1] = color * 0.8; // Green
+                    data[index + 2] = color * 0.6; // Blue
+                    data[index + 3] = 255; // Alpha
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            ctx.restore();
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        draw();
+
+        document.addEventListener('keydown', (event) => {
+            switch (event.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'k': // vi-style navigation
+                    posY -= 10; break;
+                case 'ArrowDown':
+                case 's':
+                case 'j': // vi-style navigation
+                    posY += 10; break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'h': // vi-style navigation
+                    posX -= 10; break;
+                case 'ArrowRight':
+                case 'd':
+                case 'l': // vi-style navigation
+                    posX += 10; break;
+                case 'q':
+                    posZ += 0.1; break;
+                case 'e':
+                    posZ -= 0.1; break;
+                case 'z':
+                    scale *= 1.1; updateScaleLegend(); break;
+                case 'x':
+                    scale /= 1.1; updateScaleLegend(); break;
+                case 'r':
+                    rotation += 0.1; break;
+                case 't':
+                    rotation -= 0.1; break;
+                case 'f': // Increase saturation
+                    saturation = Math.min(saturation + 10, 200); updateSaturationLegend(); break;
+                case 'v': // Decrease saturation
+                    saturation = Math.max(saturation - 10, 0); updateSaturationLegend(); break;
+            }
+            updateLegend();
+        });
+
+        function updateLegend() {
+            document.getElementById('posX').textContent = posX;
+            document.getElementById('posY').textContent = posY;
+            document.getElementById('posZ').textContent = posZ.toFixed(2);
+        }
+
+        function updateScaleLegend() {
+            document.getElementById('scale').textContent = scale.toFixed(2);
+        }
+
+        function updateSaturationLegend() {
+            document.getElementById('saturation').textContent = saturation + '%';
+        }
+    </script>
+</body>
+</html>
