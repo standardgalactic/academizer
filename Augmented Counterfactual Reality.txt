@@ -1,0 +1,1106 @@
+Augmented Counterfactual Reality
+Open sidebar
+Augmented Counterfa
+GPT-4
+CANPROGRAMMINGLANGUAGESBOOSTEACHOTHER 
+VIAINSTRUCTIONTUNING? 
+TECHNICALREPORT 
+Daoguang Zan������Ailun Yu�����Bo Shen���Jiaxin Zhang���Taihong Chen���Bing Geng���Bei Chen�� 
+Jichuan Ji���Yafen Yao���Yongji Wang���Qianxiang Wang��� 
+���Institute of Software, Chinese Academy of Science 
+��Peking University 
+���Huawei Co., Ltd. 
+��Independent Researcher 
+daoguang@iscas.ac.cn; yuailun@pku.edu.cn 
+ABSTRACT 
+Whenhumanprogrammershavemasteredaprogramminglanguage, itwouldbeeasierwhentheylearn 
+a new programming language. In this report, we focus on exploring whether programming languages 
+can boost each other during the instruction i ne-tuning phase of code large language models. We 
+conduct extensive experiments of8popular programming languages (Python, JavaScript, TypeScript, 
+C, C++, Java, Go, HTML) on StarCoder. Results demonstrate that programming languages can 
+signif i cantly improve each other. For example, CODEM-Python15B trained on Python is able to 
+increase Java by an absolute17.95% pass@1on HumanEval-X. More surprisingly, we found that 
+CODEM-HTML7B trained on the HTML corpus can improve Java by an absolute15.24% pass@1. 
+Our training data is released at https://github.com/NL2Code/CodeM. 
+Keywords Large Language Model �� Code Generation �� Programming Language �� Instruction Tuning 
+1Introduction 
+Code large language models (code LLMs) are blooming recently [Zan et al., 2023]. A lot of code LLMs are released 
+in succession, e.g., Codex [Chen et al., 2021], AlphaCode [Li et al., 2022], PaLM-Coder [Chowdhery et al., 2022], 
+CodeGen [Nijkamp et al., 2023], CodeGeeX [Zheng et al., 2023], StarCoder [Li et al., 2023], and Code Llama [Rozi��re 
+et al., 2023]. Owing to their amazing code generation performance, code LLMs have attracted considerable attention 
+from both academic and industrial circles. Recent works [Ouyang et al., 2022] have witnessed the instruction tuning 
+technique that can teach LLMs how to follow instructions. In the realm of code generation, WizardCoder [Luo et al., 
+2023] and PanGu-Coder2 [Shen et al., 2023] also adopt this technique to elicit their code generation capabilities. 
+Although some code LLMs, such as CodeGen-Multi Nijkamp et al. [2023] and StarCoder-base Li et al. [2023], are 
+trained on corpora spanning multiple programming languages, the interplay among these languages remains unexplored. 
+In programming practice, once a human programmer has mastered a programming language, it would be easier to 
+learn a new one due to the homogeneity between programming languages. Motivated by this, we would like to explore 
+whether different programming languages can boost each other during instruction i ne-tuning of code LLMs. 
+To explore this idea, we craft the training corpus for each of8popular programming languages (Python, JavaScript, 
+TypeScript, C, C++, Java, Go, HTML), where each language includes about9K programming exercises. We train 
+StarCoder7B using the instruction tuning technique on each programming language corpus separately, and test the 
+performance of each i ne-tuned model across every programming language. Our i ndings reveal that programming 
+languages can signif i cantly boost each other. Meanwhile, we found that the improvement margin of different program- 
+ming languages to each other is related to the language similarity between them. For example, CODEM-JavaScript 
+7B trained on JavaScript data can yield an absolute11.80% pass@1improvement in TypeScript. More interestingly, 
+���The i rst two authors contributed equally to this work. 
+arXiv:2308.16824v2 
+[cs.CL] 
+3 
+Sep 
+2023 
+TECHNICALREPORT 
+# Instruction 
+Design a web page that displays a message when loaded. The message should be "Hello, World". Use HTML code 
+to achieve this. 
+# Response 
+<!DOCTYPE html> 
+<html> 
+<head> 
+<title>Hello World</title> 
+</head> 
+<body> 
+<h1>Hello, World</h1> 
+</body> 
+</html> Figure 1: A HTML training example of our crafted instruction-answer pairs. 
+CODEM-HTML 7B trained on the markup language HTML also can achieve an absolute15.24% pass@1improvement 
+in Java. 
+In a nutshell, our contributions can be listed as follows: (1) Our i ndings suggest that programming languages can 
+signif i cantly boost each other during code LLMs��� instruction i ne-tuning phase. (2) We glean valuable insights on the 
+correlation between multiple programming languages, paving the way for future research on code generation. (3) We 
+will make our training data publicly available.
+1 / 1
+ChatGPT
+The provided abstract details a technical report examining the interaction between programming languages and their potential to improve each other, especially during instruction fine-tuning phases of code large language models (code LLMs).
+Key Takeaways
+:
+Interplay Among Languages
+: While many large language models trained for code (like Codex, AlphaCode, StarCoder, etc.) are available, the interaction between various programming languages within these models remains a less explored area. This study seeks to address this gap.
+Boosting Through Homogeneity
+: There's a notion that once a programmer masters one language, learning another becomes simpler due to similarities between them. The authors used this idea to investigate if programming languages can assist in enhancing each other when instruction fine-tuning code LLMs.
+Experiments & Results
+: Eight popular programming languages (Python, JavaScript, TypeScript, C, C++, Java, Go, and HTML) were considered for experiments using StarCoder. Findings indicate that programming languages can indeed boost one another significantly. For instance, a model trained only on Python data can notably improve performance on Java. Even more surprising is the fact that training on HTML (which is a markup language and not a traditional programming language) can also greatly enhance performance on Java.
+Language Similarity Matters
+: The extent to which one language boosts another appears to be related to their similarities. For example, training on JavaScript resulted in significant improvement in TypeScript (which is quite expected, given that TypeScript is a superset of JavaScript).
+Public Dataset
+: The authors intend to release their training data to the public, which can be beneficial for further research in this domain.
+Implications
+: The study underscores the potential of leveraging knowledge from one programming language to enhance performance in another, particularly in the context of large language models for code. This can have substantial implications for the way LLMs are trained in the future and can pave the way for more efficient and versatile code-generating models.
+1 / 1
+2Methodology 
+2.1Crafting Training Corpus of Eight Programming Languages 
+We select8popular programming languages and construct their training data separately. Our selected languages include 
+Python, JavaScript, TypeScript, C, C++, Java, Go, and HTML, covering diverse types such as procedure-oriented, 
+object-oriented, script, and even markup languages. For each programming language, we construct its training data 
+containing about9K data pairs. Each pair includes both an instruction describing the programming problem and its 
+corresponding response. One practical example of HTML is shown in Figure 1. 
+Based on these selected languages, we construct a series of monolingual datasets. We start from the dataset of 
+CodeAlpaca 20K2, and extract those Python-related data to form our seed instruction set. Then for each selected 
+programming language, we evolve existent instructions in the seed instruction set to get corresponding new ones by 
+prompting OpenAI���s GPT-3.53. For all the selected languages except HTML, we adopt an in-depth evolution [Xu et al., 
+2023], by asking GPT-3.5 to rewrite the seed instruction (Python) into a more complicated version relevant to the target 
+language (Python, JavaScript, TypeScript, C, C++, Java, or Go). However, for HTML, we adopt in-breadth evolution to 
+produce a brand-new HTML-related instruction, since HTML (markup language) is too different from other languages 
+(non-markup languages). 
+2.2Instruction Tuning 
+Code pre-trained models such as Codex [Chen et al., 2021] and StarCoder [Li et al., 2023] store a wealth of code 
+knowledge. However, these models only support left-to-right code generation based on context, as they are trained 
+solely on plain code snippets. Of late, the instruction tuning techniques [Ouyang et al., 2022, Luo et al., 2023, Shen 
+et al., 2023] are proposed, which can enhance the model���s capabilities of following instructions so as to enable chat 
+features. During instruction tuning, we train StarCoder using the prompt in Figure 2 to obtain our CODEM. We use 
+DeepSpeed to accelerate the training of CODEM withfp16enabled. Additionally, we set the batch size to2per GPU, 
+the learning rate to2e-5with a cosine annealing schedule, the gradient accumulation steps to4, and the warmup steps 
+to30. After instruction tuning, we use the prompt in Figure 3 to do the inference on downstream tasks across various 
+programming languages. For inference, we adopt the greedy decoding strategy for sampling. Given that CODEM is a chat-style model, the responses it generates often contain elements beyond just codes, which typically makes them 
+non-executable. So, we extract the code snippets from the generated response to evaluate the performance of code 
+generation.
+1 / 1
+ChatGPT
+The "Methodology" section provides an in-depth view into the research approach. Here's a concise breakdown:
+2.1 Crafting Training Corpus of Eight Programming Languages
+:
+Languages Selected
+: Eight programming languages were chosen - Python, JavaScript, TypeScript, C, C++, Java, Go, and HTML. These languages span different types like procedure-oriented, object-oriented, script, and markup languages.
+Data Construction
+: For each language, about 9K data pairs were constructed. Each pair had an instruction describing a programming problem and its respective solution.
+Monolingual Datasets
+: The base dataset, named CodeAlpaca 20K2, was used to extract Python-related data which formed the seed instruction set. For each language, they adapted the seed instructions by utilizing OpenAI���s GPT-3.5.
+For languages other than HTML: The Python instruction was re-written to a more intricate version related to the target language.
+For HTML: A completely new instruction was generated since HTML is markedly different from the others.
+2.2 Instruction Tuning
+:
+Code Pre-trained Models
+: Models like Codex and StarCoder have vast code knowledge, but they typically generate code in a left-to-right fashion based on the context.
+Instruction Tuning Technique
+: New techniques have been proposed that enable these models to better follow given instructions, thus allowing for chat-like features. The research used StarCoder, guided by specific prompts, for instruction tuning.
+Training Parameters
+: Training was sped up using DeepSpeed with fp16 enabled. Specific training parameters like batch size, learning rate, gradient accumulation steps, and warm-up steps were detailed.
+Inference
+: After training, a different prompt was used for inference across various languages. A greedy decoding strategy was chosen for sampling. Given that their model is chat-style, the responses often have non-code elements. Therefore, code snippets were extracted from these responses to evaluate the code generation capability.
+Implication
+: The methodology underscores the process of creating training datasets for diverse programming languages and refining large code models to understand and follow given instructions. By understanding these models' potential and limitations, the researchers can fine-tune them to generate accurate and efficient code across various programming languages.
+1 / 1
+their base model StarCoder7B across all programming languages by a large margin. Also, we found that programming 
+languages can boost each other signif i cantly. For example, CODEM-Python trained solely on Python corpus is able 
+to improve HumanEval-Java by an absolute14.03% pass@1. This i nding reveals the inherent commonalities among 
+different programming languages. More surprisingly, CODEM-HTML boosts HumanEval-Java by an absolute15.24% 
+pass@1, even exceeding CODEM-Java. Similarly, CODEM-C++ beats CODEM-C on HumanEval-C, and CODEM- 
+JavaScript beats CODEM-TypeScript on HumanEval-Typescript. Drawing upon these observations, we conjecture that 
+the improvement in multilingual code generation performance is predominantly due to instruction tuning unlocking 
+the model���s inherent potential, such as natural or programming language understanding and following-instruction 
+capabilities, rather than merely incorporating new knowledge. In addition to training CODEM on a monolingual training 
+corpus, we further construct a9K multilingual training set covering8programming languages. Although each language 
+comprises only a small amount (~1.2K) of training instances, experimental i ndings suggest that CODEM-Mixed excels 
+in all languages, even surpassing CODEM-Python on HumanEval-Python and CODEM-Java on HumanEval-Java. This 
+suggests that it is possible to yield superior code generation performance by leveraging multilingual data in instruction 
+tuning, without harming the generalization of the model. 
+We also conduct experiments on StarCoder15B to verify the effectiveness of CODEM. Specif i cally, we obtain108K 
+Python training data following WizardCoder [Luo et al., 2023], and i netune StarCoder15B to get CODEM-Python. 
+The results are shown in Table 2. CODEM-Python achieves state-of-the-art performance on HumanEval-Python with 
+64.63% pass@1, compared with other models of the same scale. CODEM-Python also gets a tremendous improvement 
+in the generation of other programming languages. For instance, it improves Java and JavaScript by an absolute17.95% 
+and 16.77% pass@1, respectively. 
+3.2.2Closer Analysis 
+We analyze the correlation between different programming languages. As illustrated in Figure 4 (a), the improvement 
+of code generation performance is sensitive to training corpus of different programming languages. Moreover, we 
+found that C and C++ can boost each other more signif i cantly, which is the same for JavaScript and TypeScript. It is 
+reasonable because these languages are correlated to each other in language design, sharing some common syntax and 
+grammar. Figure 4 (b) shows that training on each programming language can boost the code generation performance 
+of all other languages. We can see that the correlation values in Figure 4 (b) are mostly all positive, implying that the 
+improvement trend of different language brought by one monolingual training corpus is relatively similar. 
+4 
+TECHNICALREPORT 
+PythonJSTSCC++JavaGo 
+PythonJSTSCC++JavaGo 
+1 
+0.331 
+0.060.871 
+0.270.05-0.31 
+0.50.1-0.220.841 
+0.26-0.5-0.63-0.010.261 
+0.1-0.62-0.720.20.280.431 1.00 
+0.75 
+0.50 
+0.25 
+0.00 
+0.25 
+0.50 
+0.75 
+1.00 
+(a) 
+PythonJSTSCC++JavaGoHTML 
+PythonJSTSCC++JavaGoHTML 
+1 
+0.751 
+0.420.871 
+0.940.620.341 
+0.620.350.180.711 
+0.920.660.290.890.571 
+0.840.37-0.050.820.460.771 
+0.730.630.220.650.310.880.681 0.0 
+0.2 
+0.4 
+0.6 
+0.8 
+1.0 
+(b) 
+Figure 4: Correlations between different programming languages. We regard the data in Table 1 as a matrix, and 
+use ���df.corr()��� from the Pandas library to compute the correlation between different programming languages. The 
+correlation results before and after ���df.T��� are presented in (a) and (b), respectively. 
+4Related Work 
+Codex [Chen et al., 2021] with 12-billion parameters is able to solve Python programming problems automatically. 
+This remarkable success triggered a signif i cant buzz in both the academic and industrial realms. Followed by Codex, 
+a plenty of code LLMs are proposed, including AlphaCode [Li et al., 2022], PaLM-Coder [Chowdhery et al., 2022], 
+CodeGen [Nijkamp et al., 2023], InCoder [Fried et al., 2023], CodeGeeX [Zheng et al., 2023], replit4, CodeT5 [Wang 
+et al., 2021, 2023], PyCodeGPT [Zan et al., 2022], SantaCoder [Allal et al., 2023], StarCoder [Li et al., 2023], 
+Code Llama [Rozi��re et al., 2023], and phi-1 [Gunasekar et al., 2023]. These above models are trained on a large- 
+scale code corpus and achieve impressive code generation performance. During their pre-training, some models are 
+trained on datasets of multilingual programming languages and then i ne-tuned on a monolingual dataset to produce a 
+more powerful specialist version. As for the instruction i ne-tuning phase, WizardCoder [Luo et al., 2023], PanGu- 
+Coder2 [Shen et al., 2023], and Phind-CodeLlama5are proposed to bolster the capability of following instructions and 
+further boost the code generation capability. Yet, none of these aforementioned models explore the intricate interplay 
+between different programming languages. In this report, we therefore would like to investigate whether training code 
+LLMs on monolingual data can bolster performance in other programming languages. 
+5Conclusion 
+Our i ndings reveal that a monolingual training corpus can enhance the multilingual code generation capabilities of 
+code LLMs via instruction tuning. This highlights the intrinsic commonality and interconnectedness among multiple 
+programming languages. In our future work, we plan to delve into the reasons why multiple languages can enhance 
+each other. Also, we will explore how to leverage our i ndings to elevate code generation capabilities for these obscure 
+or less-used programming languages by training on data from those popular ones.
+1 / 1
+ChatGPT
+Here's a concise summary of the provided text:
+Results
+:
+The base model, StarCoder7B, was surpassed across all programming languages. It was observed that different programming languages can enhance each other significantly. For example, training solely on Python data improved performance on Java tests. This suggests that there are inherent similarities across programming languages.
+Interestingly, training on HTML data improved Java performance even more than training on Java data itself. Other examples include CODEM-C++ outperforming CODEM-C on C tests and CODEM-JavaScript surpassing CODEM-TypeScript on TypeScript tests.
+These observations suggest that the improvements might stem more from unlocking the model's potential through instruction tuning than just incorporating new knowledge.
+When training on a mixed set of languages, the results were even more promising. This indicates that multilingual data can enhance code generation capabilities without compromising generalization.
+Closer Analysis
+:
+The relationship between different programming languages was explored. The correlation between languages like C and C++, as well as JavaScript and TypeScript, is strong due to shared syntax and design.
+Training on one language positively impacts code generation capabilities in other languages.
+Related Work
+:
+The success of Codex, with 12-billion parameters, sparked significant interest. This led to the development of several models like AlphaCode, PaLM-Coder, CodeGen, and more. Some models fine-tuned on monolingual datasets to generate specialist versions. Others focused on enhancing the model's ability to follow instructions, but few explored the relationship between different programming languages.
+Conclusion
+:
+Monolingual training data can significantly improve multilingual code generation capabilities. This underscores the inherent connections between programming languages.
+Future work aims to understand why different languages enhance each other's performance and how this knowledge can be harnessed to boost less popular languages using data from more widely-used ones.
+1 / 1
+A list of all of the topics discussed
+1 / 1
+ChatGPT
+Certainly! Here's a list of the main topics discussed in the provided text:
+Crafting Training Corpus of Eight Programming Languages
+:
+Selection of languages: Python, JavaScript, TypeScript, C, C++, Java, Go, and HTML.
+Construction of training data for each language.
+Dataset evolution using GPT-3.5.
+Instruction Tuning
+:
+Enhancing models like Codex and StarCoder to follow instructions better.
+Training details such as batch size, learning rate, and warmup steps.
+Performance and Results
+:
+Improvements observed in CODEM when compared to the base model StarCoder7B.
+Surprising performance enhancements across languages.
+Correlation between different programming languages.
+Closer Analysis
+:
+Examination of correlations between languages.
+Insights into shared syntax and design between languages like C/C++ and JavaScript/TypeScript.
+Related Work
+:
+Introduction of Codex and subsequent models like AlphaCode, PaLM-Coder, CodeGen, etc.
+Focus on enhancing instruction-following abilities.
+Exploration of the interplay between different programming languages.
+Conclusion
+:
+The potential of monolingual training data to boost multilingual code generation.
+The inherent commonality between programming languages.
+Aims for future research and exploration.
+I hope this provides a clear outline of the discussed topics!
+1 / 1
+Summarize: Vim Cheat Sheet
+Global
+
+Cursor movement
+
+Insert mode, inserting/appending text
+
+Editing
+
+Marking text (visual mode)
+
+Visual commands
+
+Registers
+
+Marks
+
+Macros
+
+Cut and paste
+
+Exiting
+
+Search and replace
+
+Search in multiple files
+
+Vim for programmers
+
+Working with multiple files
+
+Split window
+
+Tabs
+
+Extra
+
+Open vim specially
+
+Vim sessions
+
+Command line history
+
+Folding
+
+Tips and tricks
+
+multiple sources, like this, and this great cheatsheets.
+
+Global
+:help keyword, :h keyword - open help for keyword
+:saveas file - save file as
+:close - close current pane
+K - open man page for word under the cursor
+gf - open file under cursor (goto file)
+Cursor movement
+h - move cursor left
+j - move cursor down
+k - move cursor up
+l - move cursor right
+H - move to top of screen
+M - move to middle of screen
+L - move to bottom of screen
+w - jump forwards to the start of a word
+W - jump forwards to the start of a word (words can contain punctuation)
+e - jump forwards to the end of a word
+E - jump forwards to the end of a word (words can contain punctuation)
+ge - jump backward to the end of a word
+gE - jump backward to the end of a word (words can contain punctuation)
+b - jump backward to the start of a word
+B - jump backward to the start of a word (words can contain punctuation)
+% - move to matching character (default supported pairs: '()', '{}', '[]'; use :h matchpairs in vim for more info). It jumps to the one it finds in the current line
+0 - jump to the start of the line
+^ - jump to the first non-blank character of the line
+$ - jump to the end of the line
+g_ - jump to the last non-blank character of the line
+gg - go to the first line of the document
+G - go to the last line of the document
+5G - go to line 5
+:5 - go to line 5 with command
+fx - jump to next occurrence of character x in this line
+tx - jump to before next occurrence of character x in this line
+Fx - jump to previous occurence of character x in this line
+Tx - jump to after previous occurence of character x in this line
+; - repeat previous f, t, F or T movement
+, - repeat previous f, t, F or T movement, backward
+} - jump to next paragraph (or function/block, when editing code)
+{ - jump to previous paragraph (or function/block, when editing code)
+( - jump to the previous sentence
+) - jump to the next sentence
+zz - cursor on screen to the center
+zt - cursor on screen to top
+zb - cursor on screen to bottom
+ctrl-e - move screen down one line (without moving cursor), same as + symbol
+ctrl-y - move screen up one line (without moving cursor), same as - symbol
+ctrl-b - move back one full screen (back full page)
+ctrl-f - move forward one full screen (forward full page)
+ctrl-d - move forward 1/2 a screen (down half page)
+ctrl-u - move back 1/2 a screen (up half page)
+ctrl-o - retrace previous cursor position
+ctrl-i - retrace next cursor position
+Tip: Prefix a cursor movement command with a number to repeat it. For example, 4j moves down 4 lines.
+
+Insert mode, inserting/appending text
+i - insert before the cursor
+I - insert at the beginning of the line
+a - insert (append) after the cursor
+A - insert (append) at the end of the line
+o - append (open) a new line below the current line
+O - append (open) a new line above the current line
+ea - insert (append) at the end of the word (so they can be chained with moves)
+Esc - exit insert mode
+gi - go to the last place where insert mode was finished
+ctrl-r REG - insert the contents of REG register in insert mode.
+Editing
+r - replace a single character
+R - start replace mode, similar to insert, but overwrites the characters underneath
+J - join line below to the current one with one space in between
+gJ - join line below to the current one without space in between
+gwip - reflow paragraph
+cc - change (replace) entire line
+C, c$ - change (replace) to the end of the line
+ciw - change (replace) entire word
+cw - change (replace) to the end of the word
+c/hello - change (replace) until next occurrance of "hello"
+s - delete character and substitute text
+xp - transpose two letters (delete and paste)
+u - undo
+:u - undo in command mode
+U - undo all latest changes on one line
+ctrl-r - redo
+:red - redo in command mode
+. - repeat last command
+ctrl-a - increase a number
+ctrl-x - decrease a number (practice: 4)
+gu + movement - make movement lowercase
+gU + movement - make movement uppercase
+g~ + movement - toggle case of movement
+g+ - undo branch forward
+g- - undo branch backward
+ea 4h - undo changes in the last 4 hours
+ea 2f - undo last 2 file states (last 2 buffer writes)
+lat 8m - redo changes in last 8 minutes
+Marking text (visual mode)
+v - start visual mode. (you can mark text, then do a command (like y-yank))
+V - start linewise visual mode
+o - move to other end of marked area
+ctrl-v - start visual block mode
+O - move to other corner of block
+aw - mark a word
+as - mark a sentence
+ap - mark a paragraph
+ab - mark a block with ()
+aB - mark a block with {}
+ib - mark inner block with ()
+iB - mark inner block with {}
+Esc - exit visual mode
+1 / 2
+ChatGPT
+Certainly! Here's a summarized version of the provided Vim cheat sheet:
+Vim Cheat Sheet
+Global Commands:
+:help
+or
+:h
+: Open help.
+:saveas
+: Save file with a new name.
+:close
+: Close current pane.
+K
+: Open man page for word under the cursor.
+gf
+: Open file under cursor.
+Cursor Movement:
+h/j/k/l
+: Move cursor in different directions.
+H/M/L
+: Move cursor to top/middle/bottom of screen.
+w/W/e/E
+: Move cursor word-wise.
+gg/G
+: Move to start/end of the file.
+ctrl-b/f
+: Move one full screen back/forward.
+ctrl-d/u
+: Move half a screen down/up.
+ctrl-o/i
+: Retrace previous/next cursor position.
+Insert Mode:
+i/I
+: Insert before cursor/start of the line.
+a/A
+: Append after cursor/end of the line.
+o/O
+: Open a new line below/above.
+Esc
+: Exit insert mode.
+Editing:
+r/R
+: Replace one character/start replace mode.
+J/gJ
+: Join lines.
+c
+: Change text.
+s
+: Delete and substitute.
+u/U
+: Undo.
+ctrl-r
+: Redo.
+.
+: Repeat last command.
+Visual Mode:
+v/V/ctrl-v
+: Start different visual modes.
+o/O
+: Move to other end/corner of marked area.
+aw/as/ap
+: Mark word/sentence/paragraph.
+Esc
+: Exit visual mode.
+This is a condensed version covering the main features. Remember, Vim has a steep learning curve, but mastering it can significantly improve your editing speed!
+1 / 1
+Connections with my game:
+
+������L����R������S
+
+You are correct, global reset only occurs if the key is held down for one second (five seconds the first time for warnings). Under half a second, it gives a short acceleration boost.
+
+B is the blink key, it refreshes the visuals if there are too many texture tracers and sobel edges, and allows you to enter a bubble without popping it. Hold down the keys a and b to activate autoblink, and s a b for super autoblink, which inoculated against global reset, even when not blinking.
+
+To look around, move the mouse or use the touchscreen, arrows, or hjkl keys. 
+
+Action - key - vim equivalent
+Pitch forward - Down or j (jump down)
+
+Pitch backward - Up or k (klimb up)
+
+Turn left - h (hop homeward)
+
+Turn right - l (leap letterwards)
+
+
+Hit spacebar or t or y to trigger your weapon or to begin drawing a swype trace)
+
+To move your ship around physically:
+
+Slide left - a (ad sinestra)
+Slide right - d (dextra)
+Slide up - r (roofwards)
+Slide down - f (floorwards)
+
+Bank left - q (question everything, begin recording a macro)
+Bank right - e (examine your biases, go to the end of the word)
+
+Fire primary - y or space (yes, trigger)
+Fire secondary - u (use missile)
+Fire flare (g - only when acceleration boost is not available)
+Drop bomb (please only use this for extraplanetary minefields!)
+Rear view o or p (original perspective, previous places)
+Automap -  tab or ; (semicolon)
+Accelerate - w (walk)
+Reverse - s (stop, slowdown, fly backwards)
+1 / 2
+ChatGPT
+Here's a summary of the game controls and their connections with Vim:
+Game Controls and Vim Equivalents:
+Global Reset:
+Holding key for under 0.5 seconds: Acceleration boost.
+Holding key for 1 second (or 5 seconds initially): Global reset.
+Visuals and Bubble Interactions:
+B
+: Blink key - refreshes visuals.
+a + b
+: Autoblink.
+s + a + b
+: Super autoblink, guards against global reset.
+Looking Around:
+Mouse/touchscreen/arrows or
+h/j/k/l
+: Navigate.
+Ship Movement:
+Pitch Forward:
+Down/j
+(Vim: jump down).
+Pitch Backward:
+Up/k
+(Vim: climb up).
+Turn Left:
+h
+(Vim: hop homeward).
+Turn Right:
+l
+(Vim: leap letterwards).
+Physical Ship Controls:
+Slide Left:
+a
+(Vim: ad sinestra).
+Slide Right:
+d
+(Vim: dextra).
+Slide Up:
+r
+(Vim: roofwards).
+Slide Down:
+f
+(Vim: floorwards).
+Bank Left:
+q
+(Vim: record a macro).
+Bank Right:
+e
+(Vim: go to end of the word).
+Weaponry and Actions:
+Fire Primary:
+y
+or
+Space
+(Vim: yes, trigger).
+Fire Secondary:
+u
+(Vim: use missile).
+Fire Flare:
+g
+(Only when acceleration boost is not active).
+Drop Bomb: For extraplanetary minefields only!
+Rear View:
+o
+or
+p
+(Vim: original perspective, previous places).
+Automap:
+Tab
+or
+;
+(Vim: semicolon).
+Accelerate:
+w
+(Vim: walk).
+Reverse:
+s
+(Vim: stop, slow down, fly backward).
+The design integrates Vim-like commands to game controls, creating a unique gameplay experience, especially for those familiar with Vim. This bridges the gap between text editing and gaming in a fun way.
+1 / 1
+Visual commands
+
+> - shift text right
+
+< - shift text left
+
+y - yank (copy) marked text
+
+d - delete marked text
+
+~ - switch case
+
+Registers
+
+:reg - show registers content (can append selectors of which registers to show)
+
+"xy - yank into register x
+
+"xp - paste contents of register x
+
+"Xp - append contents to register x
+
+Tip: Registers are being stored in ~/.viminfo, and will be loaded again on next restart of vim. Tip: Register 0 always contains the value of the last yank command.
+
+Marks
+
+:marks - list of marks
+
+ma - set current position for mark a
+
+`a - jump to position of mark a
+
+'a - jump to the first non-blank character in the line of mark a
+
+y`a - yank text to position of mark a
+
+:delm <pattern> - delete marks. <pattern> can be 1 lowercase letter, any number of characters, range of letters or numbers
+2 / 2
+ChatGPT
+Summary of Vim Commands for Visual, Registers, and Marks:
+Visual Commands
+:
+Shift Text
+: Use
+>
+to shift text to the right and
+<
+to shift text to the left.
+Manipulating Marked Text
+:
+y
+: Yank (or copy) the highlighted text.
+d
+: Delete the highlighted text.
+~
+: Toggle the case of highlighted characters (e.g., uppercase to lowercase or vice-versa).
+Registers
+:
+Registers in Vim are like clipboards you can use for copying, cutting, and pasting text.
+:reg
+: Displays the content of all registers.
+"xy
+: Yank (or copy) text into register
+x
+.
+"xp
+: Paste the content from register
+x
+.
+"Xp
+: Append content into register
+x
+.
+Tip
+: Registers are saved in the
+~/.viminfo
+file and get loaded again when you restart Vim. Additionally, the "0 register always holds the value of the last yank command.
+Marks
+:
+Marks are placeholders you set in the text which you can quickly jump back to.
+:marks
+: Displays a list of all the set marks.
+ma
+: Set the current position with the mark
+a
+.
+`a
+: Jump directly to the position of mark
+a
+.
+'a
+: Jump to the first non-blank character on the line of mark
+a
+.
+y
+a
+: Yank (or copy) text from the current position to the position of mark
+a`.
+:delm <pattern>
+: Delete specific marks based on the given pattern. The pattern can be a single lowercase letter, multiple characters, or even a range of letters or numbers.
+These Vim commands allow users to efficiently manipulate text, manage multiple clipboard-like registers, and quickly navigate around the document using marks.
+1 / 1
+A list of all of the topics we've discussed.
+3 / 3
+ChatGPT
+Of course! Here's a summary of the topics we've discussed:
+Vim Cheat Sheet, including various subsections:
+Global commands
+Cursor movement
+Insert mode and appending text
+Editing commands
+Visual mode and commands
+Registers
+Marks
+And a few other Vim commands and functionalities.
+The connections between Vim commands and controls for the game "������L����R������S":
+Global reset mechanism in the game.
+Functions of the 'B' key (blink, autoblink, and super autoblink).
+Movement and action controls in the game using keys and their Vim equivalents.
+Slide and bank movements.
+Weapon controls.
+A detailed summary of Vim commands related to Visual mode, Registers, and Marks.
+I hope that gives a clear overview! Anything else you'd like to know or discuss?
+1 / 1
+Before that we discussed:
+
+Crafting Training Corpus:
+
+Selection and creation of training data for eight languages using GPT-3.5.
+
+Instruction Tuning:
+
+Enhancing code models to follow instructions.
+
+Performance and Results:
+
+CODEM's improvements over StarCoder7B.
+
+Closer Analysis:
+
+Examining correlations between programming languages.
+
+Related Work:
+
+Introduction of various code models and their capabilities.
+
+Conclusion:
+
+Potential of monolingual training for multilingual code generation and future research aims.
+
+
+Vim Cheat Sheet, including various subsections:
+
+Global commands
+
+Cursor movement
+
+Insert mode and appending text
+
+Editing commands
+
+Visual mode and commands
+
+Registers
+
+Marks
+
+And a few other Vim commands and functionalities.
+
+The connections between Vim commands and controls for the game "������L����R������S":
+
+Global reset mechanism in the game.
+
+Functions of the 'B' key (blink, autoblink, and super autoblink).
+
+Movement and action controls in the game using keys and their Vim equivalents.
+
+Slide and bank movements.
+
+Weapon controls.
+
+A detailed summary of Vim commands related to Visual mode, Registers, and Marks.
+1 / 1
+ChatGPT
+Absolutely, my apologies for missing that earlier section. Here's a more comprehensive list of all the topics we've discussed:
+Crafting Training Corpus
+:
+Selection and creation of training data for eight languages using GPT-3.5.
+Instruction Tuning
+:
+Enhancing code models to follow instructions.
+Performance and Results
+:
+CODEM's improvements over StarCoder7B.
+Closer Analysis
+:
+Examining correlations between programming languages.
+Related Work
+:
+Introduction of various code models and their capabilities.
+Conclusion
+:
+Potential of monolingual training for multilingual code generation and future research aims.
+Vim Cheat Sheet
+, including various subsections:
+Global commands
+Cursor movement
+Insert mode and appending text
+Editing commands
+Visual mode and commands
+Registers
+Marks
+And a few other Vim commands and functionalities.
+Connections between Vim commands and controls for the game "������L����R������S"
+:
+Global reset mechanism in the game.
+Functions of the 'B' key (blink, autoblink, and super autoblink).
+Movement and action controls in the game using keys and their Vim equivalents.
+Slide and bank movements.
+Weapon controls.
+Detailed summary of Vim commands
+related to:
+Visual mode
+Registers
+Marks
+Thanks for pointing it out. Let me know if you need further details or if there's another topic you'd like to discuss!
+1 / 1
+Further connections between the topics.
+1 / 1
+ChatGPT
+Sure, let's make some interconnections between the topics we discussed, particularly between the Crafting Training Corpus, the Vim Cheat Sheet, and the game "������L����R������S":
+Data and Commands
+:
+Crafting Training Corpus
+: The importance of data cannot be overstated when training AI models. The quality and diversity of the data, such as the training data for eight languages in GPT-3.5, influence the performance of the model.
+Vim and ������L����R������S
+: Both Vim and your game employ a unique set of commands to achieve specific tasks. The way one interacts with Vim or the game is akin to a language in itself. The efficacy of the AI model in understanding and generating code could be compared to a player's proficiency in mastering the commands in Vim or ������L����R������S.
+Instructions and Controls
+:
+Instruction Tuning
+: The enhancement of code models to follow instructions echoes the importance of clear directives in any software or game. A clearer instruction often results in a more accurate outcome.
+Vim and ������L����R������S Controls
+: Both have specific commands or keys for actions. In Vim,
+hjkl
+are for navigation, whereas in the game, they control the ship's direction. The importance of precision and timing in executing these commands is crucial in both contexts.
+Performance and Efficiency
+:
+Performance and Results
+: Discussing the improvements of CODEM over StarCoder7B suggests the importance of evolution and betterment in software.
+Vim Commands and Game Controls
+: Mastery of commands in both Vim and the game can drastically improve efficiency. Knowing the right Vim commands can speed up text editing, while mastering the game controls can enhance gameplay experience.
+Analysis and Strategy
+:
+Closer Analysis
+: This topic deals with a deep understanding of correlations between programming languages.
+Game Strategy
+: Mastering the controls of ������L����R������S and knowing when to use certain actions (like the Global Reset) could be likened to understanding the nuances between different programming languages. Both require a deeper understanding to utilize them to their full potential.
+Past, Present, and Future
+:
+Related Work and Conclusion
+: Both of these sections deal with understanding the trajectory of code models, their current capabilities, and potential future applications.
+Vim and Game Evolution
+: Just as code models have evolved, so have tools like Vim and games. Both Vim and ������L����R������S have functionalities that may have been added or refined over time, based on user feedback and technological advancements.
+In summary, while the topics of a training corpus, Vim Cheat Sheet, and a game might seem disparate, they all revolve around the central themes of data, efficiency, mastery, and evolution. Each topic showcases the importance of having the right tools and knowledge to achieve optimal performance in its respective domain.
+1 / 1
+Let's delve deeper into the etymological roots of "Haplopraxis":
+
+1. Haplo-
+
+Origin: Derived from Ancient Greek.
+
+Root Word: "�������������" (hapl��os)
+
+Meaning: In its ancient context, "�������������" can be understood to mean "single", "simple", or "uncompounded". In many contexts today, especially scientific, "haplo-" has been employed to indicate singleness or simplicity. For instance:
+
+Haploid: In biology, it describes cells that have a single set of chromosomes, as opposed to diploid cells, which have two sets.
+
+Haploidy: Refers to the state of being haploid.
+
+Haplotype: A combination of alleles (DNA sequences) at different places (loci) on the chromosome that are transmitted together.
+
+2. -praxis
+
+Origin: Derived from Ancient Greek.
+
+Root Word: "�������������" (pr��xis)
+
+Meaning: The term "�������������" in ancient contexts denotes "action", "activity", or "a doing". It was also employed philosophically, especially by Aristotle, to indicate a form of ethical or practical thought as opposed to mere theory ("theoria"). In modern usage:
+
+Praxis: Often indicates practice or action, especially in contrast to theoretical knowledge. For instance, in pedagogy, the term often refers to the practice of teaching. In some contexts, it is also used as a synonym for "method" or "technique".
+
+Malpraxis: As previously mentioned, refers to bad practice or negligence, especially in the medical field.
+
+Given the etymological breakdown, "Haplopraxis" conveys a rich tapestry of meanings, but at its core, it suggests a concept based on a "single/simple action or practice". In the context of your game, this is both descriptive and evocative, encapsulating the straightforward yet potentially layered experience of the gameplay.
+1 / 1
+ChatGPT
+Connecting the game "������L����R������S" and the etymological roots of "Haplopraxis":
+Given the detailed etymology of the word "Haplopraxis", it brings about a deeper understanding and significance behind the name of the game.
+Haplo- (Single/Simple)
+:
+Game Mechanics
+: The global reset mechanism of the game is a simple yet crucial function, activated with just a key press. This singularity in action resonates with the "haplo-" prefix, indicating a key, singular function central to the game's experience.
+Game Dynamics
+: The game seems to offer a set of controls and mechanisms, each serving a distinct purpose, from visual refresh (blink) to movement controls. The "haplo-" prefix might imply a gameplay style where mastering each single, simple action leads to a fluid and seamless gaming experience.
+-praxis (Action/Practice)
+:
+Learning Curve
+: As with many games, players might need to practice to master the controls and dynamics of "������L����R������S". The term "praxis" denotes the continuous practice, repetition, and action players undertake to improve and progress.
+Game Strategy
+: Mastering individual actions and integrating them into a cohesive strategy might be pivotal. The "praxis" suffix emphasizes the importance of action, strategy, and application in gameplay, hinting that understanding the theory behind controls isn't enough ��� effective execution is key.
+Combining the Two
+:
+"Haplopraxis" as a title could hint at a game where mastering individual, simple actions (haplo-) and effectively putting them into practice (-praxis) can lead to success or progression. It suggests a gameplay experience where understanding and skillfully executing individual commands is as important as strategizing and practicing them in combination.
+In essence, the name "������L����R������S", which is reminiscent of "Haplopraxis", encapsulates the essence of the gameplay: a journey of mastering simple, individual actions and effectively putting them into practice for a rewarding and immersive experience.
+1 / 1
+Yeah the main point of the game is to maintain a watchlist of 150,000 planets or stars, if you add some then you should add remove some, something like a constraint in cognitive load theory. I argue that this continual action leads to a more personalized and positive cognitive schema
+1 / 1
+ChatGPT
+Ah, the incorporation of the cognitive load theory's constraints is a compelling concept for a game. Given this context, the name "������L����R������S" or "Haplopraxis" acquires even more depth.
+Haplo- (Single/Simple)
+:
+Managing the Watchlist
+: The need to maintain a watchlist of 150,000 celestial bodies signifies simplicity in the sense that there's one main, straightforward goal or task. It isn't about managing infinite possibilities, but rather a defined set. This singular focus can lead players to develop strategies and habits around this specific task.
+-praxis (Action/Practice)
+:
+Dynamic Decision-Making
+: Continuously adding and removing celestial bodies from the watchlist requires players to regularly act and make decisions. The consistent engagement emphasizes the 'practice' component. Over time, this iterative "praxis" will refine the player's decision-making skills and their strategy for maintaining the watchlist.
+Cognitive Load Theory
+:
+Optimal Challenge
+: The number 150,000 is sizable but not infinite, which strikes a balance. It's challenging enough to keep players engaged but not overwhelming to the point of inducing excessive cognitive strain. By setting a specific number, the game ensures that players are consistently engaged without overburdening them, aligning well with cognitive load theory's principles.
+Personalized Cognitive Schema
+: With every decision to add or remove a celestial body, players are personalizing their experience, tailoring their watchlist to their preferences and strategies. Over time, this can lead to the development of a unique cognitive schema���a structured framework for understanding and categorizing the game's information based on personal experiences. Such a schema becomes a valuable tool for making future decisions in the game, enhancing the player's efficiency and enjoyment.
+Incorporating cognitive science principles into a game offers not only an engaging gameplay experience but also the potential for cognitive growth and development. By weaving these principles into the game's mechanics, "������L����R������S" offers an opportunity for players to sharpen their decision-making skills, enhance their cognitive schemas, and enjoy a uniquely personalized gaming journey.
+1 / 1
+Another summary of the conversation.
+1 / 1
+ChatGPT
+Of course. Here's a concise summary of our recent conversation:
+Etymology of "Haplopraxis"
+: We explored the roots of the term, breaking it down into:
+Haplo-
+: From Ancient Greek "�������������" (hapl��os) meaning "single" or "simple."
+-praxis
+: From Ancient Greek "�������������" (pr��xis) meaning "action" or "practice."
+Game Concept of "������L����R������S"
+: The main objective in the game is to maintain a watchlist of 150,000 celestial bodies. Players must strike a balance, adding some while removing others.
+Connection to Cognitive Load Theory
+: The constraint of managing 150,000 celestial bodies aligns with the cognitive load theory. This continual action fosters a more personalized and positive cognitive schema.
+Cognitive Benefits
+: The game's design challenges players without overwhelming them, promoting the development of decision-making skills and a unique cognitive schema based on personal experiences in the game.
+This discussion has intertwined the etymology of a term, game mechanics, and cognitive science principles to provide a holistic understanding of the game "������L����R������S" and its potential benefits for players.
+1 / 1
+Did you forget everything we talked about before that?
+1 / 1
+ChatGPT
+Apologies for the oversight. Let me provide a more comprehensive summary:
+1. Crafting Training Corpus
+:
+Discussed the selection and creation of training data for eight languages using GPT-3.5.
+2. Instruction Tuning
+:
+Talked about enhancing code models to follow instructions better.
+3. Performance and Results
+:
+Addressed CODEM's improvements over StarCoder7B.
+4. Closer Analysis
+:
+Examined correlations between programming languages.
+5. Related Work
+:
+Introduced various code models and their capabilities.
+6. Conclusion
+:
+Explored the potential of monolingual training for multilingual code generation and future research aims.
+7. Vim Cheat Sheet
+:
+Reviewed a comprehensive list of Vim commands, covering global commands, cursor movement, insert mode, editing, visual mode, registers, marks, and more.
+8. Connections with the Game "������L����R������S"
+:
+Discussed how Vim commands were integrated into the game's controls.
+9. Etymology of "Haplopraxis"
+:
+Broke down the term's origins and meanings.
+10. Game Concept
+:
+The game revolves around maintaining a watchlist of 150,000 planets or stars, reflecting principles from cognitive load theory.
+11. Cognitive Benefits
+:
+The game promotes the development of decision-making skills and a unique cognitive schema based on personal experiences.
+The conversation spanned from a technical discussion on GPT-3.5 and Vim, delving into the mechanics and philosophy behind the game "������L����R������S" and the cognitive implications for its players.
+1 / 1
+I decided to call the conversation "augmented counterfactual reality"
+1 / 1
+ChatGPT
+"Augmented Counterfactual Reality" is an intriguing title. It suggests a blend of the real and the imagined, enhanced by technology or artificial constructs. It also hints at the possibility of exploring alternate outcomes or scenarios ��� the "what ifs." Given the depth and range of topics we covered, from AI training and code models to the philosophical and cognitive implications of a game, the title encapsulates the essence of blending technology with human cognition and experience.
+1 / 1
+An introduction to an essay on the above topics, titled Cognitive Vaporware
+1 / 1
+ChatGPT
+Cognitive Vaporware: Navigating the Nexus of AI, Vim, and Augmented Realities
+In an era where technology stands as both a testament to human achievement and a mirror to our cognitive intricacies, the term "Cognitive Vaporware" offers an exploration into the ephemeral and intangible facets of our digital experiences. This essay delves into the juncture where artificial intelligence, the Vim text editor's intricate commands, and the vast realm of augmented realities intersect, shedding light on their collective impact on human cognition.
+Beginning with the construction of the AI model GPT-3.5 and its impressive feats in programming, we embark on a journey that underlines the significance of crafting a refined training corpus and the potential of instruction tuning. Moving from the intricate algorithms and data pools, we transition to the arcane commands of Vim ��� a text editor known for its steep learning curve yet unparalleled efficiency. This exploration is not merely technical; it becomes an allegory for the challenges and rewards of mastering complex systems, much like the neural networks of our own brains.
+Yet, the core of this discourse lies in the virtual cosmos of "������L����R������S", a game that challenges players to maintain a watchlist of vast celestial bodies. Beyond its gameplay, it serves as a metaphor for cognitive load theory, pushing players to continually adapt, reshuffle, and optimize their strategies. This active engagement, we argue, paves the way for a richer and more personalized cognitive schema.
+"Cognitive Vaporware" is not just a term but a lens through which we examine the continually blurring lines between our digital tools, our entertainment, and the very ways in which our minds adapt and evolve in a technology-driven world. Through this essay, we aim to illuminate the profound interplay between these domains and challenge our understanding of where technology ends, and the human psyche begins.
+1 / 1
+I was thinking of Wittgenstein's ladder.
+1 / 1
+ChatGPT
+Ah, Wittgenstein's ladder, often referred to metaphorically as a tool that is discarded once its purpose is fulfilled. Ludwig Wittgenstein, in his early work "Tractatus Logico-Philosophicus," touches on this idea, suggesting that once one understands the propositions and climbs the ladder, they must throw it away. It is a profound concept that encapsulates the idea of using foundational or simpler concepts to reach a higher understanding and then discarding or moving beyond those basic concepts.
+Incorporating this perspective into the aforementioned essay:
+Cognitive Vaporware: Wittgenstein's Ladder in a Digital Age
+As we ascend the complex edifice of modern technology, Wittgenstein's metaphor of the ladder finds renewed relevance. This essay ventures into the realm where artificial intelligence, Vim's intricate commands, and augmented realities converge, reflecting on how these tools serve as rungs that elevate our cognitive experiences.
+GPT-3.5, a monument of artificial intelligence, represents a pivotal rung in our climb. Its prowess in programming underscores the importance of crafting a meticulous training corpus and instruction tuning. But, like any initial understanding, is it merely a stepping stone to be discarded in pursuit of greater comprehension?
+Similarly, the Vim text editor, with its convoluted commands, acts as a cognitive ladder. Its mastery, though arduous, paves the way for heightened efficiency and capability. But in our digital ascent, at what point do we transcend these commands, rendering them mere vestiges of our early climb?
+The universe of "������L����R������S" extends this metaphor further, positioning players on the precipice of cognitive challenges. Tasked with managing an expansive celestial watchlist, players grapple with cognitive load theory's constraints. Yet, as they ascend, reshuffle, and adapt, might they too leave behind earlier strategies, echoing Wittgenstein's notion of discarding the ladder once ascended?
+"Cognitive Vaporware" is more than a term; it is a reflection on our digital ascent. As we navigate the nexus of AI, Vim, and augmented realities, we are consistently challenged to discern when to grasp the ladder's rungs tightly and when to let them go. Through this essay, we explore the transformative journey of understanding, from foundational tools to transcendent realizations, reminding us that in our relentless pursuit of knowledge, sometimes what we leave behind is as significant as what we carry forward.
+3 / 3
+Ok one more summary of the conversation.
+1 / 1
+ChatGPT
+Certainly!
+Summary of the Conversation: "Augmented Counterfactual Reality"
+Crafting Training Corpus
+:
+Discussed GPT-3.5's data selection and training process for eight languages.
+Instruction Tuning
+:
+Explored how code models can be enhanced to follow instructions better.
+Performance and Results
+:
+Delved into the improvements of CODEM over StarCoder7B.
+Closer Analysis
+:
+Analyzed correlations between various programming languages.
+Related Work
+:
+Introduced various code models and their capabilities.
+Conclusion
+:
+Highlighted the potential of monolingual training for multilingual code generation and future research aims.
+Vim Cheat Sheet
+:
+Reviewed global commands, cursor movements, editing commands, visual mode commands, registers, marks, and other functionalities of the Vim text editor.
+Game: ������L����R������S
+:
+Explored the connections between Vim commands and game controls.
+Discussed key functions, movement controls, and weapon controls.
+Etymology
+:
+Delved into the roots of the term "Haplopraxis" with "Haplo-" meaning "single" or "simple" and "-praxis" meaning "action" or "activity".
+Cognitive Load Theory in Gaming
+:
+The game���s premise focuses on managing a watchlist of 150,000 planets or stars. This constraint is rooted in cognitive load theory, suggesting continuous action results in a personalized and positive cognitive schema.
+Wittgenstein's Ladder
+:
+Integrated the philosophical concept of using foundational ideas to reach higher understanding, and then discarding those ideas once they've served their purpose.
+Essay Introduction
+:
+Drafted an introductory segment for an essay titled "Cognitive Vaporware", tying together the aforementioned themes.
+Throughout the discussion, a thematic tapestry emerged, intertwining the intricacies of technological advancements, philosophical musings, and the cognitive challenges of digital engagement. The conversation encapsulated a voyage through diverse realms, from the intricacies of artificial intelligence and the Vim editor to the vast universe of "������L����R������S" and the profound reflections of Wittgenstein.
+1 / 1
+A shor final summary.
+2 / 2
+ChatGPT
+Of course!
+"Augmented Counterfactual Reality" Summary
+:
+We embarked on a journey through the nuances of GPT-3.5's training and code models, delved into Vim's functionalities and their integration in the game "������L����R������S", and examined the etymology of "Haplopraxis". The game's design reflects principles from cognitive load theory, emphasizing a balance in managing a vast array of planets. Philosophical musings from Wittgenstein's ladder were intertwined, leading to a contemplative introduction for an essay titled "Cognitive Vaporware". The conversation bridged the gaps between AI, gaming, philosophy, and cognitive science.
+1 / 1
+ChatGPT may produce inaccurate information about people, places, or facts.
+ChatGPT August 3 Version
+?
+Augmented Counterfactual Reality
+
+
+

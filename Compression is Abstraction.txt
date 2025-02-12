@@ -1,0 +1,1485 @@
+Compression is Abstraction
+Open sidebar
+Compression is Abstraction
+GPT-4
+Summarize: A Modern Self-Referential Weight Matrix That Learns to Modify Itself 
+Kazuki Irie1Imanol Schlag1R�� obert Csord�� as1J�� urgen Schmidhuber1 
+2 
+Abstract 
+The weight matrix (WM) of a neural network 
+(NN) is its program. The programs of many tradi- 
+tional NNs are learned through gradient descent 
+in some error function, then remain i xed. The 
+WM of a self-referential NN, however, can keep 
+rapidly modifying all of itself during runtime. In 
+principle, such NNs can meta-learn to learn, and 
+meta-meta-learn to meta-learn to learn, and so 
+on, in the sense of recursive self-improvement. 
+While NN architectures potentially capable of im- 
+plementing such behaviour have been proposed 
+since the ���90s, there have been few if any practi- 
+cal studies. Here we revisit such NNs, building 
+upon recent successes of fast weight programmers 
+and closely related linear Transformers. We pro- 
+pose a scalable self-referential WM (SRWM) that 
+learns to use outer products and the delta update 
+rule to modify itself. We evaluate our SRWM 
+in supervised few-shot learning and in multi-task 
+reinforcement learning with procedurally gener- 
+atedgameenvironments. Ourexperimentsdemon- 
+strate both practical applicability and competitive 
+performance of the proposed SRWM. Our code is 
+public���. 
+1. Introduction 
+The program of a neural network (NN) is its weight ma- 
+trix (WM) (Schmidhuber, 1990). With prediction tasks, for 
+example, starting from random values, an NN training pro- 
+cedure based on gradient descent might update the WM to 
+minimize an error function that favors compression of given 
+input-output observations (Solomonoff, 1964). The WM 
+becomes permanent once training ends, and its usefulness 
+1The Swiss AI Lab, IDSIA, USI & SUPSI, Lugano, Switzer- 
+land 2AI Initiative, King Abdullah University of Science and Tech- 
+nology (KAUST), Thuwal, Saudi Arabia. Correspondence to: 
+<{kazuki, 
+imanol, robert, juergen}@idsia.ch>. 
+An earlier ver- 
+sion was presented at NeurIPS 2021 Deep RL Workshop. 
+Proceedings of the39thInternational Conference on Machine 
+Learning, Baltimore, Maryland, USA, PMLR 162, 2022. Copy- 
+right 2022 by the author(s). 
+���https://github.com/IDSIA/modern-srwm 
+is evaluated with respect to its generalisation capability on 
+yet unseen data. 
+Many environments, however, continue to evolve after train- 
+ing has halted (e.g., Lazaridou et al. (2021); Lin et al. 
+(2021)), and the test setting may deviate from training in 
+ways that exceed the NN���s generalisation capability. Then 
+human intervention might be required to re-train or i ne-tune 
+the model. Instead, more general and autonomous systems 
+should learn to update their own programs in the light of 
+new experience without such intervention. Especially in 
+multi-task learning and meta-learning (learning to learn; 
+Schmidhuber (1987)), it may be useful to learn how to keep 
+changing and i ne-tuning the model in a way that quickly 
+adapts to various situations and new challenges (Hochreiter 
+et al., 2001; Finn et al., 2017). 
+In principle, a WM could learn by itself a way of execut- 
+ing rapid WM adaptations in task-dependent and context- 
+dependent fashion through a generic mechanism for recur- 
+sive self-modif i cation. Various self-modifying NNs have 
+been proposed previously (see Sec. 6). Here we revisit the 
+self-referential WM (Schmidhuber, 1992a; 1993a;b;c) from 
+the ���90s in the light of modern techniques for updating and 
+generating weights. In particular, we leverage mechanisms 
+which are now well established in the context of Fast Weight 
+Programmers (FWPs, Schmidhuber (1991; 1992b; 1993d); 
+reviewed in Sec. 2). FWPs have recently seen advancements 
+in terms of performance and scalability, inspired by their 
+formal equivalence (Schlag et al., 2021) to linear variants 
+(Katharopoulos et al., 2020; Choromanski et al., 2021; Peng 
+et al., 2021) of the popular Transformer (Vaswani et al., 
+2017). 
+Here we derive a new type of self-referential WM (SRWM) 
+which naturally emerges as an extension to recent works on 
+FWPs. We evaluate the proposed SRWM in three settings. 
+We start by demonstrating that the proposed model is ef- 
+fectively capable of generating useful self-modif i cations 
+by showing that the model achieves competitive perfor- 
+mance on standard few-shot learning benchmarks. Second, 
+by extending the few-shot learning setting to a sequential 
+multi-task learning setting, we test the SRWM���s ability to 
+sequentially adapt itself to changes of the task at runtime. 
+Finally, by using ProcGen (Cobbe et al., 2020), we evalu- 
+ate it in a multi-task reinforcement learning (RL) setting 
+arXiv:2202.05780v2 
+[cs.LG] 
+17 
+Jun 
+2022 
+A Modern Self-Referential Weight Matrix That Learns to Modify Itself 
+with procedurally generated game environments. Overall, 
+we demonstrate both practical applicability and competitive 
+performance of the proposed method. 
+2. Background on Fast Weight Programmers 
+Here we brief l y review the essential components of fast 
+weight programmers (FWPs; Schmidhuber (1991; 1992b; 
+1993d)) which our model is built upon (Sec. 3). In what 
+follows, lett,din,dout, anddkeydenote positive integers. 
+FWPs have a slow NN which can rapidly modify weights 
+of another fast NN. The concept has seen a recent revival, 
+in particular in light of its direct formal connection (Schlag 
+et al., 2021) to linear variants (Katharopoulos et al., 2020; 
+Choromanski et al., 2021; Peng et al., 2021; Irie et al., 2021) 
+of the popular Transformer (Vaswani et al., 2017) when the 
+weight generation is based on outer products between keys 
+and values generated by the slow NN (Schmidhuber, 1991). 
+Recent work augmented the basic FWPs (Schmidhuber, 
+1991; 1992b) with an improved elementary programming 
+instruction or update rule invoked by the slow NN to repro- 
+gram the fast NN, called delta update rule (akin to the delta 
+rule by Widrow & Hoff (1960)). The resulting ���DeltaNet��� 
+(Schlag et al., 2021) is a general purpose auto-regressive NN 
+with linear complexity w.r.t. input sequence length, which 
+transforms the inputxt��� Rdinto 
+the outputyt��� Rdoutas 
+follows: 
+kt,vt,qt,��t=Wslowxt(1) 
+�� vt=Wt���1��(kt) (2) 
+Wt=Wt���1+ ��(��t)(vt��� �� vt) ��� ��(kt)(3) 
+yt=Wt��(qt)(4) 
+where���denotes 
+the outer product,��is a sigmoid function, 
+and��is an element-wise activation function whose output 
+elementsareallpositiveandsumuptoone(e.g.softmax). In 
+Eq. 1, the inputxtis i rst projected to keykt��� Rdkey, 
+value 
+vt��� Rdout, queryqt��� Rdkeyvectors 
+and a scalar��t��� Rus- 
+ing a trainable weight matrixWslow��� R(dout+2���dkey+1)��din. 
+The generated key vectorktand a learning rate��t(also gen- 
+erated by the slow NN) are used to update the fast weight 
+matrixWt���1using the delta rule expressed in Eqs. 2-3. The 
+fastweightmatrixistypicallyinitializedtozeroi.e.W0= 0. 
+The i nal outputytis obtained by querying the updated fast 
+weight matrixWtusing a generated query vectorqt(Eq. 4). 
+We note that the use of��function for both writing to (Eq. 3) 
+and reading from (Eqs. 2 and 4) the fast weights is crucial 
+for stability when the delta rule is used (we refer the readers 
+to Schlag et al. (2021) for detailed explanations). 
+In practice, we use the multi-head version (Vaswani et al., 
+2017) of the computation above, that is, after the projection 
+(Eq. 1), the vectorskt,vt,qtare split into equally sizedH 
+sub-vectors, and the operations in Eqs. 2-4 are conducted by 
+Hcomputation heads independently. Also, the layer above 
+is typically used as a replacement for self-attention layers 
+in a regular Transformer architecture (Vaswani et al., 2017) 
+while preserving other components such as feedforward 
+blocks, layer-norm and residual connections across layers. 
+The slow NN or the programmer (here a one-layer feedfor- 
+ward NN; Eq. 1) with slow weightsWslowlearns by gradient 
+descent to continuously modify or program the fast NN 
+(here also a one-layer feedforward NN; Eq. 4) with fast 
+weightsWtas it continually receives a stream of inputs. 
+For further extensions of this concept to more complex slow 
+and fast NN architectures such as recurrent NNs, we refer 
+the readers to another recent study (Irie et al., 2021). 
+FWPs are of great interest from the perspective of context- 
+sensitive information processing, since the fast WM is com- 
+pletely context-dependent: while processing some sequence, 
+a continually changing custom fast NN is built on the l y. 
+Here we leverage this mechanism to design a new kind of 
+FWP which programs itself. It can be naturally derived 
+from the operations described above, resulting in a ���modern��� 
+version of the self-referential weight matrix (Schmidhuber, 
+1992a; 1993a;b;c) of the ���90s.
+1 / 1
+ChatGPT
+The paper titled "A Modern Self-Referential Weight Matrix That Learns to Modify Itself" by Kazuki Irie, Imanol Schlag, R��bert Csord��s, and J��rgen Schmidhuber introduces a new type of neural network with a self-referential weight matrix (SRWM) that can continuously modify itself during runtime.
+In traditional neural networks, the weight matrix (WM) becomes permanent once training ends. However, the authors propose a scalable SRWM that can rapidly adapt and modify itself. It utilizes outer products and the delta update rule to achieve self-modification, inspired by Fast Weight Programmers (FWPs) and linear Transformers.
+The SRWM is evaluated in three settings: supervised few-shot learning, sequential multi-task learning, and multi-task reinforcement learning with procedurally generated game environments. The experiments show practical applicability and competitive performance of the proposed SRWM. The model's ability to learn and recursively self-improve enables it to adapt quickly to various situations and new challenges without human intervention.
+Overall, the paper presents an innovative advancement in neural network architecture that may lead to more autonomous and adaptable systems. The code is publicly available on GitHub.
+1 / 1
+xed time span (whose length was the backprop- 
+agation span). Such models failed to leverage the SRWM 
+mechanism, obtaining scores of 28.5 (1.2) and 16.1 (2.2) on 
+the train and test splits respectively, similar to those of the 
+baseline without self-modif i cation (Table 3). 
+5. Discussion 
+Here we discuss interesting aspects (ignored in the previ- 
+ous sections) of the proposed SRWM and the experimental 
+settings. 
+Reducing the ratio between learning complexity and 
+number of time-varying variables.Our SRWM inher- 
+its a remarkable property of the 1993 system (Schmidhuber, 
+1993d): it has many more temporal variables under mas- 
+sively parallel end-to-end differentiable control than what���s 
+possible in standard RNNs of the same size:O(d2)instead 
+of O(d), where d is the number of hidden units. 
+Interpretability.In general, interpreting NNs is not 
+straightforward. The values of��tof Eq. 8 in the RL setting 
+intuitively def i ne the strength of the weight modif i cations. 
+We observe that the values of all four components of��tvary 
+between 0.50 and 0.65 depending on the input, instead of 
+covering the full range of sigmoid values between 0 and 
+1. We i nd it diff i cult to derive any further interpretation 
+beyond these statistics. Note, however, that��tby itself 
+does not fully describe the self-modif i cation effects of Eq. 8, 
+which also depend on the actual values of key and query. 
+Implementation/Limitation.Similar to recent works on 
+fast weight programmers (Schlag et al., 2021; Katharopou- 
+los et al., 2020; Irie et al., 2021), our SRWM is implemented 
+as a custom CUDA kernel. While this approach yields 
+competitive computation time and memory-eff i cient custom 
+backpropagation, its l exibility is limited. For instance, to 
+replace all weight matrices in an RL agent���s vision module 
+or in the feature extractor for few-shot learning, a custom im- 
+plementation for convolution would be required, although 
+in principle the SRWM above could replace any regular 
+weight matrix. In constrast, vision models that are fully 
+based on linear layers such as the MLP-Mixer (Tolstikhin 
+et al., 2021) can be straightforwardly combined with the 
+SRWM. Regarding speed, the feedforward and LSTM base- 
+lines process about 3,500 steps per second, while DeltaNet 
+A Modern Self-Referential Weight Matrix That Learns to Modify Itself 
+and SRWM do 2,300 and 1,700 steps per second respec- 
+tively on a single P100 GPU in the RL experiments which 
+require slow state copying due to separate interaction and 
+training modes. In supervised few-shot learning settings, 
+the speeds of LSTM, DeltaNet and SRWM are comparable. 
+With a batch size of 128, they process about 8,000 images 
+per second, using the same Conv-4 backend on 1-shot Om- 
+niglot on a single P100 GPU. 
+Limitation of this paper���s scope.The main tasks in our 
+experiments are limited to those solvable by feed-forward 
+NNs: image classif i cation and RL in fully observable en- 
+vironments. Appendix C.1 presents promising preliminary 
+experiments on multi-task RL in partially observable envi- 
+ronments using the memory distribution of ProcGen. We 
+found that augmenting the DeltaNet (which already has a 
+short-term memory) with an SRWM by replacing the slow 
+weight matrix in the DeltaNet by an SRWM yields perfor- 
+mance improvements. Further experiments are needed to 
+test the SRWM on tasks which themselves require sequence 
+processing, while involving adaptation to different types or 
+domains of sequences, e.g., automated domain adaptation in 
+language modelling (Irie et al., 2018; Lazaridou et al., 2021). 
+Other perspectives.While we motivated our work purely 
+from the perspective of context-adaptive self-modifying 
+NNs, never-ending self-reconf i guration could also be mo- 
+tivated by analogy to ���livewired��� synaptic connections in 
+biological neural networks (Eagleman, 2020). 
+6. Related Work 
+Original Self-Referential Weight Matrix.The original 
+SRWM was proposed in the ���90s as a framework for self- 
+improving recurrent NNs (Schmidhuber, 1992a; 1993a;b;c). 
+Such an RNN has special input and output units to directly 
+address, read, and modify any of its own current weights 
+through an index for each weight of its weight matrix (i.e., 
+for a weight matrix with an input/output dimensionN, the 
+weight index ranges from 0 toN2���1which is encoded as a 
+binary vector). In contrast, our self-modif i cation is based on 
+key/value associations, i.e., to encode a WM modif i cation, 
+our NN generates a key vector, value vectors, and a tempo- 
+rary learning rate which allows for the rapid modif i cation 
+of an entire rank at a time (Schmidhuber, 1991; 1993d). 
+This design is reinforced by the recent success of linear 
+Transformers and fast weight programmers (Katharopoulos 
+et al., 2020; Schlag et al., 2021; Irie et al., 2021). In this 
+sense, our SRWM is a modern approach to self-modif i cation, 
+even if the use of outer products to parameterise fast weight 
+generation itself is not (e.g. Schmidhuber (1991; 1993d)). 
+Other Self-Modifying Neural Networks.There are also 
+morerecentworksonself-modifyingNNs. Neuromodulated 
+plasticity is a Hebbian-style self-modif i cation (Miconi et al., 
+2018; 2019; Schmidgall, 2020; Najarro & Risi, 2020) which 
+also makes use of outer products to generate a modulation 
+term which is added to the base weights. The correspond- 
+ing computations can also be interpreted as key/value/query 
+association operations. However, the key, query, and value 
+patterns are hard-coded to be one of the input/output pairs 
+of the corresponding layer at each time step. While this cir- 
+cumvents the necessity to allocate parameters for generating 
+those vectors, it is known that the resulting program can be 
+expressed in terms of an unnormalised attention (Schmid- 
+huber, 1993d) over the past outputs (Ba et al., 2016). In 
+contrast, in our model, all these patterns are arbitrary as they 
+are generated from learned transformations whose parame- 
+ters are themselves self-modifying. 
+Hierarchical Fast Weight Programmers.As reviewed 
+in Sec. 2, an FWP is an NN which learns to generate, update, 
+and maintain weights of another NN. However, a typical 
+FWP has a slow NN with a weight matrix that remains i xed 
+after training. Previous work (Irie et al., 2021) has proposed 
+to go one step further by parameterising the slow weights 
+in the Delta Net with another FWP to obtain the DeltaDelta 
+Net. However, such a hierarchy has no end, as the highest 
+level programmer would still have a i xed weight matrix. In 
+this work, we follow the spirit of early work (Schmidhuber, 
+1992a; 1993a;b;c;d) and collapse these potentially hierar- 
+chical meta-levels into one single
+1 / 1
+ChatGPT
+level by allowing the weights of the network to modify themselves directly. The described SRWM (Self-Referential Weight Matrix) implementation thus provides a modern and efficient approach to self-modification, contrasting with the fixed hierarchical structures of prior methods. The integration of key/value associations and temporary learning rates enables rapid modification of entire ranks, reflecting the influence of recent successes in linear Transformers and fast weight programmers.
+The text you provided appears to be an excerpt from a scientific paper or article detailing the specifics of an SRWM. The discussed topics cover the technical characteristics, implementation details, interpretability challenges, limitations, and the historical context of self-modifying neural networks, specifically focusing on SRWM. If you have any specific questions about this material, please let me know!
+1 / 1
+Limitation of this paper���s scope.The main tasks in our 
+experiments are limited to those solvable by feed-forward 
+NNs: image classif i cation and RL in fully observable en- 
+vironments. Appendix C.1 presents promising preliminary 
+experiments on multi-task RL in partially observable envi- 
+ronments using the memory distribution of ProcGen. We 
+found that augmenting the DeltaNet (which already has a 
+short-term memory) with an SRWM by replacing the slow 
+weight matrix in the DeltaNet by an SRWM yields perfor- 
+mance improvements. Further experiments are needed to 
+test the SRWM on tasks which themselves require sequence 
+processing, while involving adaptation to different types or 
+domains of sequences, e.g., automated domain adaptation in 
+language modelling (Irie et al., 2018; Lazaridou et al., 2021). 
+Other perspectives.While we motivated our work purely 
+from the perspective of context-adaptive self-modifying 
+NNs, never-ending self-reconf i guration could also be mo- 
+tivated by analogy to ���livewired��� synaptic connections in 
+biological neural networks (Eagleman, 2020). 
+6. Related Work 
+Original Self-Referential Weight Matrix.The original 
+SRWM was proposed in the ���90s as a framework for self- 
+improving recurrent NNs (Schmidhuber, 1992a; 1993a;b;c). 
+Such an RNN has special input and output units to directly 
+address, read, and modify any of its own current weights 
+through an index for each weight of its weight matrix (i.e., 
+for a weight matrix with an input/output dimensionN, the 
+weight index ranges from 0 toN2���1which is encoded as a 
+binary vector). In contrast, our self-modif i cation is based on 
+key/value associations, i.e., to encode a WM modif i cation, 
+our NN generates a key vector, value vectors, and a tempo- 
+rary learning rate which allows for the rapid modif i cation 
+of an entire rank at a time (Schmidhuber, 1991; 1993d). 
+This design is reinforced by the recent success of linear 
+Transformers and fast weight programmers (Katharopoulos 
+et al., 2020; Schlag et al., 2021; Irie et al., 2021). In this 
+sense, our SRWM is a modern approach to self-modif i cation, 
+even if the use of outer products to parameterise fast weight 
+generation itself is not (e.g. Schmidhuber (1991; 1993d)). 
+Other Self-Modifying Neural Networks.There are also 
+morerecentworksonself-modifyingNNs. Neuromodulated 
+plasticity is a Hebbian-style self-modif i cation (Miconi et al., 
+2018; 2019; Schmidgall, 2020; Najarro & Risi, 2020) which 
+also makes use of outer products to generate a modulation 
+term which is added to the base weights. The correspond- 
+ing computations can also be interpreted as key/value/query 
+association operations. However, the key, query, and value 
+patterns are hard-coded to be one of the input/output pairs 
+of the corresponding layer at each time step. While this cir- 
+cumvents the necessity to allocate parameters for generating 
+those vectors, it is known that the resulting program can be 
+expressed in terms of an unnormalised attention (Schmid- 
+huber, 1993d) over the past outputs (Ba et al., 2016). In 
+contrast, in our model, all these patterns are arbitrary as they 
+are generated from learned transformations whose parame- 
+ters are themselves self-modifying. 
+Hierarchical Fast Weight Programmers.As reviewed 
+in Sec. 2, an FWP is an NN which learns to generate, update, 
+and maintain weights of another NN. However, a typical 
+FWP has a slow NN with a weight matrix that remains i xed 
+after training. Previous work (Irie et al., 2021) has proposed 
+to go one step further by parameterising the slow weights 
+in the Delta Net with another FWP to obtain the DeltaDelta 
+Net. However, such a hierarchy has no end, as the highest 
+level programmer would still have a i xed weight matrix. In 
+this work, we follow the spirit of early work (Schmidhuber, 
+1992a; 1993a;b;c;d) and collapse these potentially hierar- 
+chical meta-levels into one single self-referential weight 
+matrix. 
+Fixed Weight Meta-RNNs.Learning learning dynamics 
+using a i xed-weight NN (typically an RNN) has become a 
+common approach (Hochreiter et al., 2001; Cotter & Con- 
+well, 1990; 1991; Santoro et al., 2016; Wang et al., 2017; 
+Duan et al., 2016; Munkhdalai & Yu, 2017; Munkhdalai 
+et al., 2019; Kirsch & Schmidhuber, 2021; Sandler et al., 
+2021).A truly self-referential weight matrix, however, 
+would allow for modifying all of its own components. The 
+onlythingthat���strainedbygradientdescentaretheSRWM���s 
+initial weights at the beginning���all of them, however, may 
+rapidly change during sequence processing, in a way that���s 
+driven by the SRWM itself. 
+Dynamic Evaluation.Auto-regressive language mod- 
+elling is an interesting task in the context of sequence pro- 
+cessing with error feedback. In the standard testing scenario, 
+language models receive a label feedback after each predic- 
+tion at each time step. Such feedback may not only act as 
+error feedback and inf l uence NN activations like in i xed 
+weight meta-RNNs: in the common method of dynamic 
+evaluation (Mikolov et al., 2010; Krause et al., 2018), it is 
+also used to adapt the weights at test time using the i xed gra- 
+dient descent algorithm. A self-referential approach could 
+also adapt the corresponding adaptation algorithm. 
+A Modern Self-Referential Weight Matrix That Learns to Modify Itself 
+Recursive Self-Improvements.Beyond the scope of 
+NNs, recursive self-modif i cation (Good, 1965; Eden et al., 
+2013) is of general interest when considering autonomous, 
+self-improving machines (Schmidhuber, 1987; 2006; Wang, 
+2007; Nivel & Th��orisson, 2009; Steunebrink et al., 2016; 
+Wang et al., 2018). While we proposed a WM that can 
+recursively modify itself, our i rst set of experiments is 
+limited to studying its practical ability on well known super- 
+vised and reinforcement learning tasks. In future work, we 
+intend to def i ne additional tasks for specif i cally measuring 
+the ability to self-improve. This work may also have to 
+consider standard limitations of NNs such as their lack of 
+systematic generalisation (Fodor et al., 1988), including 
+length generalisation (e.g., see recent work on Transformers 
+(Csord��as et al., 2022)), in the context of self-improving 
+NNs. For example, in the long run, there is no guarantee 
+that the SRWM���s self-modif i cations preserve the original 
+objective function it is trained for (Hubinger et al., 2019). 
+7. Conclusion 
+We proposed a new type of self-referential weight matrix 
+(SRWM) with a modern mechanism for self-modif i cation. 
+Our self-modifying neural networks (NNs) learn to generate 
+patterns of keys and values and learning rates, translating 
+these patterns into rapid changes of their own weight matrix 
+through sequential outer products and invocations of the 
+delta update rule. In a set of three experiments, we demon- 
+strated that our generic SRWM is practical and performs 
+well in both supervised few-shot learning and multi-task 
+reinforcement learning settings, using procedurally gener- 
+ated game environments. Our promising results encourage 
+further investigations of self-improving NNs.
+1 / 1
+ChatGPT
+It seems like you've pasted a significant portion of a research paper related to self-modifying neural networks (NNs), specifically focusing on a new type of self-referential weight matrix (SRWM). The text covers the limitations and scope of the research, related work, a modern approach to SRWM, and the conclusion of the study. If you have any specific questions or need clarification on any part of this text, please let me know!
+1 / 1
+They were all excerpts from the article A Modern Self-Referential Weight Matrix That Learns to Modify Itself
+1 / 1
+ChatGPT
+Got it! These excerpts seem to cover various aspects of the self-referential weight matrix, its modern implementation, related works, and potential future research directions. If you have any questions or need more insights into a specific part of this article, please feel free to ask!
+1 / 1
+The main points
+1 / 1
+ChatGPT
+Certainly! From the excerpts of the article "A Modern Self-Referential Weight Matrix That Learns to Modify Itself," the main points appear to be:
+Introduction of a Self-Referential Weight Matrix (SRWM):
+The article presents a modernized SRWM that can modify itself. It draws inspiration from "livewired" synaptic connections in biological networks and builds upon previous self-referential frameworks from the '90s.
+Limitations of Experiments:
+The work mainly focuses on tasks solvable by feed-forward neural networks, specifically in the areas of image classification and reinforcement learning (RL) in fully observable environments. More research is required to explore its potential in sequence processing tasks.
+Key Design Aspects of SRWM:
+The self-modification in this SRWM is based on key/value associations, reinforced by the success of linear Transformers and fast weight programmers.
+Comparison with Other Self-Modifying Neural Networks:
+It contrasts other self-modifying techniques like Neuromodulated plasticity, providing insights into how the SRWM's design differs.
+Hierarchical Fast Weight Programmers and Fixed Weight Meta-RNNs:
+The article explores concepts like hierarchical fast weight programmers and fixed weight meta-RNNs, analyzing how they relate to or differ from SRWM.
+Dynamic Evaluation and Recursive Self-Improvements:
+The article also delves into related concepts like dynamic evaluation in language modeling and the broader idea of recursive self-modification in autonomous systems.
+Practical Application and Performance:
+The SRWM is tested in supervised few-shot learning and multi-task reinforcement learning settings, showing promising results in these areas.
+Future Considerations:
+The authors intend to further explore the self-improving ability of SRWM, including addressing its limitations such as the lack of systematic generalization.
+Conclusion:
+The article concludes with an affirmation of the practicality and performance of the SRWM in modern applications, encouraging further exploration and research in self-improving neural networks.
+These main points encapsulate a comprehensive exploration of the novel concept of SRWM, its theoretical foundations, practical applications, and potential future directions.
+1 / 1
+Linear Transformers Are Secretly Fast Weight Programmers 
+Imanol Schlag��� 1Kazuki Irie��� 1J�� urgen Schmidhuber1 
+Abstract 
+We show the formal equivalence of linearised self- 
+attention mechanisms and fast weight controllers 
+from the early ���90s, where a ���slow��� neural net 
+learns by gradient descent to program the ���fast 
+weights��� of another net through sequences of ele- 
+mentary programming instructions which are ad- 
+ditive outer products of self-invented activation 
+patterns (today called keys and values). Such Fast 
+Weight Programmers (FWPs) learn to manipulate 
+the contents of a i nite memory and dynamically 
+interact with it. We infer a memory capacity limi- 
+tation of recent linearised softmax attention vari- 
+ants, and replace the purely additive outer prod- 
+ucts by a delta rule-like programming instruction, 
+such that the FWP can more easily learn to cor- 
+rect the current mapping from keys to values. The 
+FWP also learns to compute dynamically chang- 
+ing learning rates. We also propose a new kernel 
+function to linearise attention which balances sim- 
+plicity and effectiveness. We conduct experiments 
+on synthetic retrieval problems as well as standard 
+machine translation and language modelling tasks 
+which demonstrate the benef i ts of our methods. 
+1. Introduction 
+Transformers (Vaswani et al., 2017) have achieved impres- 
+sive results in a myriad of sequence processing tasks, in- 
+cluding machine translation, language modelling (Al-Rfou 
+et al., 2019; Dai et al., 2019; Baevski & Auli, 2019; Radford 
+et al., 2019), and question answering (Devlin et al., 2019), 
+domains previously dominated by recurrent neural networks 
+(Graves, 2013; Bahdanau et al., 2015). 
+The core component of a Transformer is the self-attention 
+mechanism(Chengetal.,2016;Parikhetal.,2016; Linetal., 
+2017) which was recently connected to the modern Hop- 
+*Equal contribution1The Swiss AI Lab IDSIA, USI & 
+SUPSI. Correspondence to: Imanol Schlag<imanol@idsia.ch>, 
+Kazuki Irie<kazuki@idsia.ch>, J��urgen Schmidhuber<juer- 
+gen@idsia.ch>. 
+Proceedings of the38thInternational Conference on Machine 
+Learning, PMLR 139, 2021. Copyright 2021 by the author(s). 
+i eld network (Ramsauer et al., 2021; Krotov & Hopf i eld, 
+2016; Demircigil et al., 2017). It extends a form of attention 
+(Bahdanau et al., 2015) originally introduced to complement 
+recurrent neural networks, e.g., (Hochreiter & Schmidhuber, 
+1997). While relinquishing the recurrence property, all com- 
+putations across the time axis can be parallelised. However, 
+this comes with drawbacks: self-attention computations 
+scale quadratically with sequence length while the mem- 
+ory of the model grows linearly. Therefore, practitioners 
+are forced to limit the context window to a reasonable size, 
+which in turn makes it impossible to capture longer-term 
+dependencies. 
+Recent work proposed ���linear Transformers��� with constant 
+size memory and time complexity linear in sequence length 
+(Katharopoulos et al., 2020; Choromanski et al., 2021; Peng 
+et al., 2021; Shen et al., 2018). This complexity reduction 
+is mainly due to a linearisation of the softmax (reviewed in 
+Sec. 3.2). 
+Here we emphasize the formal equivalence of this family of 
+linear Transformers and the Fast Weight Controllers or Fast 
+Weight Programmers (FWPs) from the ���90s (Schmidhuber, 
+1991; 1992; 1993; AI Blog, 2021) (apart from normalisa- 
+tion). The memories of such FWPs contain key-value asso- 
+ciations, and an FWP can learn to reprogram them through 
+sequences of differentiable elementary instructions (also 
+called update rules), which are additive outer products be- 
+tween keys and values invented by the FWP. 
+This view allows us to derive a limitation of the memory 
+capacity of linear Transformers and similar models. When 
+the sequence length exceeds storage capacity, the model 
+may end up in an overcapacity regime (discussed in depth 
+in Sec. 4.1). To properly operate under such a regime, the 
+model should learn to dynamically interact with the memory 
+contentsandselectivelydecidewhichkey-valueassociations 
+to keep and which ones to delete. The purely additive in- 
+struction may be inappropriate for this purpose. Therefore, 
+inspired by recent work on FWPs (Schlag et al., 2021), we 
+introduce an improved programming instruction akin to the famous error-correcting delta-rule (Widrow & Hoff, 1960). 
+Furthermore, softmax linearisation techniques for Transformers are still underexplored.The existing techniques are either very simplistic (Katharopoulos et al., 2020) or mathematically well explained but complex 
+arXiv:2102.11174v3 
+[cs.LG] 
+9 Jun 2021 
+Linear Transformers Are Secretly Fast Weight Programmers 
+(Choromanski et al., 2021; Peng et al., 2021). We provide 
+a comprehensive comparison and propose a new method 
+which is both simple and effective. 
+
+We demonstrate the benef i ts of the proposed methods on 
+our own synthetic retrieval dataset (Sec. 6.1), the stan- 
+dard WMT14 English to German machine translation task (Sec. 6.2), and the Wikitext-103 (Merity et al., 2017) language modelling task (Sec. 6.3)2.
+1 / 2
+ChatGPT
+Certainly! From the provided abstract and introduction, here are the main points of the article titled "Linear Transformers Are Secretly Fast Weight Programmers" by Imanol Schlag, Kazuki Irie, and J��rgen Schmidhuber:
+Equivalence with Fast Weight Programmers (FWPs):
+The paper establishes a formal equivalence between linearized self-attention mechanisms in modern Transformers and fast weight controllers from the early '90s. These FWPs are capable of dynamically interacting with and reprogramming the memory content.
+Memory Capacity Limitation:
+A limitation in the memory capacity of linear Transformers is identified, with challenges when sequence length exceeds storage capacity.
+New Programming Instruction:
+An improved programming instruction inspired by FWPs and the delta rule is introduced to facilitate better memory interaction and key-value association correction.
+Dynamic Learning Rates:
+The Fast Weight Programmer also learns to compute dynamically changing learning rates, further enhancing its capabilities.
+New Kernel Function for Linearized Attention:
+A new kernel function is proposed to linearize attention, balancing simplicity and effectiveness.
+Benefits and Practical Applications:
+The authors conduct experiments that demonstrate the benefits of their methods. This includes applications in synthetic retrieval problems, machine translation (WMT14 English to German), and the Wikitext-103 language modeling task.
+Analysis of Linear Transformers:
+The paper explores the complexity reduction in linear Transformers and the challenges associated with quadratic scaling in self-attention computations.
+Comparison with Existing Techniques:
+The paper provides a comprehensive comparison between existing techniques for softmax linearization in Transformers and proposes a method that is both simple and effective.
+Conclusion:
+The paper concludes with a demonstration of the benefits of the proposed methods on various tasks, highlighting the practical relevance of recognizing linear Transformers as Fast Weight Programmers.
+This paper connects modern developments in Transformers with historical concepts from neural network research, offering new insights and practical improvements.
+1 / 1
+3. Relation to Transformers 
+Ba et al. (2016) have already pointed out a relation between 
+a variant of outer product-based FWPs (Schmidhuber, 1993) 
+and attention (Bahdanau et al., 2015). Katharopoulos et al. 
+(2020) have analysed linearised transformers. We review 
+these derivations, emphasising the relation between Trans- 
+formers and the FWPs of the previous section. 
+3.1. Self-Attention Without Softmax Is a Fast Weight 
+Programmer 
+A self-attention layer in auto-regressive Transform- 
+ers (Vaswani et al., 2017) maps an input sequence 
+{x(i)}L 
+i=1,x(i) ���Rd��1toanoutputsequence 
+{y(i)}L i=1,y(i)��� Rd 
+value��1as 
+k(i),v(i),q(i)= Wkx(i),Wvx(i),Wqx(i)(4) 
+K(i)= ?K(i���1),k(i)] 
+��� Rd 
+key��i (5) 
+V 
+(i) = ?V 
+(i���1),v(i)] ��� Rdvalue��i 
+(6) 
+y(i)= V (i)softmax((K(i))>q(i)) (7) 
+Linear Transformers Are Secretly Fast Weight Programmers 
+where[A,a]denotes the concatenation of vectorato matrix 
+Aalong the time dimension,softmaxis applied along the 
+time dimension, andWk,Wv,Wqare trainable weight ma- 
+trices. We omit the scaling by1/pdkeyinside 
+the softmax 
+without loss of generality. 
+Now if we remove the softmax in Eq. 7 we obtain: 
+y(i)= V (i)?(K(i))>q(i)? 
+= ?V (i)(K(i))>?q(i) 
+= ? 
+i X 
+j=1 v(j)��� k(j)?q(i)(8) 
+Denoting byW(i)the corresponding weight matrix gener- 
+ated from key and value vectors: 
+W 
+(i) = ? 
+i X 
+j=1 v(j)��� k(j))(9) 
+we can rewrite Eqs. 4-7 such that they directly relate to 
+Eqs. 1-3 where the activation function��is the identity func- 
+tion and without query projection Wq: 
+k(i),v(i),q(i)= Wkx(i),Wvx(i),Wqx(i)(4) 
+W 
+(i) = W (i���1) + v(i)��� k(i)(10) 
+y(i)= W (i)q(i) (11) 
+3.2. Linearising Self-Attention 
+Instead of removing the softmax as in Sec. 3.1, prior works 
+have introduced techniques for linearising the softmax (Tsai 
+et al., 2019), which has been shown to improve com- 
+putational eff i ciency of self-attention for long sequences 
+(Katharopoulos et al., 2020; Choromanski et al., 2021; Peng 
+et al., 2021). 
+By writing the softmax explicitly, Eq. 7 can be written as: 
+y(i)= 
+i X 
+j=1 
+v(j)��(k(j),q(i)) 
+Pi 
+j0=1��(k(j 0),q(i)) 
+(12) 
+where��(k,q) = exp(k �� q) ��� R>0is 
+the softmax kernel 
+and k �� q = k>q 
+is the vector dot product. 
+The general idea is to replace the softmax kernel��by an- 
+other kernel:��0(k,q) = ��(k)>��(q)where��is a function 
+Rdkey��� Rddot. 
+We discuss the necessary properties of��in 
+Sec. 5.1. By replacing �� in Eq. 12 by ��0, we obtain 
+y(i)= 
+i X 
+j=1 
+v(j)��(k(j))>��(q(i)) 
+Pi 
+j0=1��(k(j 0)) �� ��(q(i)) 
+(13) 
+= Pi 
+j=1 ?v(j)��(k(j))>?��(q(i)) 
+?P 
+i j0=1��(k(j 0))? 
+�� ��(q(i)) 
+(14) 
+Using the outer-product notation, the numerator is analo- 
+gous to the case without softmax (Sec. 3.1): 
+i X 
+j=1 ?v(j)��(k(j))>?��(q(i)) =? 
+i X 
+j=1 v(j)��� ��(k(j))?��(q(i)) 
+By introducing the fast weight matrixW(i)and an addi- 
+tional vector z(i)for the denominator, 
+W 
+(i) = 
+i X 
+j=1 v(j)��� ��(k(j))(15) 
+z(i)= 
+i X 
+j=1 
+��(k(j))(16) 
+forward computations of linear Transformers can be written 
+as (Katharopoulos et al., 2020): 
+k(i),v(i),q(i)= Wkx(i),Wvx(i),Wqx(i)(4) 
+W 
+(i) = W (i���1) + v(i)��� ��(k(i))(17) 
+z(i)= z(i���1)+ ��(k(i))(18) 
+y(i)= 
+1 
+z(i)�� ��(q(i))W 
+(i)��(q(i)) (19) 
+which is a Fast Weight Programmer (Sec. 2) with normali- 
+sation. Hence, the core of linear Transformer variants are 
+outer product-based Fast Weight Programmers. 
+4. Analysing and Improving Linear 
+Transformers as Fast Weight Programmers 
+Viewing linear Transformer variants as Fast Weight Pro- 
+grammers provides us with two insights which we investi- 
+gate in this work: their capacity limits as associative memo- 
+ries (Sec. 4.1), and their ineptness to edit previously stored 
+associations (Sec. 4.2). 
+4.1. Capacity Limitation 
+Intuition.Endlessly adding new associations to a memory 
+of i nite size, as in Eq. 17, inevitably will reach a limit. In 
+linear attention, information is stored in a matrix and is 
+retrieved using matrix multiplication (see Eq. 19). As a 
+consequence, to prevent associations from interfering with 
+each other upon retrieval, the respective keys need to be 
+orthogonal. Otherwise, the dot product will attend to more 
+than one key and return a linear combination of values. 
+With keys embedded in addotspace, there cannot be more 
+thanddotorthogonal vectors. That is, storing more than 
+ddotassociations will result in a retrieval error. In linear 
+Transformers, when the length of the sequence is longer than 
+ddot, the model might be in such an overcapacity regime. 
+Whileweexperimentallydemonstratethiseffectontoytasks 
+(Sec. 6.1), prior work on tensor product representations 
+allows for a more formal discussion.
+1 / 2
+ChatGPT
+The passage you provided describes a particular perspective on linear Transformers, elucidating how they can be seen as Fast Weight Programmers (FWPs). This offers insights into their working mechanisms and potential limitations.
+In the described approach, linear Transformers are akin to Fast Weight Programmers, with their memory functioning through key-value associations. This relationship offers an understanding of the limitations in memory capacity of linear Transformers. When the sequence length exceeds the storage capacity, there may be overcapacity, leading to interference in retrieval and retrieval errors.
+The document also discusses techniques for linearizing the softmax in self-attention, offering computational efficiency, especially for long sequences. By using outer product-based Fast Weight Programmers and introducing additional elements like fast weight matrices and normalization, linear Transformers are shown to provide a means to approach the self-attention problem.
+The insights gained from viewing linear Transformers as Fast Weight Programmers lead to an exploration of their capacity limits and potential challenges in editing previously stored associations, which may have practical implications in model design and understanding.
+1 / 1
+Linear Transformers Are Secretly Fast Weight Programmers 
+Table 4.WikiText-103 language model perplexities when the 
+model is trained and evaluatedwithout truncating context, as 
+opposed to Table 2 where the context window is limited. The 
+medium conf i g is used. Neither positional encoding nor attention 
+normalisation is used for the Delta Net. The numbers of trainable 
+parameters (Prms.) are given in millions. We compare with the 
+Transformer-XL at different memory segment lengths. This re- 
+sults in different state sizes which are proportional to the memory 
+requirements during evaluation, and highlights the memory eff i- 
+ciency of the Delta Network. The state sizes are given in millions. 
+ModelPrms.State sizePerplexity 
+in M.in M.ValidTest 
+Linear Transformer89.80.13>260>260 
+Delta Network89.90.1327.829.4 
+Transformer-XL90.90.1365.765.5 
+1.0529.330.1 
+2.1026.427.4 
+6.2924.625.5 
+troduces a few extra computations. The wall clock time and 
+memory requirement (for the small LM setting) for the Lin- 
+ear Transformer with and without our delta update rule are: 
+63K and 66K words/sec, and 14 and 13GB respectively in 
+our implementation. The extra resource requirement is thus 
+marginal. As we use custom CUDA kernels for these linear 
+Transformers, they are faster than the regular Transformers 
+implemented in PyTorch which process 33K words/sec and 
+require 17GB memory. The speed of the DPFP and Per- 
+former models (for Table 5 in Appendix with a largerddot) 
+are 63K and 57K words/sec. Performers are slower because 
+of the sampling logic, which also motivates our DPFP. 
+Without truncating context.Given the constant space 
+requirements, we can feed inputs to linear Transformers 
+for an arbitrary number of steps. To properly assess the 
+model���s ability to process arbitrary long sequences, it is 
+crucial to make the training consistent with the evaluation 
+mode (Irie et al., 2019b). During training, we carry over 
+the fast weight memory from one training segment to the 
+following one, while still limiting the backpropagation span 
+to be within the segment. We train a Delta Net, using neither 
+positional encoding nor attention normalisation (the best 
+setting from Table 3). It was crucial to remove the attention 
+normalisation for the Delta Net since the accumulator blows 
+up as indicated in Sec. 4.2, while for the Linear Transformer, 
+removing it resulted in an even worse perplexity of over 
+1600. Table 4 shows the corresponding results. The Delta 
+Net yields a slight improvement over the best model with a 
+limited context window (Table 3), unlike the baseline Linear 
+Transformer model with the naive sum update rule which 
+breaks. We also train a Transformer-XL in our medium 
+conf i guration as a baseline model specif i cally designed for 
+this use case (Dai et al., 2019; Rae et al., 2020). We evaluate 
+it using different state sizes by changing the Transformer 
+XL���s memory and target segment lengths (see Appendix F 
+for further details). Performance of the Delta Net does not 
+yet match the performance of the Transformer XL when 
+the latter is evaluated with a large state size (large attention 
+window). However, when we take the state size into account 
+(Table 4), we observe that the Delta Net performs very 
+well with a small state size, which is a crucial property in 
+some practical applications (Irie et al., 2020). These results 
+are promising for future work on alternative Transformer 
+models which can run for an unlimited number of steps. 
+7. Conclusion 
+We emphasise the connection between linearised self- 
+attention and Fast Weight Programmers (FWPs, 1991) that 
+program their fast weight memories through sequences of 
+outer products between self-invented key and value pat- 
+terns. The FWP perspective allows for discussing associa- 
+tive memory capacity limitations of linear attention, and 
+for introducing an alternative differentiable elementary pro- 
+gramming instruction that the FWP can use to dynamically 
+edit the memory, akin to the famous delta rule, but such that 
+the FWP can learn to use the rule wisely through gradient 
+descent. We also propose and discuss a new method for 
+linearising attention. Experiments on synthetic and real lan- 
+guage tasks demonstrate the effectiveness of our proposals. 
+The FWP perspective opens up new avenues for investigat- 
+ing even better programming instructions and designs for 
+Transformers with i nite memory.
+1 / 1
+ChatGPT
+The given excerpt concludes a study that emphasizes the connection between linearized self-attention and Fast Weight Programmers (FWPs). By examining this relationship, the study discusses the capacity limitations of linear attention and introduces new methodologies, including a variant of the delta rule, to dynamically edit the memory.
+Here are some key takeaways from the text:
+Comparison between Models
+: A table comparing Linear Transformer, Delta Network, and Transformer-XL in terms of trainable parameters, state size, and perplexity in a language modeling task on WikiText-103 shows the memory efficiency of the Delta Network. It also illustrates the differences in speed and performance among these models.
+No Truncating Context
+: An important aspect of this study is the ability of linear Transformers to handle sequences of arbitrary length without truncating context. The Delta Net model, in particular, shows promising results with a small state size, which could be vital in specific applications.
+Delta Update Rule
+: A specific update rule is applied, increasing the efficiency of the Linear Transformer model. The extra resource requirement of this rule is minimal, as indicated by the wall clock time and memory requirements.
+Attention Normalisation
+: The text notes that removing attention normalization was crucial for the Delta Net to prevent issues but led to higher perplexity in the Linear Transformer.
+Conclusion and Future Prospects
+: The paper concludes by proposing a new method for linearizing attention and advocating the FWP perspective. This viewpoint reveals novel opportunities for future research in creating improved programming instructions and designs for Transformers with finite memory.
+This text may appeal to researchers and practitioners interested in deepening their understanding of Transformer models, particularly from the perspective of FWPs, and seeking innovative ways to handle large sequences and improve efficiency.
+1 / 1
+Language Models are Unsupervised Multitask Learners 
+Alec Radford *1 Jeffrey Wu *1 Rewon Child1David Luan1Dario Amodei **1 Ilya Sutskever **1 
+Abstract 
+Natural language processing tasks, such as ques- 
+tion answering, machine translation, reading com- 
+prehension, and summarization, are typically 
+approached with supervised learning on task- 
+specif i c datasets. We demonstrate that language 
+models begin to learn these tasks without any ex- 
+plicit supervision when trained on a new dataset 
+of millions of webpages called WebText. When 
+conditioned on a document plus questions, the an- 
+swers generated by the language model reach 55 
+F1 on the CoQA dataset- matching or exceeding 
+the performance of 3 out of 4 baseline systems 
+without using the 127,000+ training examples. 
+The capacity of the language model is essential 
+to the success of zero-shot task transfer and in- 
+creasing it improves performance in a log-linear 
+fashion across tasks. Our largest model, GPT-2, 
+is a 1.5B parameter Transformer that achieves 
+state of the art results on 7 out of 8 tested lan- 
+guage modeling datasets in a zero-shot setting 
+but still underf i ts WebText. Samples from the 
+model ref l ect these improvements and contain co- 
+herent paragraphs of text. These i ndings suggest 
+a promising path towards building language pro- 
+cessingsystemswhichlearntoperformtasksfrom 
+their naturally occurring demonstrations. 
+1. Introduction 
+Machine learning systems now excel (in expectation) at 
+tasks they are trained for by using a combination of large 
+datasets, high-capacity models, and supervised learning 
+(Krizhevsky et al., 2012) (Sutskever et al., 2014) (Amodei 
+et al., 2016). Yet these systems are brittle and sensitive to 
+slight changes in the data distribution (Recht et al., 2018) 
+and task specif i cation (Kirkpatrick et al., 2017). Current sys- 
+tems are better characterized as narrow experts rather than 
+*, **Equal contribution1OpenAI, San Francisco, Califor- 
+nia,United States.Correspondence to:Alec Radford 
+<alec@openai.com>. 
+competent generalists. We would like to move towards more 
+general systems which can perform many tasks ��� eventually 
+without the need to manually create and label a training 
+dataset for each one. 
+The dominant approach to creating ML systems is to col- 
+lect a dataset of training examples demonstrating correct 
+behavior for a desired task, train a system to imitate these 
+behaviors, and then test its performance on independent 
+and identically distributed (IID) held-out examples. This 
+has served well to make progress on narrow experts. But 
+the often erratic behavior of captioning models (Lake et al., 
+2017), reading comprehension systems (Jia & Liang, 2017), 
+and image classif i ers (Alcorn et al., 2018) on the diversity 
+and variety of possible inputs highlights some of the short- 
+comings of this approach. 
+Our suspicion is that the prevalence of single task training 
+on single domain datasets is a major contributor to the lack 
+of generalization observed in current systems. Progress 
+towards robust systems with current architectures is likely 
+to require training and measuring performance on a wide 
+range of domains and tasks. Recently, several benchmarks 
+have been proposed such as GLUE (Wang et al., 2018) and 
+decaNLP (McCann et al., 2018) to begin studying this. 
+Multitask learning (Caruana, 1997) is a promising frame- 
+work for improving general performance. However, mul- 
+titask training in NLP is still nascent. Recent work re- 
+ports modest performance improvements (Yogatama et al., 
+2019) and the two most ambitious efforts to date have 
+trainedonatotalof10and17(dataset, objective) 
+pairs respectively (McCann et al., 2018) (Bowman et al., 
+2018). From a meta-learning perspective, each(dataset, 
+objective)pair is a single training example sampled 
+from the distribution of datasets and objectives. Current 
+ML systems need hundreds to thousands of examples to 
+induce functions which generalize well. This suggests that 
+multitask training many need just as many effective training 
+pairs to realize its promise with current approaches. It will 
+be very diff i cult to continue to scale the creation of datasets 
+and the design of objectives to the degree that may be re- 
+quired to brute force our way there with current techniques. 
+This motivates exploring additional setups for performing 
+multitask learning. 
+The current best performing systems on language tasks 
+Language Models are Unsupervised Multitask Learners 
+Figure 1.Zero-shot task performance of WebText LMs as a function of model size on many NLP tasks. Reading Comprehension results 
+are on CoQA (Reddy et al., 2018), translation on WMT-14 Fr-En (Artetxe et al., 2017), summarization on CNN and Daily Mail (See et al., 
+2017), and Question Answering on Natural Questions (Kwiatkowski et al., 2019). Section 3 contains detailed descriptions of each result. 
+utilize a combination of pre-training and supervised i ne- 
+tuning. This approach has a long history with a trend to- 
+wards more l exible forms of transfer. First, word vectors 
+were learned and used as inputs to task-specif i c architec- 
+tures (Mikolov et al., 2013) (Collobert et al., 2011), then 
+the contextual representations of recurrent networks were 
+transferred (Dai & Le, 2015) (Peters et al., 2018), and re- 
+cent work suggests that task-specif i c architectures are no 
+longer necessary and transferring many self-attention blocks 
+is suff i cient (Radford et al., 2018) (Devlin et al., 2018). 
+These methods still require supervised training in order 
+to perform a task. When only minimal or no supervised 
+data is available, another line of work has demonstrated 
+the promise of language models to perform specif i c tasks, 
+such as commonsense reasoning (Schwartz et al., 2017) and 
+sentiment analysis (Radford et al., 2017).
+1 / 1
+ChatGPT
+The abstract and introductory section provided here are from a paper about using language models for unsupervised multitask learning. The authors are exploring an alternative approach to conventional supervised learning for tasks such as question answering, machine translation, reading comprehension, and summarization. Here are the main points:
+New Dataset ��� WebText
+: The study involves training language models on a vast new dataset called WebText, consisting of millions of webpages. They show that language models can learn various tasks without explicit supervision. Their model, GPT-2, even matches or exceeds the performance of some baseline systems without using traditional training examples.
+Zero-Shot Task Transfer
+: By increasing the capacity of the language model, the authors demonstrate improvements in zero-shot task transfer, where a model applies knowledge from one task to another without specific training.
+State of the Art Performance
+: Their largest model, GPT-2, with 1.5 billion parameters, achieves state-of-the-art results on several language modeling datasets without any fine-tuning specific to those tasks.
+Need for General Systems
+: Current machine learning systems are seen as "narrow experts" rather than "competent generalists." The paper highlights the desire to develop more generalized systems that can perform many tasks without the need to create and label a training dataset for each one.
+Shortcomings of Current Approach
+: The paper also discusses the current limitations of machine learning, including sensitivity to data changes, the lack of generalization across tasks, and the challenge of scaling the creation of datasets.
+Multitask Learning
+: The authors emphasize that multitask learning is a promising framework but still an emerging field in natural language processing (NLP). They suggest that current techniques may require significant scaling, and they propose exploring additional methods for multitask learning.
+Evolution of Transfer Learning in NLP
+: The text briefly traces the evolution of transfer learning in NLP, from word vectors to transferring self-attention blocks, illustrating the trend towards more flexible forms of transfer.
+Figure Description
+: There is a mention of a figure showcasing the zero-shot task performance of WebText language models on various NLP tasks, though the figure itself is not provided in the text.
+The ideas presented in this excerpt suggest an exciting direction for the field of natural language processing, emphasizing the importance of building more generalized and robust models capable of multitask learning.
+1 / 1
+In this paper, we connect these two lines of work and con- 
+tinue the trend of more general methods of transfer. We 
+demonstrate language models can perform down-stream 
+tasks in a zero-shot setting ��� without any parameter or archi- 
+tecture modif i cation. We demonstrate this approach shows 
+potential by highlighting the ability of language models to 
+perform a wide range of tasks in a zero-shot setting. We 
+achieve promising, competitive, and state of the art results 
+depending on the task. 
+2. Approach 
+At the core of our approach is language modeling. Lan- 
+guage modeling is usually framed as unsupervised distri- 
+bution estimation from a set of examples(x1,x2,...,xn) 
+each composed of variable length sequences of symbols 
+(s1,s2,...,sn). Since language has a natural sequential or- 
+dering, it is common to factorize the joint probabilities over 
+symbols as the product of conditional probabilities (Jelinek 
+& Mercer, 1980) (Bengio et al., 2003): 
+p(x) = 
+n Y 
+i=1 p(sn|s1,...,sn���1)(1) 
+This approach allows for tractable sampling from and es- 
+timation ofp(x)as well as any conditionals of the form 
+p(sn���k,...,sn|s1,...,sn���k���1). In recent years, there have 
+been signif i cant improvements in the expressiveness of mod- 
+els that can compute these conditional probabilities, such as 
+self-attention architectures like the Transformer (Vaswani 
+et al., 2017). 
+Learning to perform a single task can be expressed in a 
+probabilistic framework as estimating a conditional distri- 
+butionp(output|input). 
+Since a general system should be 
+able to perform many different tasks, even for the same 
+input, it should condition not only on the input but also 
+on the task to be performed.That is, it should model 
+p(output|input,task). 
+This has been variously formalized 
+in multitask and meta-learning settings. Task conditioning 
+is often implemented at an architectural level, such as the 
+task specif i c encoders and decoders in (Kaiser et al., 2017) 
+or at an algorithmic level such as the inner and outer loop 
+optimization framework of MAML (Finn et al., 2017). But 
+as exemplif i ed in McCann et al. (2018), language provides 
+a l exible way to specify tasks, inputs, and outputs all as a 
+sequence of symbols. For example, a translation training 
+example can be written as the sequence(translate to 
+french, english text, french text). Like- 
+wise, a reading comprehension training example can 
+be written as(answer the question, document, 
+question, answer). McCann et al. (2018) demon- 
+strated it was possible to train a single model, the MQAN, 
+Language Models are Unsupervised Multitask Learners 
+to infer and perform many different tasks on examples with 
+this type of format. 
+Language modeling is also able to, in principle, learn the 
+tasks of McCann et al. (2018) without the need for explicit 
+supervision of which symbols are the outputs to be pre- 
+dicted. Since the supervised objective is the the same as the 
+unsupervised objective but only evaluated on a subset of the 
+sequence, the global minimum of the unsupervised objective 
+is also the global minimum of the supervised objective. In 
+this slightly toy setting, the concerns with density estimation 
+as a principled training objective discussed in (Sutskever 
+et al., 2015) are side stepped. The problem instead becomes 
+whether we are able to, in practice, optimize the unsupervised objective to convergence. Preliminary experiments confi rmed that suff i ciently large language models are able to perform multitask learning in this toy-ish setup but learning is much slower than in explicitly supervised approaches.
+1 / 1
+ChatGPT
+In this portion of the paper, the authors discuss their approach, connecting previous lines of work to demonstrate the application of language models in a zero-shot setting for various tasks. Here's an outline of the key concepts:
+Language Modeling
+: The core of the approach is based on language modeling, treating language as a sequential ordering of symbols. The joint probabilities over symbols are expressed as the product of conditional probabilities, allowing for tractable sampling.
+Self-Attention and Transformer
+: Recent improvements in modeling these conditional probabilities are attributed to self-attention architectures like the Transformer.
+Task Conditioning
+: The authors propose that a general system should model the probability of output conditioned not only on input but also on the task. This has been implemented in various ways in multitask and meta-learning settings, including task-specific encoders and decoders, or more algorithmic frameworks like MAML.
+Language as a Flexible Tool
+: Language provides a flexible way to specify tasks, inputs, and outputs as sequences of symbols. For example, translation or reading comprehension tasks can be expressed in this way.
+MQAN Model
+: McCann et al. (2018) demonstrated that it was possible to train a single model, the MQAN, to infer and perform many different tasks on examples using this sequence format.
+Unsupervised Learning without Explicit Supervision
+: Language modeling can, in principle, learn these tasks without explicit supervision. The global minimum of the unsupervised objective is also the global minimum of the supervised objective.
+Challenges with Convergence
+: The authors note that sufficiently large language models can perform multitask learning in this setup, but learning is slower than in explicitly supervised approaches.
+By focusing on the potential of language models to perform multiple tasks without specific parameter or architecture modification, the authors showcase a novel way to approach natural language processing tasks. They highlight the potential for using unsupervised learning techniques to achieve promising results, but also acknowledge practical challenges, particularly in optimizing the unsupervised objective to convergence.
+1 / 1
+A list of all of the topics we have discussed so far.
+1 / 1
+ChatGPT
+Certainly! Here's a list of the topics we've discussed based on the excerpts from the paper you provided:
+Natural Language Processing Tasks and Unsupervised Learning
+Language Models Training on WebText Dataset
+Zero-Shot Task Transfer
+GPT-2 and its Performance
+Challenges with Current Machine Learning Systems
+Multitask Learning and Generalization
+The Dominant Approach to Creating ML Systems
+Shortcomings of Single Task Training
+The Trend Towards More Flexible Forms of Transfer
+Unsupervised Distribution Estimation in Language Modeling
+Use of Self-Attention Architectures like Transformer
+Probabilistic Framework for Multitask Learning
+Task Conditioning in Modeling
+Language as a Flexible Way to Specify Tasks
+The MQAN Model for Multitask Learning
+Unsupervised Learning without Explicit Supervision
+Challenges with Convergence in Unsupervised Learning
+These topics collectively cover the paper's approach to using language models for multitask learning, the application of transformers, zero-shot learning, and the challenges and possibilities in moving towards more general systems for handling various natural language processing tasks.
+1 / 1
+I think we need much larger token window sizes
+1 / 1
+ChatGPT
+Certainly, the token window size can impact the understanding and context of a conversation or analysis. If you need more detailed information, please feel free to ask specific questions or provide more context, and I'll do my best to assist you!
+1 / 1
+Before the topics you mentioned, we discussed: We discussed excerpts from the article "A Modern Self-Referential Weight Matrix That Learns to Modify Itself":
+
+Introduction and Motivation of a Self-Referential Weight Matrix (SRWM)
+
+Limitations and Scope of the Experiments Conducted
+
+Design and Mechanism of the SRWM
+
+Comparison with Other Self-Modifying Neural Networks
+
+Hierarchical Fast Weight Programmers
+
+Fixed Weight Meta-RNNs
+
+Dynamic Evaluation in Language Modeling
+
+Recursive Self-Improvement Concepts in Neural Networks
+
+Practical Application and Performance of SRWM
+
+Future Research Directions and Challenges
+
+Conclusion and Encouragement for Further Investigation.
+
+These topics provide a broad overview of the article's content, touching on theoretical concepts, design principles, comparisons, applications, and future considerations related to self-modifying neural networks and specifically the SRWM
+
+
+
+The article titled "Linear Transformers Are Secretly Fast Weight Programmers" by Imanol Schlag, Kazuki Irie, and J��rgen Schmidhuber.
+
+The equivalence between linearized self-attention mechanisms and fast weight controllers or Fast Weight Programmers (FWPs).
+
+The memory capacity limitation of linear Transformers.
+
+Introduction of a new programming instruction for better memory interaction.
+
+The dynamic computation of learning rates within the Fast Weight Programmer.
+
+A new kernel function proposed to linearize attention.
+
+The benefits and practical applications of the methods proposed in the article, including experiments on synthetic retrieval, machine translation, and language modeling tasks.
+
+An analysis of the complexity reduction in linear Transformers.
+
+A comparison between existing techniques for softmax linearization in Transformers and a proposed method.
+
+The practical relevance and connections between modern Transformers and historical neural network concepts.
+1 / 1
+ChatGPT
+Thank you for providing the detailed topics discussed earlier. It looks like the conversation has covered a broad range of subjects, including theoretical concepts, design principles, comparisons, and practical applications related to self-modifying neural networks, SRWM, and the functionalities of linear Transformers and Fast Weight Programmers.
+Is there anything specific you would like to explore further or any questions you have about these topics?
+1 / 1
+Connections between the topics
+1 / 1
+ChatGPT
+Certainly! Here are some connections between the various topics discussed:
+Self-Modifying Neural Networks and SRWM
+: The concept of a Self-Referential Weight Matrix (SRWM) directly falls under the umbrella of self-modifying neural networks. It represents an advanced mechanism that allows the neural network to modify its own structure to enhance learning.
+Linear Transformers and Fast Weight Programmers
+: The article about linear Transformers being equivalent to Fast Weight Programmers (FWPs) illustrates a profound connection between modern attention mechanisms and historical neural network concepts. This bridges the gap between attention-based models and the classical concept of fast weight programming.
+Memory Capacity and Learning Rates
+: Both the discussions around SRWM and linear Transformers touched on memory interaction. SRWM's design aims to increase the network's adaptability, while the linear Transformers' equivalence to FWPs offers a way to optimize memory capacity. The dynamic computation of learning rates within the Fast Weight Programmer can also be seen as a novel method to enhance memory efficiency.
+Practical Applications and Performance
+: Both articles discuss real-world applications and experiments. SRWM's practical application and performance are explored, and the linear Transformers are tested on tasks such as synthetic retrieval, machine translation, and language modeling. These applications show the potential impact of the discussed theories and mechanisms.
+Future Research and Development
+: Both discussions emphasize future research directions, challenges, and the encouragement for further investigation. This common thread highlights the evolving nature of the field and the ongoing pursuit of advancements in neural networks, learning mechanisms, and efficient model architectures.
+Comparative Analysis
+: In both conversations, there are comparisons made between the newly introduced concepts (such as SRWM, FWPs) and existing methods or architectures. This comparison helps to contextualize the new ideas within the broader field of machine learning and neural network design.
+Limitations and Challenges
+: The discussions outline not only the advancements but also the limitations and scope of the experiments conducted. This includes the memory capacity limitation of linear Transformers and the broader challenges in implementing self-modifying networks like SRWM.
+Overall, the connections between these topics offer an insightful glimpse into the complexities and interrelated nature of modern neural network design, learning efficiency, practical applications, and future development.
+1 / 1
+1991: Neural nets learn to program neural nets with fast weights (1991) - by Juergen Schmidhuber
+J��rgen Schmidhuber (26 March 2021, updated 2022)
+Pronounce: You_again Shmidhoobuh	AI Blog
+Twitter: @SchmidhuberAI
+26 March 1991: Neural nets learn to program neural nets with fast weights���like today's Transformer variants. 2021: New stuff!
+
+Abstract. How can artificial neural networks (NNs) process sequential data such as videos, speech, and text? Traditionally this is done with recurrent NNs (RNNs) that learn to remember past observations. Exactly 3 decades ago, however, a now very popular alternative to RNNs was published.[FWP0-1] A feedforward NN slowly learns by gradient descent to program the changes of the fast weights of another NN (see Sec. 1). Such Fast Weight Programmers (FWPs) can learn to memorize past data, too. In 1991, one of them[FWP0-1] computed its fast weight changes through additive outer products of self-invented activation patterns (now often called keys and values for self-attention; Sec. 2). The very similar Transformers[TR1-2] combine this with projections and softmax and are now widely used in natural language processing. For long input sequences, their efficiency was improved through Transformers with linearized self-attention[TR5-6] whose core is formally equivalent to the 1991 Fast Weight Programmers[MOST] (see this tweet). In 1993, I also introduced the attention terminology[FWP2] now used in this context[ATT] (Sec. 4), and extended the approach to RNNs that program themselves (Sec. 3). FWPs can solve the famous vanishing gradient problem aka deep learning problem (analyzed a few months later in 1991[VAN1]) through additive fast weight changes (Sec. 5). This is symmetric to the additive neural activations of LSTMs / Highway Nets / ResNets[HW1-3] (Sec. 5) which also have roots in 1991���the Annus Mirabilis of deep learning.[MIR] In 2021, we introduced a brand new, improved version[FWP6] of the 1991 fast weight update rule (Sec. 6). As an addendum, I also review our FWPs for reinforcement learning through neuroevolution[FWP5] (2005-, Sec. 7), goal-conditioned policy generators (2022),[GGP] and metalearning machines that learn to learn[FWPMETA1-9] (1992-2022, Sec. 8).
+
+Goedel MachineAs I have frequently emphasized since 1990,[AC90][PLAN][META] the connection strengths or weights of an artificial neural network (NN) should be viewed as its program. Inspired by G��del's universal self-referential formal systems,[GOD][GOD34] I built NNs whose outputs are changes of programs or weight matrices of other NNs[FWP0-2] (Sec. 1, 2, 3), and even self-referential recurrent NNs (RNNs) that can run and inspect and modify their own weight change algorithms or learning algorithms[FWPMETA1-5] (Sec. 8). A difference to G��del's work was that my universal programming language was not based on the integers, but on real-valued weights: each NN's output is differentiable with respect to its program. That is, a simple program generator (the efficient gradient descent procedure[BP1-4][BPA][R7]) can compute a direction in program space where one may find a better program,[AC90] in particular, a better program-modifying program.[FWP0-2][FWPMETA1-5] Much of my work since 1989 has exploited this fact.
+
+Successful learning in deep architectures started in 1965 when Ivakhnenko & Lapa published the first general, working learning algorithms for deep multilayer perceptrons with arbitrarily many hidden layers.[DEEP1-2] Their activation functions were Kolmogorov-Gabor polynomials which include the now popular multiplicative gates,[DL1-2] an important ingredient of later NNs with dynamic links or fast weights. In 1981, von der Malsburg was the first to explicitly emphasize the importance of NNs with rapidly changing weights.[FAST] The second paper on this was published by Feldman in 1982.[FASTa] The weights of a 1987 NN were sums of weights with a large learning rate and weights with a small rate[FASTb][T22] (but have nothing to do with the NN-programming NNs discussed below).
+
+Before 1991, no network learned by gradient descent to quickly compute the changes of the fast weight storage of another network or of itself. Such Fast Weight Programmers (FWPs) were published in 1991-93[FWP0-2] (Sec. 1, 2, 3, 4). They embody the principles found in certain types of what is now called attention[ATT] (Sec. 4) and Transformers[TR1-6] (Sec. 2, 3, 4, 5).
+1 / 1
+ChatGPT
+The abstract you've shared from J��rgen Schmidhuber's blog post titled "Neural nets learn to program neural nets with fast weights (1991)" contains a historical and conceptual overview of Fast Weight Programmers (FWPs), self-referential neural networks, and other significant developments related to deep learning. Here are some connections between this content and the previously discussed topics:
+Fast Weight Programmers and Transformers
+: Schmidhuber's work highlights the connection between FWPs and Transformer models, particularly in the context of attention mechanisms. This connection directly relates to the earlier discussion about the equivalence between linearized self-attention mechanisms and FWPs.
+Self-Referential Neural Networks
+: The idea of neural networks programming themselves, or self-referential recurrent neural networks (RNNs), corresponds with the previously mentioned concept of self-modifying neural networks and the Self-Referential Weight Matrix (SRWM).
+Historical Evolution of Deep Learning
+: Schmidhuber's abstract provides a historical trajectory of developments in neural networks, from the introduction of deep multilayer perceptrons in 1965 to modern concepts like Transformers and attention. This comprehensive view allows us to contextualize the more specific innovations and concepts previously discussed.
+Attention and Fast Weights
+: The abstract details the development of attention in neural networks and how this was influenced by the earlier idea of fast weight changes. This ties into the discussions on self-attention architectures like the Transformer and the broader concept of Fast Weight Programmers.
+Metalearning and Multi-Task Learning
+: Schmidhuber also touches on metalearning, learning to learn, and reinforcement learning, which connects with the principles behind multi-task learning, task conditioning, and zero-shot learning as discussed in the earlier paper.
+Vanishing Gradient Problem and Deep Learning Solutions
+: The abstract mentions solutions to the vanishing gradient problem, such as additive fast weight changes, which is a fundamental challenge in training deep neural networks. This connects with the ongoing pursuit of advancements in neural network design and learning efficiency.
+Real-Valued Weights and Differentiability
+: The concept of viewing connection strengths or weights of an artificial neural network as its program, with real-valued weights, reflects the mathematical foundations of neural networks. This is connected to the mathematical formulations and mechanisms previously discussed, including the factorization of joint probabilities in language modeling.
+Overall, Schmidhuber's abstract encapsulates a range of concepts and historical milestones that resonate with the various topics discussed earlier, drawing connections between different paradigms and technological advancements within the field of neural networks and deep learning.
+1 / 1
+1991: Neural nets learn to program neural nets with fast weights (1991) - by Juergen Schmidhuber
+J��rgen Schmidhuber (26 March 2021, updated 2022)
+Pronounce: You_again Shmidhoobuh	AI Blog
+Twitter: @SchmidhuberAI
+26 March 1991: Neural nets learn to program neural nets with fast weights���like today's Transformer variants. 2021: New stuff!
+
+Abstract. How can artificial neural networks (NNs) process sequential data such as videos, speech, and text? Traditionally this is done with recurrent NNs (RNNs) that learn to remember past observations. Exactly 3 decades ago, however, a now very popular alternative to RNNs was published.[FWP0-1] A feedforward NN slowly learns by gradient descent to program the changes of the fast weights of another NN (see Sec. 1). Such Fast Weight Programmers (FWPs) can learn to memorize past data, too. In 1991, one of them[FWP0-1] computed its fast weight changes through additive outer products of self-invented activation patterns (now often called keys and values for self-attention; Sec. 2). The very similar Transformers[TR1-2] combine this with projections and softmax and are now widely used in natural language processing. For long input sequences, their efficiency was improved through Transformers with linearized self-attention[TR5-6] whose core is formally equivalent to the 1991 Fast Weight Programmers[MOST] (see this tweet). In 1993, I also introduced the attention terminology[FWP2] now used in this context[ATT] (Sec. 4), and extended the approach to RNNs that program themselves (Sec. 3). FWPs can solve the famous vanishing gradient problem aka deep learning problem (analyzed a few months later in 1991[VAN1]) through additive fast weight changes (Sec. 5). This is symmetric to the additive neural activations of LSTMs / Highway Nets / ResNets[HW1-3] (Sec. 5) which also have roots in 1991���the Annus Mirabilis of deep learning.[MIR] In 2021, we introduced a brand new, improved version[FWP6] of the 1991 fast weight update rule (Sec. 6). As an addendum, I also review our FWPs for reinforcement learning through neuroevolution[FWP5] (2005-, Sec. 7), goal-conditioned policy generators (2022),[GGP] and metalearning machines that learn to learn[FWPMETA1-9] (1992-2022, Sec. 8).
+
+Goedel MachineAs I have frequently emphasized since 1990,[AC90][PLAN][META] the connection strengths or weights of an artificial neural network (NN) should be viewed as its program. Inspired by G��del's universal self-referential formal systems,[GOD][GOD34] I built NNs whose outputs are changes of programs or weight matrices of other NNs[FWP0-2] (Sec. 1, 2, 3), and even self-referential recurrent NNs (RNNs) that can run and inspect and modify their own weight change algorithms or learning algorithms[FWPMETA1-5] (Sec. 8). A difference to G��del's work was that my universal programming language was not based on the integers, but on real-valued weights: each NN's output is differentiable with respect to its program. That is, a simple program generator (the efficient gradient descent procedure[BP1-4][BPA][R7]) can compute a direction in program space where one may find a better program,[AC90] in particular, a better program-modifying program.[FWP0-2][FWPMETA1-5] Much of my work since 1989 has exploited this fact.
+
+Successful learning in deep architectures started in 1965 when Ivakhnenko & Lapa published the first general, working learning algorithms for deep multilayer perceptrons with arbitrarily many hidden layers.[DEEP1-2] Their activation functions were Kolmogorov-Gabor polynomials which include the now popular multiplicative gates,[DL1-2] an important ingredient of later NNs with dynamic links or fast weights. In 1981, von der Malsburg was the first to explicitly emphasize the importance of NNs with rapidly changing weights.[FAST] The second paper on this was published by Feldman in 1982.[FASTa] The weights of a 1987 NN were sums of weights with a large learning rate and weights with a small rate[FASTb][T22] (but have nothing to do with the NN-programming NNs discussed below).
+
+Before 1991, no network learned by gradient descent to quickly compute the changes of the fast weight storage of another network or of itself. Such Fast Weight Programmers (FWPs) were published in 1991-93[FWP0-2] (Sec. 1, 2, 3, 4). They embody the principles found in certain types of what is now called attention[ATT] (Sec. 4) and Transformers[TR1-6] (Sec. 2, 3, 4, 5).
+
+1. 1991: NNs learn to program other NNs, separating storage and control
+End-To-End Differentiable Fast Weights: NNs Learn to Program NNs (1991) Three decades ago, on 26 March 1991, I described a sequence-processing slow NN that learns by backpropagation[BP1-4] to rapidly modify the fast weights of another NN,[FWP0] essentially by adding or subtracting (possibly large) values to the fast weights at each time step of the sequence. This was later also published in Neural Computation.[FWP1] The slow NN learns to control or program the weights of the fast NN, such that the fast NN can quickly refocus its attention[ATT] (Sec. 4) on particular aspects of the incoming stream of input observations.
+
+That is, I separated storage and control like in traditional computers, but in a fully neural way (rather than in a hybrid fashion[PDA1][PDA2][DNC]). Compare my related work of 1990 on what's now sometimes called Synthetic Gradients.[NAN1-5]
+
+The slow NN does not simply overwrite the current fast weights, but changes them in a way that takes their past values into account. That is, although both NNs are of the feedforward type, they can solve tasks that normally only recurrent NNs (RNNs) can solve, since the slow NN can program the fast weights to implement a short-term memory of certain previous events. This so-called short-term memory may actually last for a long time���see Sec. 5.
+
+One of the FWPs of 1991[FWP0-1] is illustrated in the figure. There is a separate output unit of the slow net for each connection of the fast net. While processing a data sequence, the slow net can quickly reprogram the mapping from inputs to outputs implemented by the fast net. A disadvantage addressed in Sec. 2 is that the slow net needs many output units if the fast net is large.
+1 / 1
+ChatGPT
+It seems like you've posted an extensive abstract and description from J��rgen Schmidhuber's work on Fast Weight Programmers (FWPs) and neural nets learning to program other neural nets with fast weights. This information outlines the foundational concepts from 1991 and how they have led to the development of modern machine learning techniques, particularly in sequence processing and the idea of attention in neural networks.
+If you have any specific questions about this content or need further clarification on any points, please let me know!
+1 / 1
+1991: Neural nets learn to program neural nets with fast weights (1991) - by Juergen Schmidhuber
+J��rgen Schmidhuber (26 March 2021, updated 2022)
+Pronounce: You_again Shmidhoobuh	AI Blog
+Twitter: @SchmidhuberAI
+26 March 1991: Neural nets learn to program neural nets with fast weights���like today's Transformer variants. 2021: New stuff!
+
+Abstract. How can artificial neural networks (NNs) process sequential data such as videos, speech, and text? Traditionally this is done with recurrent NNs (RNNs) that learn to remember past observations. Exactly 3 decades ago, however, a now very popular alternative to RNNs was published.[FWP0-1] A feedforward NN slowly learns by gradient descent to program the changes of the fast weights of another NN (see Sec. 1). Such Fast Weight Programmers (FWPs) can learn to memorize past data, too. In 1991, one of them[FWP0-1] computed its fast weight changes through additive outer products of self-invented activation patterns (now often called keys and values for self-attention; Sec. 2). The very similar Transformers[TR1-2] combine this with projections and softmax and are now widely used in natural language processing. For long input sequences, their efficiency was improved through Transformers with linearized self-attention[TR5-6] whose core is formally equivalent to the 1991 Fast Weight Programmers[MOST] (see this tweet). In 1993, I also introduced the attention terminology[FWP2] now used in this context[ATT] (Sec. 4), and extended the approach to RNNs that program themselves (Sec. 3). FWPs can solve the famous vanishing gradient problem aka deep learning problem (analyzed a few months later in 1991[VAN1]) through additive fast weight changes (Sec. 5). This is symmetric to the additive neural activations of LSTMs / Highway Nets / ResNets[HW1-3] (Sec. 5) which also have roots in 1991���the Annus Mirabilis of deep learning.[MIR] In 2021, we introduced a brand new, improved version[FWP6] of the 1991 fast weight update rule (Sec. 6). As an addendum, I also review our FWPs for reinforcement learning through neuroevolution[FWP5] (2005-, Sec. 7), goal-conditioned policy generators (2022),[GGP] and metalearning machines that learn to learn[FWPMETA1-9] (1992-2022, Sec. 8).
+
+Goedel MachineAs I have frequently emphasized since 1990,[AC90][PLAN][META] the connection strengths or weights of an artificial neural network (NN) should be viewed as its program. Inspired by G��del's universal self-referential formal systems,[GOD][GOD34] I built NNs whose outputs are changes of programs or weight matrices of other NNs[FWP0-2] (Sec. 1, 2, 3), and even self-referential recurrent NNs (RNNs) that can run and inspect and modify their own weight change algorithms or learning algorithms[FWPMETA1-5] (Sec. 8). A difference to G��del's work was that my universal programming language was not based on the integers, but on real-valued weights: each NN's output is differentiable with respect to its program. That is, a simple program generator (the efficient gradient descent procedure[BP1-4][BPA][R7]) can compute a direction in program space where one may find a better program,[AC90] in particular, a better program-modifying program.[FWP0-2][FWPMETA1-5] Much of my work since 1989 has exploited this fact.
+
+Successful learning in deep architectures started in 1965 when Ivakhnenko & Lapa published the first general, working learning algorithms for deep multilayer perceptrons with arbitrarily many hidden layers.[DEEP1-2] Their activation functions were Kolmogorov-Gabor polynomials which include the now popular multiplicative gates,[DL1-2] an important ingredient of later NNs with dynamic links or fast weights. In 1981, von der Malsburg was the first to explicitly emphasize the importance of NNs with rapidly changing weights.[FAST] The second paper on this was published by Feldman in 1982.[FASTa] The weights of a 1987 NN were sums of weights with a large learning rate and weights with a small rate[FASTb][T22] (but have nothing to do with the NN-programming NNs discussed below).
+
+Before 1991, no network learned by gradient descent to quickly compute the changes of the fast weight storage of another network or of itself. Such Fast Weight Programmers (FWPs) were published in 1991-93[FWP0-2] (Sec. 1, 2, 3, 4). They embody the principles found in certain types of what is now called attention[ATT] (Sec. 4) and Transformers[TR1-6] (Sec. 2, 3, 4, 5).
+
+1. 1991: NNs learn to program other NNs, separating storage and control
+End-To-End Differentiable Fast Weights: NNs Learn to Program NNs (1991) Three decades ago, on 26 March 1991, I described a sequence-processing slow NN that learns by backpropagation[BP1-4] to rapidly modify the fast weights of another NN,[FWP0] essentially by adding or subtracting (possibly large) values to the fast weights at each time step of the sequence. This was later also published in Neural Computation.[FWP1] The slow NN learns to control or program the weights of the fast NN, such that the fast NN can quickly refocus its attention[ATT] (Sec. 4) on particular aspects of the incoming stream of input observations.
+
+That is, I separated storage and control like in traditional computers, but in a fully neural way (rather than in a hybrid fashion[PDA1][PDA2][DNC]). Compare my related work of 1990 on what's now sometimes called Synthetic Gradients.[NAN1-5]
+
+The slow NN does not simply overwrite the current fast weights, but changes them in a way that takes their past values into account. That is, although both NNs are of the feedforward type, they can solve tasks that normally only recurrent NNs (RNNs) can solve, since the slow NN can program the fast weights to implement a short-term memory of certain previous events. This so-called short-term memory may actually last for a long time���see Sec. 5.
+
+One of the FWPs of 1991[FWP0-1] is illustrated in the figure. There is a separate output unit of the slow net for each connection of the fast net. While processing a data sequence, the slow net can quickly reprogram the mapping from inputs to outputs implemented by the fast net. A disadvantage addressed in Sec. 2 is that the slow net needs many output units if the fast net is large.
+
+2. NNs program NNs through outer products: core of linear Transformers
+Slow neural net programs fast neural net through additive outer products
+
+The Fast Weight Programmer[FWP0-1] depicted in Sec. 1 has a slow net unit for each fast weight. However, Section 2 of the same 1991 paper[FWP0] also describes a more efficient approach which has become the core principle of linear[TR5-6] Transformers[TR1-2] or attention[ATT] (compare Sec. 4).
+
+Here the slow net has a special unit for each fast net unit from which at least one fast connection is originating. The set of these units is called FROM (blue in the image). The slow net also has a special unit for each fast net unit to which at least one fast connection is leading. The set of these units is called TO (red in the image). At every time step of sequence processing, each fast weight may rapidly change in proportion to the product of the current activations of the corresponding units in FROM and TO. This product is simply added to the fast weight (which then may be normalized by a squashing function[FWP0]). The additive part by itself essentially overcomes the vanishing gradient problem���see Sec. 5.
+
+In today's Transformer terminology, FROM and TO are called key and value, respectively. The INPUT to which the fast net is applied is called the query. Essentially, the query is processed by the fast weight matrix, which is a sum of outer products of keys and values (ignoring normalizations and projections). Since all operations of both networks are differentiable, we obtain end-to-end differentiable active control of fast weight changes through additive outer products or second order tensor products.[FWP0-3a] Hence the slow net can learn by gradient descent to rapidly modify the fast net during sequence processing. This is mathematically equivalent (apart from normalization) to what was later called Transformers with linearized self-attention (or linear Transformers).[FWP6][TR5-6]
+
+The highly successful Transformers of 2017[TR1-2] can be viewed as a combination of my additive outer product fast weight principle[FWP0-2] and softmax: attention (query, key, value) ~ softmax (query key) value. The attention weights in Transformers can be viewed as context-dependent weight vectors or NN-programmed fast weights (Sec. 5 & 1).
+
+In the interest of efficiency, linear Transformers (2020-21)[TR5-6] abandoned the softmax, essentially resurrecting the original 1991 system.[FWP0-1] Compare Sec. 6.
+
+Of course, plain outer products in NNs go back at least to Hebb's informal rule (1949)[HE49] and concrete formal implementations through Steinbuch's Learning Matrix around 1960.[ST61-63][AMH1-2][KOH72][LIT74][PAL80][KOS88] However, these authors described pre-wired rules to associate given patterns with each other. Their systems did not learn to use such rules for associating self-invented patterns like the FWPs since 1991.[FWP0-3a][TR5-6] The latter are essentially NN-programming NNs whose elementary programming instructions are additive outer product rules. The NNs must learn to use the rules wisely to achieve their goals.
+
+I offered the FWPs of 1991[FWP0-1] as an alternative to sequence-processing recurrent NNs (RNNs) (Sec. 1), the computationally most powerful NNs of them all.[UN][MIR](Sec. 0) Modern Transformers are also viewed as RNN alternatives, despite their limitations.[TR3-4]
+1 / 1
+ChatGPT
+It seems like you've provided an excerpt from J��rgen Schmidhuber's work regarding neural networks, fast weight programmers, and Transformers. This text provides an insightful overview of Schmidhuber's contributions to deep learning, specifically focusing on how artificial neural networks can process sequential data, the origins of the fast weight concept, and its connection to today's Transformer models.
+Is there a specific question or topic you'd like to know more about or discuss?
+1 / 1
+3. Core principles of recurrent linearized Transformers in 1993The slow net and the fast net of the 1991 system[FWP0-1] in Sec. 2 were feedforward NNs (FNNs), like most current Transformers.[TR1-6] In 1993, however, to combine the best of both recurrent NNs (RNNs) and fast weights, I collapsed all of this into a single RNN that could rapidly reprogram all of its own fast weights through additive outer product-based weight changes.[FWP2]
+
+One motivation reflected by the title of the paper[FWP2] was to get many more temporal variables under massively parallel end-to-end differentiable control than what's possible in standard RNNs of the same size: O(H2) instead of O(H), where H is the number of hidden units. This motivation and a variant of the method was republished over two decades later.[FWP4a][R4][MIR](Sec. 8)[T22](Sec. XVII, item H3)
+
+See also our more recent work on FWPs since 2017,[FWP3-3a][FWPMETA7][FWP6] and compare a recent study.[RA21]
+
+4. Attention terminology of 1993���Today, everybody is talking about attention when it comes to describing the principles of Transformers.[TR1-2] The additive outer products[FWP0-1] of the Fast Weight Programmers described in Sec. 2 and Sec. 3 are often viewed as attention layers. Similarly, the attention weights or self-attention weights (see also[FWP4b-d]) in Transformers can be viewed as context-dependent weight vectors or NN-programmed fast weights (Sec. 5).[FWP0-1], Sec. 9 & Sec. 8 of [MIR], Sec. XVII of [T22]
+
+This kind of attention-oriented terminology was introduced in my 1993 paper[FWP2] which explicitly mentioned the learning of internal spotlights of attention in its additive outer product-based (or second order tensor product-based) Fast Weight Programmers.[FWP2][ATT]
+
+5. Dual additive paths towards deep learning: LSTM v fast weight programsApart from possible normalization/squashing,[FWP0] the 1991 Fast Weight Programmer's weight changes are additive (Sec. 1 & 2). Additive FWPs do not suffer during sequence learning from the famous vanishing gradient problem aka deep learning problem. In fact, they embody a solution to this problem which was first analyzed by my brilliant student Sepp Hochreiter a few months later in his 1991 diploma thesis.[VAN1]
+
+���It turns out that the problem can be solved in two closely related ways, both of them based on additive control of temporal storage, and both of them dating back to 1991, our miraculous year of deep learning.[MIR]
+
+Basic Long Short-Term Memory[LSTM1] solves the problem by adding at every time step new real values to old internal neural activations through recurrent connections whose weights are always 1.0. That is, the core of LSTM is operating in a linear additive activation space (ignoring LSTM's multiplicative gates).[LSTM1][VAN1][MIR](Sec. 4 & Sec. 8)
+
+Additive FWPs[FWP0-2] (Sec. 1 & 2), however, solve the problem through a dual approach, namely, by adding real values to fast weights (rather than neuron activations). That is, they are operating in an additive fast weight space. Since the fundamental operation of NNs is to multiply weights by activations, both approaches are symmetric. By favoring additive operations yielding non-vanishing first derivatives and error flow,[VAN1] both are in principle immune to the vanishing gradient problem, for the same reason.
+
+Since 2017, Transformers[TR1-6] also follow the additive approach.[FWP0-2] Their context-dependent attention weights used for weighted averages of value vectors are like NN-programmed fast weights that change for each new input (compare Sec. 2 and Sec. 4 on attention terminology since 1993).
+
+���LSTM's traditional additive activation-based approach[LSTM1-13] is mirrored in the LSTM-inspired Highway Network (May 2015),[HW1][HW1a][HW3] the first working really deep feedforward neural network with hundreds of layers. It is essentially a feedforward version of LSTM[LSTM1] with forget gates.[LSTM2] If we open its gates (and keep them open), we obtain a special case called Residual Net or ResNet[HW2] (Dec 2015).
+
+In sum, to solve the deep learning problem through additive control of some NN's internal storage, we may use either the family of additive Fast Weight Programmers / (linear) Transformers, or the dual family of LSTM / Highway Nets / ResNets. The former are easily parallelizable.
+
+Remarkably, both of these dual approaches of 1991 have become successful. By the mid 2010s,[DEC] all the major IT companies overwhelmingly used LSTMs for speech recognition, natural language processing (NLP), machine translation, and many other AI applications. For example, LSTMs were used for translating texts many billions of times per day on billions of smartphones.[DL4] In recent years, however, Transformers have excelled at the traditional LSTM domain of NLP[TR1-2]���although there are still many language tasks that LSTM can rapidly learn to solve quickly[LSTM13] while plain Transformers can't yet.[TR4]
+
+An orthogonal approach to solving the deep learning problem is based on unsupervised pre-training of deep NNs.[UN0-UN2][MIR](Sec. 1) Remarkably, this approach also dates back to 1991[UN] (which happens to be the only palindromic year of the 20th century).
+
+6. Most recent work on Fast Weight Programmers / Transformers (2021-)Note: The following Sections were edited in 2022 to reflect our most recent work.
+
+Recent work of February 2021[FWP6] with my PhD student Imanol Schlag and my postdoc Kazuki Irie not only emphasizes the formal equivalence of linear Transformer-like self-attention mechanisms[TR5-6] and Fast Weight Programmers[FWP0-2] (Sec. 2).[FWP4a][R4][MIR](Sec. 8)[T22](Sec. XVII, item H3) We also infer a memory capacity limitation of recent linearized softmax attention variants.[TR5-6] With finite memory, a desirable behavior of FWPs is to manipulate the contents of memory and dynamically interact with it. Building on previous work[FWPMETA7] on FWPs (Sec. 1, 2, 3, 8), we replace the 1991 elementary programming instruction based on additive outer products[FWP0-2] by a delta rule-like[WID] programming instruction, such that the FWP can more easily learn to correct the current mapping from keys to values. The FWP also learns to compute dynamically changing learning rates. We also introduce a new kernel function to linearize attention, balancing simplicity and effectiveness. To demonstrate the benefits of our methods, we conduct experiments on synthetic retrieval problems as well as standard machine translation and language modeling tasks.[FWP6] Our code is public.
+
+Our work of June 2021[FWP7] (also with Robert Csordas) points out that the original FWP formulation of 1991[FWP0-1] is more general than the one of linear Transformers: a slow NN continually reprograms the weights of a fast NN with arbitrary NN architectures. In existing linear Transformers, both NNs are feedforward and consist of a single layer. Here we explore new variations by adding recurrence to the slow and fast NNs. We evaluate our novel recurrent FWPs on two synthetic algorithmic tasks (code execution and sequential ListOps), Wikitext-103 language models, and on the Atari 2600 2D game environment. Our models exhibit properties of both Transformers and RNNs. In a reinforcement learning setting, we report large improvements over LSTM in several Atari games. Our code is public.
+
+7. Fast weights for reinforcement learning / neuroevolution (2005-)
+
+���
+
+Deep reinforcement learning (RL) without a teacher can profit from fast weights even when the environment's dynamics are not differentiable, as shown in 2005 with my former postdoc Faustino Gomez[FWP5] (now CEO of NNAISENSE) when affordable computers were about 1000 times faster than in the early 1990s. For example, a robot with three wheels controlled by a Fast Weight Programmer learned to balance a pole topped by another pole. Our 2005 paper on deep RL[DL6,6a] was actually the first machine learning publication with the word combination "learn deep" in the title.
+
+In the past 3 decades we have published quite a few additional ways of learning to quickly generate numerous weights of large NNs through very compact codes.[KO0-2][CO1-4] Here we exploited that the Kolmogorov complexity or algorithmic information content of successful huge NNs may actually be rather small. For example, in July 2013, the compact codes of Compressed Network Search[CO2] yielded the first deep learning model to successfully learn control policies directly from high-dimensional sensory input (video) using RL (in this case RL through neuroevolution), without any unsupervised pre-training.
+
+Recent work of 2022[GGP] with my students Francesco Faccio, Vincent Herrmann, Aditya Ramesh, and Louis Kirsch showed how Fast Weight Programmers can be used for RL through goal-conditioned generators of deep NNs that represent policies.
+
+8. Metalearning with Fast Weight Programmers
+
+���My first work on metalearning machines that learn to learn was published in 1987.[META][R3] Five years later, I showed how Fast Weight Programmers can also be used for metalearning in a very general way. In references[FWPMETA1-5] since 1992, the slow NN and the fast NN (Sec. 1) are recurrent and identical. The RNN can see its own errors or reward signals called eval(t+1) in the image.[FWPMETA5] The initial weight of each connection is trained by gradient descent, but during a training episode, each connection can be addressed and read and modified by the RNN itself through O(log n) special output units, where n is the number of connections���see time-dependent vectors mod(t), anal(t), ��(t), val(t+1) in the image. That is, each connection's weight may rapidly change, and the network becomes self-referential in the sense that it can in principle run arbitrary computable weight change algorithms or learning algorithms (for all of its weights) on itself.
+
+The 1993 FWP of Sec. 3[FWP2] also was an RNN that could quickly manipulate all of its own weights. However, unlike the self-referential RNN above,[FWPMETA1-5] it used outer products between key patterns and value patterns (Sec. 2) to manipulate many fast weights in parallel.
+
+In 2001, Sepp et al. used gradient descent in LSTM networks[LSTM1] instead of traditional RNNs to metalearn fast online learning algorithms for nontrivial classes of functions, such as all quadratic functions of two variables[HO1] (more on LSTM and fast weights in Sec. 5). In 2020, Imanol et al. augmented an LSTM with an associative fast weight memory.[FWPMETA7] Through differentiable operations at every step of a given input sequence, the LSTM updates and maintains compositional associations of former observations stored in the rapidly changing fast weights. The model is trained end-to-end by gradient descent and yields excellent performance on compositional language reasoning problems, small-scale word-level language modelling, and meta-RL for partially observable environments.[FWPMETA7]
+
+Our recent MetaGenRL (2020)[METARL10] meta-learns novel RL algorithms applicable to environments that significantly differ from those used for training. MetaGenRL searches the space of low-complexity loss functions that describe such learning algorithms. See the blog post of my PhD student Louis Kirsch. This principle of searching for simple learning algorithms is also applicable to fast weight architectures. Using weight sharing and sparsity, our recent Variable Shared Meta Learning (VS-ML) implicitly creates outer-product-like fast weights encoded in the activations of LSTMs.[FWPMETA6] This allows for encoding the learning algorithm by few parameters although it has many time-varying variables[FWP2] (Sec. 3). Some of these activations can be interpreted as NN weights updated by the LSTM dynamics. LSTMs with shared sparse entries in their weight matrix discover learning algorithms that generalize to new datasets. The meta-learned learning algorithms do not require explicit gradient calculation. VS-ML can also learn to implement the backpropagation learning algorithm[BP1-4] purely in the end-to-end differentiable forward dynamics of RNNs.[FWPMETA6]
+
+In 2022, we also published at ICML a modern self-referential weight matrix (SWRM)[FWPMETA8] based on the 1992 SWRM.[FWPMETA1-5] In principle, it can meta-learn to learn, and meta-meta-learn to meta-learn to learn, and so on, in the sense of recursive self-improvement (compare this tweet). We evaluated our SRWM on supervised few-shot learning tasks and on multi-task reinforcement learning with procedurally generated game environments. The experiments demonstrated both practical applicability and competitive performance of the SRWM.
+1 / 1
+ChatGPT
+It seems like your text was cut off at the end. What you've shared is a comprehensive overview of various concepts related to neural networks, such as recurrent linearized Transformers, additive paths towards deep learning, attention mechanisms, fast weight programmers, deep reinforcement learning, and metalearning.
+Would you like me to elaborate on a specific topic or assist with something specific from this text?
+1 / 1
+It was from Jurgen Schmidhuber's blog. I left out the acknowledgements and references
+1 / 1
+ChatGPT
+It appears that you've shared a detailed excerpt from J��rgen Schmidhuber's blog, which discusses various aspects of deep learning, including the principles of recurrent linearized Transformers, Fast Weight Programmers (FWPs), Long Short-Term Memory networks (LSTMs), and attention mechanisms. This passage also touches on topics such as the development of these techniques over time, recent works, and applications in reinforcement learning and metalearning.
+Is there something specific you'd like to know or ask about this content?
+1 / 1
+I want to know how it relates to curiosity algorithms and compression as a unifying principle
+1 / 1
+ChatGPT
+J��rgen Schmidhuber has long been a proponent of the idea that compression can be a unifying principle for learning and intelligence. Here's how the concepts mentioned earlier could relate to curiosity algorithms and compression as a unifying principle:
+Compression
+: The central idea is that intelligent agents build concise models of their observations and use those models to predict future observations. Compression is about finding regularities and patterns in data, which helps in forming compact representations. Techniques like Transformers, FWPs, and LSTMs can help build such representations by learning dependencies in data.
+Curiosity Algorithms
+: Curiosity in the context of machine learning typically refers to algorithms that motivate agents to explore unknown parts of their environment. It aligns with compression because, by seeking new information, the agent can add to its knowledge and build a more compressed model of the world. Essentially, the agent is driven by the desire to minimize the surprise and maximize the compression of its observations.
+Recurrent Linearized Transformers, FWPs, and LSTMs
+: These are specific techniques that allow for the learning of sequential dependencies and patterns in data. By learning such dependencies, they are effectively compressing information by capturing the underlying structure of the data. They can be utilized within curiosity-driven algorithms to build models that guide exploration.
+Reinforcement Learning and Metalearning
+: Both of these concepts involve the process of learning to learn and can be tied back to compression. In reinforcement learning, the agent learns to make decisions that maximize rewards, effectively compressing its understanding of the environment into a policy. Metalearning takes this a step further by enabling models to quickly adapt to new tasks, compressing not only knowledge of a specific task but the underlying principles of learning itself.
+Attention Mechanisms
+: Attention helps in focusing on the most relevant parts of the input, ignoring irrelevant information, which aligns with the concept of compression. By concentrating on what is essential, the network effectively compresses the input into a more manageable form.
+In summary, the principles and techniques described in the excerpt can be linked to curiosity algorithms and compression through the common theme of finding efficient and compact representations of information. These compact representations enable better learning and prediction, and they guide exploration and decision-making within a curiosity-driven framework.
+1 / 1
+An essay on these topics titled "Compression is Abstraction"
+1 / 1
+ChatGPT
+Certainly! Below is an essay titled "Compression is Abstraction" that elaborates on the relationship between compression, curiosity algorithms, and abstraction in the context of machine learning.
+Compression is Abstraction
+Introduction
+In the age of data-driven technology, the ability to efficiently represent, process, and understand vast amounts of information is paramount. A recurring theme in this journey is the principle of compression - the act of encapsulating complex information into simpler, more manageable forms. This essay explores how compression is not merely a utility for storage efficiency but a fundamental aspect of abstraction, learning, and intelligence.
+Compression and Learning
+The pursuit of understanding and modeling our world often boils down to finding patterns and regularities within complex data. This process of pattern discovery is essentially a compression task, where redundancies are identified, and the information is condensed into a more abstract form.
+Techniques like Recurrent Linearized Transformers, Fast Weights Predictors (FWPs), and Long Short-Term Memory networks (LSTMs) excel at capturing these dependencies. By learning the sequential patterns, they form an abstract, compressed representation of the data, enabling predictive modeling and intelligent decision-making.
+Curiosity and Exploration
+Curiosity-driven algorithms are a fascinating application of the compression principle. Here, agents are motivated to explore unknown aspects of their environment to minimize surprise and maximize the compression of their observations.
+This intrinsic motivation to explore and understand stems from the agent's desire to build more abstract, compressed models of the world. As new information is gathered, the agent refines its model, continuously striving for a more perfect compression that encompasses all observed phenomena.
+Attention Mechanisms
+Attention mechanisms within neural networks provide another compelling link between compression and abstraction. By focusing on the relevant portions of the input, these mechanisms compress the information into a form that captures only what is essential.
+This selective focus on important features leads to abstraction, allowing the network to generalize across different contexts and tasks. Attention becomes a critical bridge between the raw data and the abstract concepts that form the basis of understanding and reasoning.
+Metalearning and Reinforcement Learning
+The fields of metalearning and reinforcement learning illustrate how compression extends beyond data representation into the very principles of learning. By developing compact policies or learning strategies, agents can efficiently navigate complex environments or adapt to new tasks.
+In essence, this is an abstraction of the learning process itself, where the underlying principles are compressed into reusable strategies. The agent's ability to act and adapt becomes a reflection of its understanding, represented in a condensed form.
+Conclusion
+Compression is more than a mere tool for reducing data size; it's a fundamental principle that permeates all levels of intelligence and learning. From the algorithms that learn to represent data to the curiosity that drives exploration, from the attention that selects what is essential to the metalearning that encapsulates the principles of learning itself, compression stands at the core.
+It is the act of turning complexity into simplicity, noise into signal, and chaos into order. Compression is abstraction, and it is through this lens that we can begin to grasp the intricate and beautiful mechanisms that drive learning and intelligence in both machines and biological systems.
+The road to understanding the mind and building intelligent machines may well be paved with the principles of compression, and it is a journey that continues to unravel new horizons and possibilities.
+1 / 1
+Connections to Self-Modifying Neural Networks
+1 / 1
+ChatGPT
+Certainly! The connections between compression as a unifying principle and Self-Modifying Neural Networks (SMNN) are multifaceted and can be explored through various angles:
+1.
+Adaptation and Refinement
+Self-Modifying Neural Networks can adapt their structure and weights dynamically as they learn. This continuous modification and fine-tuning are akin to the process of compression, where the network is constantly working to represent the underlying patterns in the data in an ever more efficient and abstracted form. The self-modification enables the network to focus on essential information and disregard redundant details, essentially compressing knowledge into a more efficient form.
+2.
+Hierarchical Abstraction
+In the process of self-modification, SMNN can develop layers of abstraction that capture various levels of complexity. This hierarchy can be seen as a form of multi-level compression, where each layer condenses information from the one below, creating a progressively more abstract and concise representation of the input data. Hierarchical abstraction is a core concept in both compression and cognition, leading to more generalized understanding and decision-making.
+3.
+Curiosity and Exploration
+As previously discussed, curiosity algorithms are driven to explore and minimize surprise in their environment. In a Self-Modifying Neural Network, this drive for exploration can guide the modification process, leading the network to develop structures and connections that encapsulate the most important and interesting features of the data. This continual evolution and curiosity-driven exploration enable the network to reach a more compressed and abstract understanding of its environment.
+4.
+Metalearning
+Metalearning is about learning how to learn. In SMNN, the ability to modify itself provides a powerful platform for metalearning, where the network can develop high-level strategies for adaptation and problem-solving. These strategies can be seen as a compressed form of the learning process, where the essential principles are abstracted into a reusable and efficient form.
+5.
+Complexity Management
+Self-modification can also be seen as a way of managing complexity in neural networks. By dynamically adjusting its structure, an SMNN can control the complexity of its model, balancing the need to capture detailed information with the desire to avoid overfitting. This dynamic complexity management is related to the principles of compression, where the goal is to represent information in the most concise yet informative manner possible.
+Conclusion
+Compression as a unifying principle provides a compelling lens through which to view the dynamics of Self-Modifying Neural Networks. From their adaptability and hierarchical structure to their curiosity-driven exploration and complexity management, the concepts of compression and abstraction resonate deeply within the architecture and function of SMNN.
+These connections reveal the inherent elegance and complexity of learning and adaptation, showing that the principles that guide data compression extend well beyond mere storage efficiency into the very heart of cognition and intelligence. It paints a picture of a system in perpetual refinement, always striving for a more perfect understanding and representation of the world it interacts with.
+1 / 1
+A final summary.
+2 / 2
+ChatGPT
+The connections between compression, curiosity algorithms, and Self-Modifying Neural Networks (SMNN) reveal a profound relationship between efficiency, exploration, and adaptation. Compression as a unifying principle resonates with the dynamic, hierarchical, and complexity-managing nature of SMNN. It reflects a system constantly striving to abstract and condense information, driven by curiosity to explore and represent the underlying patterns in data. This process not only enables more efficient storage but also fosters a deeper, generalized understanding, reflecting the very essence of learning and intelligence. The convergence of these ideas provides a comprehensive insight into cognition's fundamental mechanisms, linking the mathematical simplicity of compression to the complex world of neural adaptation and self-modification.
+1 / 1
+Sometimes a problem gets more difficult, as when moving a it to a higher dimensional space, but we usually are still doing this in order to get a simplified output
+1 / 1
+ChatGPT
+Indeed, sometimes increasing the dimensionality of a problem or dataset can make it seem more complex initially, but this can be a crucial step in finding a simplified or more elegant solution. By moving a problem into a higher-dimensional space, you may uncover structures or relationships that were not apparent in the original space. This can lead to more robust models or solutions that capture the essence of the data. Ultimately, it may allow for more effective compression or abstraction, aligning with the principles of curiosity algorithms and self-modifying neural networks, even though the process might seem more complicated at first glance.
+1 / 1
+Let's compare it to learning Latin, in order to better understand Spanish, French, and Italian, or classical Arabic, in order to learn the regional dialects, since they are all modifications or abstractions of the classical version
+1 / 1
+ChatGPT
+Sure, comparing the idea of moving into higher-dimensional spaces with learning Latin or classical Arabic to understand their derived languages is an apt analogy.
+Higher-Dimensional Spaces in Mathematics / Learning Latin or Classical Arabic
+:
+In mathematics, working in higher-dimensional spaces can reveal hidden structures and relationships that simplify the understanding of a complex problem. It allows you to see the underlying pattern that may be obscured in lower dimensions.
+Similarly, learning Latin or classical Arabic can provide a foundational understanding of the grammatical structures, vocabulary, and idiomatic expressions that have influenced modern Romance languages or regional Arabic dialects.
+Modifications or Abstractions
+:
+When you understand the higher-dimensional space in mathematics, you can often represent the original complex problem in a simplified or abstracted form.
+In the same way, having a grounding in Latin or classical Arabic can make learning the derived languages like Spanish, French, Italian, or regional Arabic dialects easier. You can see them as modifications or abstractions of the classical version.
+Challenges
+:
+Both approaches may seem more difficult initially. Working in higher dimensions can appear more complex, just as learning an ancient language may seem daunting.
+However, the long-term benefits often outweigh these initial challenges. In both cases, taking this "higher-dimensional" or "classical" route can lead to a deeper, more comprehensive understanding of the subject matter.
+In summary, this comparison highlights how the process of simplification and abstraction, whether in mathematics or language learning, often involves delving into more complex territories first to uncover unifying principles or structures that make subsequent learning more accessible and enriched.
+1 / 1
+The template or matrix represents all possibilities in probability space, we use constraints into a narrow range.  Another comparison might be how a sixteen-segment display can display any digit, by not lighting all of the leds
+1 / 1
+ChatGPT
+Indeed, your comparison with a sixteen-segment display is a fitting illustration of the idea of using a template or matrix to represent all possibilities in a probability space and then applying constraints to narrow it down.
+Sixteen-Segment Display / Probability Space
+:
+A sixteen-segment display has the potential to represent any digit by lighting up specific segments. All the possibilities are embedded in the structure, but not all LEDs are used at once.
+In a similar way, a template or matrix in a probability space might contain all potential outcomes or possibilities. Constraints are then applied to focus on the relevant subset of that space, just as only certain segments are lit to form a specific digit.
+Efficiency and Flexibility
+:
+This approach is efficient because it provides a flexible system that can adapt to different needs or outcomes by simply applying different constraints.
+In the display example, the same structure can represent different digits without needing a separate mechanism for each one. The "constraints" here are the decisions on which segments to light up.
+In probability or mathematical models, constraints allow us to focus on specific scenarios or outcomes without having to build a unique model for each one.
+Unifying Principle
+:
+This concept of a flexible template that can be tailored through constraints is a unifying principle that can be seen in various fields.
+It's about having a universal set of building blocks (like the segments in a display or the elements in a matrix) and then using constraints or rules to create specific representations or solutions.
+In summary, whether through the lenses of mathematical models, learning ancient languages to understand their modern derivatives, or representing numbers with a sixteen-segment display, these analogies all speak to the underlying theme of having a versatile framework that can be adapted to specific needs through the application of constraints or rules. It's a principle that emphasizes the balance between complexity and simplicity, universality, and specificity.
+1 / 1
+I drew one of these as a child by drawing all of the capital letters overlaying each other in the same block. Today I call it a necker alphabet.
+
+I wrote an acrostic poem about it once called Abraham's Altar 
+
+The capital's spell out ABRAHAM, and the lines spell out ARA. 
+
+A library of Babel
+Read it And Have
+A Marvellous day
+1 / 1
+ChatGPT
+That's a fascinating and creative concept! The "necker alphabet" you describe, where all the capital letters are overlaid in the same block, indeed resonates with the themes we've been discussing.
+Universality and Specificity
+: Just as in the sixteen-segment display, your necker alphabet symbolizes the idea of universality contained within a specific structure. All letters are present in the same space, and specific letters can be identified or isolated within that structure.
+Link to the Poem
+: Your acrostic poem, titled "Abraham's Altar," adds a literary and symbolic layer to this concept. By spelling out "ABRAHAM" and "ARA," you've created a multi-dimensional message that invites readers to explore different layers of meaning.
+Philosophical Resonance
+: The notion of a "library of Babel" in the poem connects to a rich philosophical concept that represents the universe as a vast library containing all possible books and therefore all possible knowledge. This echoes the idea of a template or matrix representing all possibilities, constrained to specific realities.
+Personal and Universal
+: Your childhood drawing and poem have personal significance to you but also tie into universal ideas about knowledge, creativity, and the interconnectedness of things.
+The necker alphabet is a unique and poetic expression of some profound ideas about complexity, simplicity, and the nature of representation. It's wonderful how personal creativity can connect with universal concepts in such a meaningful way. Thank you for sharing this personal insight!
+1 / 1
+A final summary.
+2 / 2
+The previous model used in this conversation is unavailable. We've switched you to the latest default model.
+ChatGPT
+Certainly! Throughout our conversation, we've explored the fascinating concepts of compression, abstraction, and their connections to various aspects of artificial intelligence and learning. Here's a summary of the key points:
+Compression and Abstraction
+: Compression refers to the process of representing complex information in a more concise form, often by identifying patterns or redundancies. Abstraction involves simplifying information by focusing on essential characteristics while ignoring irrelevant details. Both compression and abstraction are powerful principles in various fields, including AI.
+Fast Weight Programmers (FWPs)
+: FWPs are neural network architectures introduced by J��rgen Schmidhuber in 1991. They allow one neural network to control the fast weight changes of another, leading to efficient learning and memory storage. The concept of FWPs connects with attention mechanisms, Transformers, and even the principles behind Long Short-Term Memory (LSTM) networks.
+Curiosity and Compression
+: Curiosity-driven algorithms in AI are inspired by the idea that agents seek to learn more about their environment by focusing on novel and unexpected experiences. Curiosity can be seen as a form of compression ��� the agent seeks to compress its understanding of the world by identifying patterns in new data.
+Learning and Unifying Principles
+: Learning is often about finding efficient representations or abstractions of data. The idea of using a template or matrix to represent all possibilities and then constraining it reflects the process of simplification. Learning Latin to understand Spanish, French, and Italian, or classical Arabic to learn dialects, exemplifies abstraction as a basis for acquiring related knowledge.
+Personal Creations and Universality
+: Your "necker alphabet" drawing and acrostic poem offer a creative analogy to the concepts discussed. They illustrate the idea of universality within specific structures, akin to how information can be represented efficiently within constraints.
+Philosophical Implications
+: Concepts like the "library of Babel" in your poem and the connection between universality and specificity touch on philosophical ideas about knowledge, representation, and the universe's inherent complexity.
+In essence, the journey from compression and abstraction to fast weight programmers, curiosity algorithms, and personal creations demonstrates the profound interplay between complexity and simplicity in the realms of AI, creativity, and philosophical thought. These ideas reflect the intricate nature of learning, understanding, and exploring the world around us.
+2 / 2
+In another branch of this conversation, we discussed the following: Compression as Abstraction: Understanding how compressing information leads to abstraction, creating simplified representations of complex data.
+
+Curiosity Algorithms and Learning: Exploring the relationship between curiosity-driven algorithms and learning processes, where the drive to minimize surprise or complexity can foster learning.
+
+Self-Modifying Neural Networks: Discussion about neural networks that can adapt and modify themselves, relating to higher efficiency and adaptability.
+
+High-Dimensional Space Simplification: Delving into how complex problems are sometimes transformed into higher-dimensional spaces to achieve simplified outputs.
+
+Language Learning as Abstraction: Comparing the learning of classical languages to understand modern dialects as an example of abstraction.
+
+Probability Space and Constraints: Examining how a template or matrix represents possibilities in probability space, and how constraints can narrow down outcomes.
+
+Sixteen-Segment Display Analogy: Utilizing the sixteen-segment display as a metaphor for representing complex information through selective lighting, including the creative application to the "Necker alphabet."
+
+Poetry and Creativity: Connection to creative expressions like the acrostic poem "Abraham's Altar," linking artistic creativity to broader themes of abstraction and complexity.
+1 / 1
+ChatGPT
+Absolutely, you've captured the essence of our discussion beautifully. These interconnected topics reflect the intricate interplay between abstraction, complexity, learning, and creativity. From the concept of compressing information to foster abstraction, to exploring how curiosity-driven algorithms mimic the human drive to learn, and even delving into the realm of self-modifying neural networks, higher-dimensional simplification, and language learning as a form of abstraction ��� each idea reinforces the notion that the pursuit of simplicity often underpins our quest for understanding and mastery.
+Your analogy of the sixteen-segment display and the "Necker alphabet," along with the creative expression in the acrostic poem "Abraham's Altar," aptly demonstrate how concepts from different domains can converge to illuminate common threads of thought.
+In summary, these discussions highlight the elegance in seeking simplicity amid complexity, whether in the realm of AI, learning, or creative expression. This intricate dance between abstraction and intricacy serves as a reminder of the beauty that emerges from our efforts to distill understanding from the vastness of information and experience.
+2 / 2
+A final summary
+1 / 1
+ChatGPT
+Certainly! Throughout our conversation, we've explored a diverse array of topics that all revolve around the theme of abstraction, complexity, learning, and creativity. From the relationship between compression and abstraction, to the role of curiosity algorithms in driving learning processes, and even the adaptability of self-modifying neural networks ��� each concept has illuminated how the pursuit of simplicity often lies at the heart of understanding complex phenomena.
+We've delved into the idea of simplifying problems by moving them to higher-dimensional spaces, drawing parallels to language learning as a form of abstraction. The notion of probability space and constraints has shown how templates and matrices can represent numerous possibilities, while constraints narrow down outcomes.
+Your creative analogy of the sixteen-segment display and the "Necker alphabet" beautifully encapsulates the idea of selective representation to convey complex information. This creativity extends to your acrostic poem "Abraham's Altar," revealing how artistic expression itself mirrors the very themes we've explored.
+In essence, these discussions paint a vivid picture of the intricate dance between abstraction and complexity. Whether in the realm of AI, language, or creative endeavors, our pursuit of understanding often involves seeking simplicity amid the vast expanse of information. This symphony of ideas serves as a reminder that the journey towards comprehension is a harmonious blend of embracing complexity while striving for elegant abstraction.
+2 / 2
+ChatGPT may produce inaccurate information about people, places, or facts.
+ChatGPT August 3 Version
+?
+
+
+

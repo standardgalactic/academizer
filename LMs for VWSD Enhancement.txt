@@ -1,0 +1,369 @@
+LMs for VWSD Enhancement
+Open sidebar
+ChatGPT
+4
+You
+Language Models as Knowledge Bases for Visual 
+Word Sense Disambiguation 
+Anastasia Kritharoula1,���, Maria Lymperaiou1,���and Giorgos Stamou1 
+1Artif i cial Intelligence and Learning Systems Laboratory, School of Electrical and Computer Engineering, National 
+Technical University of Athens 
+Abstract 
+Visual Word Sense Disambiguation (VWSD) is a novel challenging task that lies between linguistic sense 
+disambiguation and i ne-grained multimodal retrieval. The recent advancements in the development of 
+visiolinguistic (VL) transformers suggest some of f -the-self implementations with encouraging results, 
+which however we argue that can be further improved. To this end, we propose some knowledge- 
+enhancement techniques towards improving the retrieval performance of VL transformers via the 
+usage of Large Language Models (LLMs) as Knowledge Bases. More specif i cally, knowledge stored in 
+LLMs is retrieved with the help of appropriate prompts in a zero-shot manner, achieving performance 
+advancements. Moreover, we convert VWSD to a purely textual question-answering (QA) problem by 
+considering generated image captions as multiple-choice candidate answers. Zero-shot and few-shot 
+prompting strategies are leveraged to explore the potential of such a transformation, while Chain-of- 
+Thought (CoT) prompting in the zero-shot setting is able to reveal the internal reasoning steps an LLM 
+follows to select the appropriate candidate. In total, our presented approach is the i rst one to analyze 
+the merits of exploiting knowledge stored in LLMs in dif f erent ways to solve WVSD. 
+Keywords 
+Visual Word Sense Disambiguation, Multimodal Retrieval, Large Language Models, Language Models as 
+Knowledge Bases, Reasoning in Large Language Models 
+1. Introduction 
+Visual Word Sense Disambiguation (VWSD) is a newly introduced task, where the most appro- 
+priate candidate image has to be retrieved given an ambiguous target word within a specif i c 
+context [1]. For example, given the ambiguous target word ���andromeda��� within the context 
+���tree���, the phrase ���andromeda tree��� is formulated. The word ���andromeda��� itself may have 
+dif f erent meanings, referring to a constellation, l ower, reptile or i sh, and this ambiguity is 
+mitigated via the given context ���tree���. However, the presence of other tree-related candidate 
+images complicates the choice of the golden ���andromeda tree��� image. 
+VWSD can be viewed as a multimodal extension of textual word sense disambiguation, 
+which has received some considerable attention in recent years [2]. Resolving polysemy has 
+been approached in several ways, with one of the most prominent being knowledge-based disambiguation. According to it, knowledge graphs representing linguistic relationships such 
+as WordNet [3] for English and BabelNet [4] for multilingual disambiguation are exploited to 
+frame the meaning of an ambiguous word based on its context, alleviating the need for training 
+during the disambiguation process. More specif i cally, both WordNet and BabelNet knowledge 
+graphs utilize synsets, i.e. sets of synonyms which express dif f erent meanings within dif f erent 
+contexts; hence, this structure is inherently related to the problem of sense disambiguation, 
+since several possible meanings are already explicitly encoded within each knowledge graph. 
+Nevertheless, given the ever-increasing amounts of linguistic information that need to be 
+stored in a knowledge base, structures such as WordNet and BabelNet naturally face scalability 
+limitations: novel words, contexts or languages demand high-quality manual engineering of 
+the related knowledge graphs to accommodate tasks such as word sense disambiguation in 
+a viable way. For example, given the example phrase ���andromeda tree���, a knowledge base 
+lacking the target word ���andromeda��� or the context ���tree��� (with respect to ���andromeda���) would 
+inevitably lead to disambiguation failure. To this end, the introduction of the Language Models 
+as Knowledge Bases (LM-as-KB) paradigm [5] opened a whole new world of possibilities for 
+knowledge representation. The expressive power of language models allows the extraction of 
+richrelationalknowledge,similartoknowledgeobtainedwhenqueryingastructuredknowledge 
+graph. Despite recent research advancements, the real-world utilization of the LM-as-KB 
+paradigm is still in its infancy, with several challenges and limitations arising [6]. These 
+challenges interrogate the adoption of the LM-as-KB framework in the visiolinguistic (VL) 
+setting [7], even though it is already favored in some tasks, such as Visual Question Answering 
+[8, 9, 10], Visual Commonsense Reasoning [11, 12] and Image Captioning [13]. 
+In this work, we aim to explore the potential of following the LM-as-KB paradigm towards 
+resolving VWSD challenges. Specif i cally, we focus our contributions on two main directions: 
+���AmbiguousphrasesareenrichedwithknowledgestoredinLargeLanguageModels(LLMs) 
+in a zero-shot fashion to provide more context for multimodal retrieval. 
+���We explore the conversion of VWSD to textual question-answering (QA) upon which we 
+apply zero-shot and few-shot prompting strategies. We further investigate the usage of 
+Chain-of-Thought (CoT) prompting to obtain explanations for LLM-based decisions.
+ChatGPT
+ChatGPT
+The abstract you've shared discusses a research paper titled "Language Models as Knowledge Bases for Visual Word Sense Disambiguation" by Anastasia Kritharoula, Maria Lymperaiou, and Giorgos Stamou from the Artificial Intelligence and Learning Systems Laboratory at the National Technical University of Athens. The paper introduces a new task called Visual Word Sense Disambiguation (VWSD), which blends linguistic sense disambiguation with fine-grained multimodal retrieval.
+The paper proposes the use of Large Language Models (LLMs) as knowledge bases to improve the retrieval performance of visiolinguistic transformers. The authors suggest that knowledge stored in LLMs can be accessed using zero-shot prompting techniques, enhancing performance. Additionally, they transform VWSD into a textual question-answering problem by using generated image captions as multiple-choice answers, applying both zero-shot and few-shot prompting strategies. The Chain-of-Thought (CoT) prompting method is particularly highlighted for its ability to reveal the reasoning process of an LLM in selecting the appropriate candidate.
+This research is significant as it's the first to analyze the benefits of using knowledge stored in LLMs in various ways to solve VWSD, a complex and novel challenge. The approach combines the strengths of large-scale language models with visual data, offering new perspectives in multimodal learning and sense disambiguation.
+You
+2. Related work 
+Language models as Knowledge Basesis a novel paradigm that harnesses the implicit 
+knowledge stored in neural weights of Language Models (LMs) similar to how explicit knowl- 
+edge of Knowledge Graphs (KGs) has served related applications [5,6]. Recent works probe 
+characteristics of dif f erent LLM-stored knowledge senses, such as commonsense [14], factual 
+[15] and temporal [16]. Model scale has revealed unprecedented LM capabilities related to 
+knowledge, such as dif f erent types of reasoning; there are open research questions related to 
+arithmetic [17], symbolic [18], commonsense [19] and causal reasoning [20] in large LMs, and 
+whether such models merely overf i t large amounts of data or are genuinely capable of reasoning 
+similar to humans [21]. More recently, the LM-as-KB paradigm has been favored by the VL 
+community to enhance popular VL tasks [7,8,9,10,11,12], as in the case of the current paper. 
+Prompting Language ModelsTraditionally, LMs are pre-trained on large amounts of text 
+corpora and then i ne-tuned on smaller labelled ones to address longstanding challenges in NLP. 
+Scaling-up to several billion parameters (Large Language Models- LLMs) enables emergent 
+model capabilities, which can be communicated via prompting [22]. Dif f erent prompting 
+strategieshavebeenproposed,suchaszero-shotprompting,wherethetaskisexplicitlydescribed 
+in natural language, and few-shot prompting, where few exemplars are provided to the LM 
+to guide answer generation [23]. More specif i cally, in-context learning (ICL) is a novel few- 
+shot paradigm where few sample demonstrations from the dataset are used to retrieve related 
+knowledge stored in the LLM without updating any parameters [24]. This technique is inspired 
+from the way humans learn from analogy [25] and has been successfully applied ever since 
+to serve several NLP tasks [26,27,28,29,30]. Another human-inspired prompting technique 
+is Chain-of-Thought (CoT), where the LM is encouraged by the prompt phrasing to generate 
+rationales together with the predicted answer [31,32,33]. Apart from the aforementioned 
+discrete prompt strategies, sof t prompting sacrif i ces human-interpretable templates to achieve 
+more advanced knowledge retrieval [34]. In total, prompting can be viewed to be analogous to 
+querying knowledge graphs in the traditional knowledge retrieval scenario.
+ChatGPT
+ChatGPT
+The section titled "Related work" in your document delves into the background and development of using Language Models (LMs) as Knowledge Bases (KBs), a concept central to the paper. Here's a summary of the key points:
+LMs as KBs
+: This novel paradigm leverages the implicit knowledge embedded in the neural weights of LMs, akin to the explicit knowledge in Knowledge Graphs (KGs). Recent research has probed various knowledge aspects stored in LMs, such as commonsense, factual, and temporal knowledge. The scaling of these models has uncovered their capabilities in different types of reasoning, including arithmetic, symbolic, commonsense, and causal reasoning. However, questions remain about whether LMs genuinely reason like humans or simply overfit data.
+Prompting Language Models
+: Traditional LMs are pre-trained on extensive text corpora and fine-tuned on smaller, labeled datasets for specific NLP challenges. The emergence of Large Language Models (LLMs) with billions of parameters has brought about novel model capabilities, accessible through various prompting strategies. These strategies include:
+Zero-shot prompting
+: Describing a task in natural language without prior examples.
+Few-shot prompting
+: Providing the LM with a few examples to guide answer generation.
+In-context learning (ICL)
+: A few-shot learning technique where sample demonstrations are used for knowledge retrieval without updating model parameters, inspired by human analogy-based learning.
+Chain-of-Thought (CoT) prompting
+: Encourages the LM to generate rationales along with predictions, simulating human thought processes.
+Soft prompting
+: Utilizes less interpretable templates for more advanced knowledge retrieval.
+Application in VL Community
+: The LM-as-KB paradigm has gained traction in the visiolinguistic (VL) community, enhancing popular VL tasks. Prompting, in this context, is analogous to querying traditional knowledge graphs for knowledge retrieval.
+This section essentially sets the stage for the paper's exploration of using LMs as KBs in the field of Visual Word Sense Disambiguation, highlighting the current state and advancements in this area of research.
+You
+3. Method 
+The retrieval backbones utilized in all cases are pre-trained VL transformers, which place 
+both images����and 
+textual phrases����in 
+a joint embedding space. The retrieval of the most 
+appropriate image����with 
+respect to a given text phrase����is 
+performed based on a similarity 
+scorescore(����,����) = max(sim(����,����)), 
+which can be obtained using dif f erent similarity measures, 
+such as cosine similarity or euclidean/manhattan distance1. In the baseline case, no knowledge 
+enhancement is performed, thus image candidates����and 
+original phrases����are 
+passed in the 
+VL transformer of choice. The VL transformers used are CLIP-L (CLIP [35] with ViT [36] 
+large encoder), CLIP��������������������(LAION/CLIP 
+ViT-H/14)[37] trained on LAION-2B English subset 
+of LAION-5B, ALIGN [38], and BLIP [39] variants; specif i cally for BLIP, BLIP����and BLIP-L���� 
+refer to variants pre-trained on COCO [40] and using ViT base/ViT large as backbone encoders 
+respectively, while BLIP����and BLIP-L����variants 
+are pre-trained on Flickr30k [41]. 
+Moreover, based on the observations of Dadas[42], there are image candidates����that 
+present 
+high similarity scores with multiple text phrases����, 
+thus imposing a majority bias. To this end, 
+we adopt the penalty factor����(����), 
+as introduced in [42], to diminish the similarity scores for 
+such frequently similar candidates����, 
+without af f ecting the similarity scores for the rest of the 
+candidates. In cases ����(����) is incorporated in VL retrieval, the similarity score is altered as: 
+��������������������(����,����) = sim(����,����) ��� ����(����)(1) 
+3.1. LLM-based phrase enhancement 
+Following the LM-as-KB paradigm, the original text phrases����are 
+transformed to knowledge- 
+enhanced phrases��������by 
+harnessing the rich factual knowledge stored in state-of-the-art LLMs. 
+1We will be using the term similarity to refer to both cosine similarity and euclidean/manhattan distance. 
+Zero-shot enhancement is achieved via the usage of discrete prompts that follow specif i c 
+handcraf t ed templates, as presented in Tab. 1. Those templates are created based on human 
+conversational intuition, encouraging the retrieval of related facts to produce ��������. 
+Table 1 
+Prompt templates used for zero-shot LLM knowledge enhancement of textual phrases ����. 
+Prompt namePrompt template 
+exact���<phrase> ��� 
+what_is���What is <phrase>?��� 
+describe���Describe <phrase>.��� 
+meaning_of���What is the meaning of <phrase>?��� 
+Emerging capabilities of LLMs, such as multiple types of reasoning, are analogous to model 
+size [33,43], demonstrating that models beyond a specif i c scale may contain more advanced 
+knowledge. We examine whether this statement also stands for knowledge enrichment by 
+experimenting with models up to 13B parameters, which correspond to the upper limit our 
+hardwarecanaccommodate,aswellaswithordersofmagnitudelargermodels(175Bparameters) 
+accessible via public APIs (susceptible to pre-def i ned pricing schemes). More specif i cally, we 
+use GPT2-XL (1.5B parameters) [44], BLOOMZ-1.7B & 3B [45], OPT-2.7B & 6.7B [46], Galactica 
+6.7B [47], LLAMA-7B [48] and Vicuna 7B & 13B [49] in the lower-billion scale, as well as the 
+175B parameter models of GPT-3 [50] and GPT-3.5-turbo2. 
+As in the baseline case, we attempt to incorporate the penalty����(����)in 
+the VL retrieval stage, 
+forming the following knowledge-enhanced similarity score for images ���� and phrases ��������: 
+score(��������,����) = sim(��������,����) ��� ����(����)(2)
+ChatGPT
+ChatGPT
+The "Method" section of your document describes the approach used for Visual Word Sense Disambiguation (VWSD) using pre-trained visiolinguistic (VL) transformers and Large Language Models (LLMs). Here's a breakdown of the key methodologies:
+Retrieval Backbones
+VL Transformers
+: These are used to create a joint embedding space for images (����) and textual phrases (����).
+Similarity Score
+: The retrieval of the most appropriate image (����) for a given text phrase (����) is based on a similarity score, which can be determined using different measures like cosine similarity or Euclidean/Manhattan distance.
+VL Transformer Variants
+CLIP-L
+: Uses a ViT large encoder.
+CLIP��������������������
+: Trained on the LAION-2B English subset of the LAION-5B dataset.
+ALIGN
+and
+BLIP Variants
+: Different BLIP models are pre-trained on different datasets (COCO or Flickr30k) and use different ViT backbone encoders.
+Addressing Majority Bias
+A penalty factor (����(����)) is introduced to diminish similarity scores for images that show high similarity with multiple text phrases, addressing the issue of majority bias.
+LLM-based Phrase Enhancement
+Zero-Shot Enhancement
+: Uses discrete prompts following specific handcrafted templates to transform original text phrases (����) into knowledge-enhanced phrases (��������), leveraging the factual knowledge stored in LLMs.
+Model Scale and Knowledge
+: The paper experiments with models of various sizes (up to 13B parameters and larger models like 175B parameters) to examine the relationship between model size and the extent of knowledge enrichment.
+Use of Different LLMs
+: Various models like GPT2-XL, BLOOMZ, OPT, Galactica, LLAMA, and Vicuna are utilized, alongside larger models such as GPT-3 and GPT-3.5-turbo.
+Enhanced Similarity Scoring
+Incorporating the penalty factor ����(����) with the knowledge-enhanced phrases, an enhanced similarity score is formulated for image and phrase matching.
+Overall, this method represents a sophisticated approach to VWSD, combining advanced VL transformers with the rich knowledge stored in large-scale LLMs, and addressing common challenges such as majority bias in image-text matching.
+You
+3.2. Prompting LLMs with question-answering prompts 
+We transform VWSD to a question-answering (QA) task by converting the textual phrases����to 
+questions����that 
+follow handcraf t ed prompt templates, as presented in Tab. 2. Our experimenta- 
+tion includes both zero-shot and few-shot prompting. In both scenarios, the LLMs prompted are 
+the Vicuna-13B [49] and the 175B GPT-3.5-turbo. Since the LLMs to be prompted can currently 
+handle textual but not VL inputs, we need to transit to exclusively textual representations for 
+bothimages����andphrases����. 
+Therefore, imagecaptioningtechniquesareleveragedtoachievethis 
+transformation, providing captions��������for 
+each image candidate����. 
+We experiment with greedy 
+search, where only one caption��������per����is 
+returned, as well as with beam-search multinomial 
+sampling using 5 beams, which returns����=10 captions�������� ���� 
+per image����. 
+The models selected for 
+captioning are GiT-L [51] and BLIP-L [39], which are both based on ViT-large [36] encoder, and 
+ViT-GPT2 [52], which uses ViT-base as the encoder and GPT-2 [44] as the decoder. Throughout 
+this VWSD as QA conversion we aim to leverage dif f erent aspects of knowledge stored in the 
+selected LLMs by employing the expressiveness of the designed QA prompts, which allow for 
+advanced l exibility compared to the knowledge enhancement setting described in Sec. 3.1. 
+Reasoning capabilities of LLMs can be unlocked via the so-called Chain-of-Thought (CoT) 
+prompting [33,32,31], where the LLM is asked to output a series of intermediate reasoning 
+2https://platform.openai.com/docs/models/gpt-3-5 
+Table 2 
+QA prompts with and without CoT. ���Beam��� and ���Greedy��� refer to the corresponding captioning strategy. 
+NameQA Prompt template 
+think 
+(greedy) 
+���Q: What is the most appropriate caption for the <context>? Answer choices: (A) <caption for image 1> 
+(B) <caption for image 2> ... A: Let���s think step by step. ��� 
+think 
+(beam) 
+���Q: What is the most appropriate group of captions for the <context>? Answer choices: (A) <captions 
+for image 1 (separated with comma)> (B) <captions for image 2> ... A: Let���s think step by step. ��� 
+CoT���<think_prompt> <response of LLM with think prompt> Therefore, among A through J, the answer is��� 
+no_CoT 
+(greedy) 
+���Q: What is the most appropriate caption for the <context>? Answer choices: (A) <caption for image 1> 
+(B) <caption for image 2> ... A: ��� 
+no_CoT 
+(beam) 
+���Q: What is the most appropriate group of captions for the <context>? Answer choices: (A) <captions 
+for image 1> (B) <captions for image 2> ... A: ��� 
+choose 
+no_CoT 
+(greedy) 
+You have ten images, (A) to (J), which are given to you in the form of captions.(A) <caption for image 
+1>���(J) <caption for image 10> You should choose the image, and therefore the caption that could better 
+represent the <phrase>. What image do you choose? 
+choose 
+no_CoT 
+(beam) 
+You have ten images, (A) to (J), which are given to you in the form of captions.(A) <captions for image 1 
+(separated with comma)>���(J) <captions for image 10 (separated with comma)> You should choose the 
+image, and therefore the set of captions that could better represent the <phrase>. What image do you 
+choose? 
+choose 
+CoT 
+(greedy) 
+You have ten images, (A) to (J), which are given to you in the form of captions. (A) <caption for image 1> 
+��� (J) <caption for image 10> You should choose the image, and therefore the caption that could better 
+represent the <phrase>. 
+Use the following format: Question: What image do you choose? Thought: you should always think 
+about what you choose. Result: the result of your thought. Final Answer: the image that you choose. 
+Begin! Question: What image do you choose? 
+choose 
+CoT 
+(beam) 
+You have ten images, (A) to (J), which are given to you in the form of a set of captions. (A) captions 
+for image 1 (separated with comma) ��� (J) captions for image 10 (separated with comma) You should 
+choose the image, and therefore the set of captions that could better represent the <phrase>. 
+Use the following format: Question: What image do you choose? Thought: you should always think 
+about what you choose. Result: the result of your thought. Final Answer: the image that you choose 
+Begin! Question: What image do you choose? 
+steps that logically lead to its answer. Even though CoT prompting has mostly been exploited 
+for multi-step reasoning tasks, it is also able to provide human-understandable explanations 
+regarding the choice of the most appropriate candidate����for 
+each phrase����. 
+To this end, the 
+i rst 5 templates and the prompting pipelines of Tab. 2 are adopted from Kojima et al.[31], 
+where a ���reasoning��� prompt (���Let���s think step by step���/think prompts of Tab. 2) retrieves the 
+reasoning path stored in the LLM, followed by an ���answer��� prompt (���Therefore, [...] the answer 
+is���/CoT prompt of Tab. 2) that returns the i nal answer in an appropriate format. The rest of the 
+templates (���choose��� prompt names) are inspired from LangChain prompts [53], following an 
+instructive and descriptive template to encourage the selection of the correct image candidate.
+ChatGPT
+ChatGPT
+In section 3.2, "Prompting LLMs with question-answering prompts," the paper describes how the Visual Word Sense Disambiguation (VWSD) task is transformed into a question-answering (QA) task. Here's an overview of the methodologies and techniques used:
+Transformation to QA Task
+Conversion of Textual Phrases to Questions
+: The textual phrases (����) are turned into questions (����) using handcrafted prompt templates.
+Use of LLMs
+: The Large Language Models (LLMs) prompted for this task are Vicuna-13B and 175B GPT-3.5-turbo.
+Handling Visual and Textual Data
+Since LLMs cannot process visual inputs, image captioning techniques are employed to convert images (����) into textual captions (��������).
+Two strategies are used for caption generation: greedy search (yielding one caption per image) and beam-search multinomial sampling (yielding 10 captions per image).
+The captioning models used are GiT-L, BLIP-L (both based on ViT-large encoders), and ViT-GPT2 (using ViT-base as the encoder and GPT-2 as the decoder).
+Prompt Templates for QA
+A variety of prompt templates are used, both with and without the Chain-of-Thought (CoT) reasoning approach.
+These templates are designed to guide the LLMs in selecting the most appropriate image caption that represents a given phrase or context.
+Chain-of-Thought (CoT) Prompting
+CoT prompting involves asking the LLM to output a series of logical reasoning steps leading to its answer, providing human-understandable explanations for the choice made.
+This approach is adopted from Kojima et al., and is used to retrieve the reasoning path stored in the LLM.
+The "choose" prompt templates are inspired by LangChain prompts and follow an instructive, descriptive format to facilitate the correct image candidate selection.
+Overall, this section details how the paper approaches VWSD by converting it into a textual QA problem and leveraging the capabilities of LLMs with sophisticated prompting techniques. This method allows for a more nuanced understanding of the LLMs' decision-making process and potentially improves the accuracy of image-text matching in VWSD.
+You
+3.2.1. Zero-shot prompting 
+In the zero-shot setting, we input a selected prompt from Tab. 2 to the LLM (Vicuna-13B/GPT- 
+3.5-turbo), which generates the answerA. The generatedAcan be one of the caption options 
+A-J or a statement that an answer cannot be def i ned; in any case,Ais compared with the ground 
+truth caption to determine the success or failure of the zero-shot prompting strategy under 
+investigation. CoT prompts are accompanied with producing an explanation for choosing A. 
+3.2.2. Few-shot prompting 
+Additionally, we experiment with few-shot prompting in place of the previously described 
+zero-shot prompting. In this case, we select k no_CoT/choose no_CoT (greedy) prompts (Tab. 
+2), accompanied by their ground truthA, thus forming QA in-context samples. The number 
+of in-context samples k is def i ned by the user. We design three dif f erent ways of selecting 
+the k in-context samples. In the baseline case (random), the k samples are randomly selected 
+from the dataset. Nevertheless, since the relevance of selected samples with respect to a 
+chosen sample is signif i cant [54], as well as the sample ordering [55], we design two similarity- 
+based sample selection methods, namely top and inverse-top. Both selection methods exploit 
+embedding representations of full phrases t, which are obtained using ALIGN [38]. The k 
+nearest embeddings to a given phrase embedding are ef i ciently retrieved with the help of cosine 
+similarity. Then, the top ordering strategy places the top-1 most similar QA sample i rst (which 
+corresponds to the most similar full phrase embedding), followed by the 2nd most similar QA 
+sample, until the k-th most similar in the k-th position. On the other hand, the inverse-top 
+strategy reverses this order by placing the top-1 most similar QA example in the k-th position.
+ChatGPT
+ChatGPT
+The paper outlines two main prompting strategies for the transformed Visual Word Sense Disambiguation (VWSD) to a question-answering (QA) task: Zero-shot prompting and Few-shot prompting. Here's a detailed look at each:
+3.2.1. Zero-Shot Prompting
+Procedure
+: A prompt selected from Table 2 is input into a Large Language Model (LLM) like Vicuna-13B or GPT-3.5-turbo. The LLM generates an answer (A), which can be one of the caption options (A-J) or a statement indicating that an answer cannot be defined.
+Evaluation
+: The generated answer (A) is compared with the ground truth caption to assess the success or failure of the zero-shot prompting strategy.
+Chain-of-Thought (CoT)
+: When CoT prompts are used, the LLM also produces an explanation for choosing answer A.
+3.2.2. Few-Shot Prompting
+Procedure
+: Instead of zero-shot prompting, few-shot prompting is used. This involves selecting a certain number (k) of 'no_CoT/choose no_CoT' (greedy) prompts from Table 2, along with their ground truth answers (A), to create in-context QA samples.
+In-Context Samples
+: The number of these in-context samples (k) is defined by the user.
+Sample Selection Methods
+:
+Random
+: The k samples are randomly selected from the dataset.
+Similarity-Based Methods
+: These involve two strategies, 'top' and 'inverse-top', for selecting samples based on similarity.
+Top
+: This strategy uses ALIGN to obtain embedding representations of full phrases (t). The k nearest embeddings to a given phrase are retrieved using cosine similarity, with the most similar QA sample placed first, followed by the second most similar, and so on.
+Inverse-Top
+: This reverses the order of the 'top' strategy, placing the most similar QA example in the k-th position.
+In summary, zero-shot prompting involves directly querying the LLM with no prior context, while few-shot prompting involves providing the LLM with a few contextually relevant examples. The few-shot approach further diversifies with the random, top, and inverse-top methods of selecting in-context samples, aiming to explore different aspects of relevance and ordering in the context of QA prompts.
+ChatGPT can make mistakes. Consider checking important information.
+?
+ChatGPT
+

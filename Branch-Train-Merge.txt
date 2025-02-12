@@ -1,0 +1,517 @@
+Branch-Train-Merge
+Abrir barra lateral
+ChatGPT
+4o
+Some analogies and metaphors to help explain it: Submitted on 5 Aug 2022]
+Branch-Train-Merge: Embarrassingly Parallel Training of Expert Language Models
+Margaret Li, Suchin Gururangan, Tim Dettmers, Mike Lewis, Tim Althoff, Noah A. Smith, Luke Zettlemoyer
+View PDF
+We present Branch-Train-Merge (BTM), a communication-efficient algorithm for embarrassingly parallel training of large language models (LLMs). We show it is possible to independently train subparts of a new class of LLMs on different subsets of the data, eliminating the massive multi-node synchronization currently required to train LLMs. BTM learns a set of independent expert LMs (ELMs), each specialized to a different textual domain, such as scientific or legal text. These ELMs can be added and removed to update data coverage, ensembled to generalize to new domains, or averaged to collapse back to a single LM for efficient inference. New ELMs are learned by branching from (mixtures of) ELMs in the current set, further training the parameters on data for the new domain, and then merging the resulting model back into the set for future use. Experiments show that BTM improves in- and out-of-domain perplexities as compared to GPT-style Transformer LMs, when controlling for training cost. Through extensive analysis, we show that these results are robust to different ELM initialization schemes, but require expert domain specialization; LM ensembles with random data splits do not perform well. We also present a study of scaling BTM into a new corpus of 64 domains (192B whitespace-separated tokens in total); the resulting LM (22.4B total parameters) performs as well as a Transformer LM trained with 2.5 times more compute. These gains grow with the number of domains, suggesting more aggressive parallelism could be used to efficiently train larger models in future work.
+ChatGPT
+Certainly! Here are some analogies and metaphors to help explain the concepts in the "Branch-Train-Merge (BTM)" algorithm for training large language models (LLMs):
+Branching Out Like a Tree
+:
+Analogy
+: Imagine a tree growing new branches. Each branch grows independently, taking in sunlight and nutrients from its specific part of the environment.
+BTM Explanation
+: In BTM, each "expert" language model (ELM) trains independently on a specific type of text, just like each branch of the tree growing in its unique direction.
+Specialized Chefs in a Kitchen
+:
+Analogy
+: Think of a large kitchen where different chefs specialize in cooking different cuisines (e.g., Italian, Chinese, Indian). They work independently but can come together to create a diverse and comprehensive menu.
+BTM Explanation
+: Each ELM specializes in a different domain of text (like scientific or legal texts). These models can then be combined or averaged to create a comprehensive language model that covers multiple domains effectively.
+Building Blocks in Construction
+:
+Analogy
+: Imagine constructing a large building with prefabricated blocks. Each block is built separately and then assembled together to form the final structure.
+BTM Explanation
+: Each ELM is trained separately on its subset of data, and later these models are merged to form a final language model, similar to assembling prefabricated blocks into a complete building.
+A Team of Researchers
+:
+Analogy
+: Picture a team of researchers, each working on different aspects of a large project. They conduct their studies independently and then combine their findings to create a comprehensive report.
+BTM Explanation
+: In BTM, independent ELMs are trained on different domains. These models' parameters and knowledge are then merged, resulting in a robust and well-rounded language model.
+Parallel Puzzle Solving
+:
+Analogy
+: Imagine multiple people working on different sections of a puzzle. Once each person completes their section, the pieces are assembled to reveal the full picture.
+BTM Explanation
+: Each ELM works on a different subset of the data (like solving a part of the puzzle). After training, the models are merged to form a comprehensive model, analogous to assembling the complete puzzle.
+Branches of a River
+:
+Analogy
+: Think of a river that splits into several branches, each branch flowing through different terrain and collecting different sediments. Eventually, the branches reconverge into a larger river.
+BTM Explanation
+: Each ELM trains on a different domain (branch of the river), collecting domain-specific knowledge. These models are then merged (reconverge) to form a unified and robust language model.
+These analogies help illustrate the key idea of the BTM approach: independent specialization followed by integration, leading to efficient and scalable training of large language models.
+4o
+1Introduction 
+Training and inference in large language models (LMs) typically require access to supercomputers 
+that can achieve the massive multi-node (e.g., GPU or TPU) synchronization required to compute 
+model activations and gradients (Brown et al., 2020; Zhang et al., 2022; Fedus et al., 2022; Lepikhin 
+et al., 2021). In this paper, we develop a new class of large LMs that is instead embarrassingly 
+parallel: different parts of the model are independently trained on different subsets of the data, with 
+no need for multi-node training or inference (Figure 2). 
+Our new ELMFOREST1models consist of a set ofEXPERTLMs(ELMs), each specialized to a 
+distinct domain in the training corpus, e.g., scientif i c or legal text. The ELMs are each independently 
+functional LMs with no shared parameters, unlike previous domain mixture-of-experts models that 
+���These authors contributed equally to this work. Correspondence to {margsli, sg01}@cs.washington.edu. 
+1Expert Language Models For Eff i cient Sparse Training 
+arXiv:2208.03306v1 
+[cs.CL] 
+5 
+Aug 
+2022 
+01K2K3K4K5K6K7K8K 
+Training cost (GPU Hours) 
+13 
+15 
+17 
+19 
+21 
+Perplexity 1B 
+125M 
+125M 
+1B 2.8B 
+350M 
+2.8B 
+350M 760M 
+6B 
+760M 
+6B 10.4B 1.3B 
+1.3B 
+10.4B 
+8 Training Domains 
+Random Ensemble 
+Transformer-LM 
+ELMforest (Parameter Average) 
+ELMforest (Ensemble) 01K2K3K4K5K6K7K8K 
+Training cost (GPU Hours) 
+16 
+18 
+20 
+22 
+24 
+26 
+Perplexity 
+1B 
+125M 
+125M 
+1B 2.8B 
+350M 
+2.8B 
+350M 
+6B 760M 
+6B 
+760M 
+10.4B 1.3B 
+1.3B 
+10.4B 
+8 Evaluation Domains 
+Random Ensemble 
+Transformer-LM 
+ELMforest (Parameter Average) 
+ELMforest (Ensemble) 
+Figure 1:ELMFORESTs outperform compute-matched TRANSFORMER-LM and random- 
+ensemble baselines across parameter scales (��4.2). ELMFORESTparameter averaging closely 
+approaches the performance of ELMFORESTensembling at no additional cost to inference compared 
+to the TRANSFORMER-LM. ELMFORESTeff i ciency also grows as the model size increases due to 
+substantially reduced GPU communication overhead relative to TRANSFORMER-LM baselines. 
+only specialize the Transformer feedforward layers (Gururangan et al., 2022). ELMs can be added 
+and removed to the model at any time to update data coverage, ensembled to generalize to new 
+domains, or parameter averaged to collapse back to a single LM for more eff i cient inference. 
+We present the Branch-Train-Merge (BTM) algorithm for learning this set of specialized LMs. Our 
+procedure repeatedly expands the ELMFORESTby adding one or more new ELMs completely in 
+parallel. Each new ELM in the ELMFORESTis i rst branched by initializing a new LM with an 
+average of the parameters of the most relevant LMs in the current set, then further trained on new 
+domain data with a standard cross-entropy loss, and i nally merged into the model by simply adding 
+it to the current ELMFOREST(Figure 3 provides a schematic of this process). BTM is initialized 
+with a single LM that is trained on heterogeneous data to establish strong shared representations for 
+future domain specialization, a process that we explore extensively in our ablation analysis. 
+When evaluated in- and out-of-domain, ELMFORESTs trained with BTM outperform monolithic GPT- 
+style transformer LMs (GPT-LMs) and a previous domain-specialized mixture-of-experts baseline 
+(DEMIX; Gururangan et al. 2022) across a range of computational budgets ��� up to 1.3B parameters 
+per ELM trained for 7000 GPU-hours in aggregate (Figure 1; ��4.2). These gains are biggest for 
+ELMFORESTensembles, which use all of the model parameters, but also hold when we collapse the 
+models by averaging parameters. 
+We also perform detailed analysis to understand which aspects of BTM are most important for these 
+gains. Ensembled ELMFORESTs outperform ensembling across random data splits, suggesting that 
+domain specialization is a critical component to our approach (��5.1). We also show that performance 
+is robust to a range of initializations, including the choice of the compute budget allocation (��5.2) 
+and data (��5.3) for training the initial LM. Our ELMFORESTs are also able to forget domains by 
+removing the relevant ELM, as long as they were not included in the initialization phase (��5.3). 
+Finally, we perform a preliminary scaling study on a training corpus with 192B whitespace-separated 
+tokens (��6.3). Building on our i ndings, we use BTM to incrementally train a total of 64 experts 
+which form a ELMFOREST. Our scaled ELMFORESTperforms comparably with a 1.3B parameter 
+TRANSFORMER-LM trained with 2.5 times the total GPU hours. We i nd that benef i ts of BTM 
+increase with the number of domains in the training corpus. 
+These results provide compelling evidence for the promise of scaling large language models with 
+many smaller, independently trained ELMs. We envision that this work lays the foundation for 
+democratized model development at inclusive compute budgets ��� that groups with different resource 
+constraints and research interests may combine efforts to build open-sourced, community-authored 
+large language models, comprised of continually-evolving repositories ofEXPERTLMs.
+ChatGPT
+The introduction of the paper "Branch-Train-Merge: Embarrassingly Parallel Training of Expert Language Models" presents the Branch-Train-Merge (BTM) algorithm, which is designed to train large language models (LLMs) in a more efficient and scalable way. Here are some key points and simplified analogies to help explain the introduction:
+Current Challenges in Training Large LMs
+:
+Problem
+: Training and inference for large language models require massive multi-node synchronization, often needing supercomputers with numerous GPUs or TPUs.
+Analogy
+: Think of trying to coordinate a large team of people all at once to lift a heavy object. It requires everyone to synchronize their efforts perfectly, which is complicated and resource-intensive.
+Introduction of ELMFOREST and Expert LMs (ELMs)
+:
+Solution
+: BTM introduces a new class of large LMs, called ELMFOREST, which consists of independently trained Expert Language Models (ELMs). Each ELM specializes in a distinct domain of text, such as scientific or legal documents.
+Analogy
+: Imagine a group of experts, each highly skilled in their specific field (like a legal expert, a scientific expert, etc.). They work independently and can be combined to form a comprehensive team of specialists.
+Branch-Train-Merge (BTM) Algorithm
+:
+Process
+:
+Branch
+: Initialize a new ELM by averaging the parameters of relevant existing ELMs.
+Train
+: Further train the new ELM on domain-specific data.
+Merge
+: Add the newly trained ELM back into the ELMFOREST.
+Analogy
+: This is like growing new branches on a tree. Each branch starts from the trunk (or a mixture of other branches), grows independently, and then becomes part of the overall tree structure.
+Advantages of BTM
+:
+Efficiency
+: ELMFOREST models do not require multi-node synchronization, making training more parallel and scalable.
+Performance
+: BTM-trained models outperform traditional GPT-style transformers and other domain-specialized models.
+Flexibility
+: ELMs can be added or removed to update the model's coverage or to adapt to new domains.
+Analogy
+: This is like building with modular blocks, where each block can be independently created and then combined to form a complex structure. You can easily add new blocks or remove old ones without rebuilding the entire structure.
+Scalability and Future Potential
+:
+Scaling Study
+: The paper presents a scaling study showing that ELMFOREST models can handle a large number of domains efficiently and perform comparably to larger models trained with significantly more resources.
+Democratization
+: The approach enables more accessible model development, allowing various groups with different resources to collaborate and build open-source, community-driven LMs.
+Analogy
+: Think of a community garden where different people contribute their specialized plants. Together, they create a diverse and thriving ecosystem that anyone can benefit from.
+By using these analogies, the introduction of the BTM algorithm can be better understood as a method for efficiently and effectively training large language models through independent specialization and modular integration.
+4o
+3BRANCH-TRAIN-MERGE(BTM) 
+BRANCH-TRAIN-MERGEtraining of ELMFORESTmodels is incremental and embarrassingly 
+parallel (Figure 2).EXPERTLMs are trained completely independently in batches, starting from an 
+LM trained on a shared, heterogeneous corpus. Figure 3 summarizes the process, which we detail in 
+this section. 4 
+Figure 3:BTM training process overview (��3).Our BTM method is initialized with a seed training 
+phase (Step 0), in which a single LM is trained on a corpus. The resulting parameters are branched, 
+or copied,ktimes (Step 1) and we continue training each LM on a unique assigned data domain, 
+resulting inkELMs (Step 2). Trained ELMs are merged into the ELMFOREST(Step 3), and the 
+process can be repeated from Step 1, initializing new ELMs with parameter averages of existing 
+ELMs. After the seed phase (Step 0), ELMs are fully disconnected, with no communication between 
+them. This process is shown atk = 4for simplicity, but our experiments in ��4-5 usek = 8domains 
+and train for one iteration through BTM. Our experimental setup for ��6, illustrated in Figure 6, trains 
+on k = 64 domains over 4 iterations of BTM. 
+3.1The Branch-Train-Merge Iteration 
+Each BRANCH-TRAIN-MERGEiteration begins with an existing ELMFORESTE = {��i}k i=1. Each 
+ELM��irepresents a corresponding domaindiin the dataset ofkdomainsDE= {d1,...,dk} 
+currently modeled byE. In this section, we i rst describe the inductive case ofk > 0and then 
+describe how to train the initial model ��0. 
+Step 1 (Branch): Sprouting a new ELMThe new ELM parameters are a function of the 
+current expert setE.Given some vector of weightsw = {w1,w2,...,wk}over 
+the exist- 
+ing experts��1,��2,...,��k, we can initialize the new expert with the weighted parameter average 
+��k+1��� Pk 
+i=0wi��i. We experiment with a few ways to setw, including initializing from only the 
+nearest ELM or ��� our best performing approach ��� a parameter average of ELMs according to their 
+domain posterior on the new data dk+1(��4.4). 
+Step 2 (Train): Growing the ELMWe train the new ELM��k+1on data domaindk+1with the 
+log likelihood objective. None of the existing ELMs inEare involved in the training of the new 
+ELM. We also refer to this step as branched training later, to distinguish it from other training 
+regimens we compare to. 
+Step 3 (Merge): Transplanting the ELMWe merge the new ELM��k+1, which now represents 
+the domain dk+1, into E to create an updated set: E0= E ��� {��k+1} and DE0= DE��� {dk+1}. 
+These operations are described for a single ELM, but can be parallelized to add multiple ELMs in a 
+batch or iterated to add them asynchronously. 
+3.2Step 0 (Initialization): Seeding the ELMFOREST 
+On the i rst iteration of BTM,E = ���; we have no ELMs in the set to branch from. Instead of 
+initializing the i rst ELMs of the set randomly, we hypothesize that ELM performance is boosted by 
+branching from pretrained LM parameters, since multi-phase adaptive pretraining is an effective way 
+to develop domain-specif i c language models (Gururangan et al., 2020), and parameter interpolation 
+techniques work best with models that have a shared initialization (Izmailov et al., 2018; Frankle 
+5
+ChatGPT
+The Branch-Train-Merge (BTM) algorithm for training ELMFOREST models is an incremental and embarrassingly parallel method for developing Expert Language Models (ELMs). Here's a detailed explanation of the process along with some analogies to make it more understandable:
+Overview of BTM Training Process
+Initialization Phase (Step 0)
+:
+Process
+: Start with a single language model (LM) trained on a diverse corpus of data.
+Analogy
+: Think of planting a seed in a garden. This seed represents the initial model that will grow and branch out.
+Branching Phase (Step 1)
+:
+Process
+: The parameters of the initial LM are copied to create multiple new LMs. Each new LM is initialized with a weighted parameter average from the existing set of models.
+Analogy
+: Imagine taking cuttings from the initial plant and planting them in different parts of the garden. Each cutting (new LM) starts with the characteristics of the original plant.
+Training Phase (Step 2)
+:
+Process
+: Each new LM (now an ELM) is trained independently on a specific domain of data without any communication with other LMs.
+Analogy
+: Each plant cutting is then nurtured in its unique environment, growing independently and adapting to its specific conditions.
+Merging Phase (Step 3)
+:
+Process
+: The newly trained ELM is added back into the ELMFOREST, updating the set of models.
+Analogy
+: The matured plants are transplanted back into the main garden, enriching the overall diversity and capabilities of the garden.
+Detailed Steps of BTM Iteration
+Branching (Step 1)
+Sprouting a New ELM
+: The new ELM is initialized using a weighted average of the parameters from the existing set of ELMs.
+Weighting Methods
+: The weights can be determined in various ways, such as using the nearest ELM or averaging parameters based on the domain posterior of the new data.
+Analogy
+: When taking cuttings from the initial plant, you might select the healthiest or most suitable branches for specific parts of the garden.
+Training (Step 2)
+Growing the ELM
+: The new ELM is trained on its designated data domain independently, using standard training objectives like log-likelihood.
+Analogy
+: Each plant cutting is individually cared for, allowing it to grow strong and healthy in its unique environment.
+Merging (Step 3)
+Transplanting the ELM
+: The newly trained ELM is merged back into the ELMFOREST, updating the collection of models to include the new domain expertise.
+Analogy
+: Once the plant cuttings have grown, they are integrated back into the main garden, enhancing its overall variety and robustness.
+Initialization Phase (Step 0)
+Seeding the ELMFOREST
+: On the first iteration, there are no existing ELMs to branch from. Instead, the process starts with a single pre-trained LM on a diverse dataset, providing a strong foundation for future domain-specific models.
+Analogy
+: Planting the initial seed in the garden, which will grow and provide cuttings for future plants.
+Summary
+The BTM process allows for efficient and scalable training of large language models by leveraging independent specialization. Each ELM focuses on a specific domain, and the overall system can be continuously expanded and improved by repeating the Branch-Train-Merge cycle. This approach reduces the need for massive multi-node synchronization and allows for parallel training, making it more accessible and flexible for various computational resources.
+4o
+et al., 2020; Wortsman et al., 2022b; Matena and Raffel, 2021; Wortsman et al., 2022a) . Specif i cally, 
+we perform a seed phase, training a seed LM��seedon some data corpusdseed, which can be used to 
+initialize the i rst batch of ELMs in the set. In ��4.4, we i nd that the seed phase is important for 
+enabling ELMFORESTparameter averaging (��2.3). Ensembling ELMFORESTs trained with BTM 
+results in comparable performance across a wide range of seed LM training settings (��5). 
+3.3Scale: Expanding the ELMFOREST 
+ELMFORESTs can be scaled incrementally by repeating the steps in ��3.1 on batches of new domains. 
+Incremental training allows new ELMs to be initialized with parameter averages of existing LMs 
+when branching. We hypothesize that this allows us to amortize the compute necessary to train new 
+ELMs as BTM proceeds; subsequent ELMs can be trained for shorter periods of time by leveraging 
+the pretraining of existing ELMs in the set.
+ChatGPT
+Branch-Train-Merge (BTM) Detailed Process
+Initialization Phase (Step 0): Seeding the ELMFOREST
+Seed Training
+:
+Process
+: Begin by training a seed language model (LM), denoted as ��_seed, on a heterogeneous corpus of data (d_seed). This serves as the initial model from which future Expert Language Models (ELMs) will branch.
+Importance
+: The seed phase is crucial for the success of the ELMFOREST parameter averaging. A well-trained seed model provides a strong foundation for initializing the first batch of ELMs, ensuring better performance and consistency across the model set.
+Analogy
+: This is akin to planting a robust seed that will eventually provide cuttings for new plants. The initial plant's strength and diversity determine the health and growth potential of future plants.
+Branch-Train-Merge Iteration (Steps 1-3)
+Step 1 (Branch)
+: Sprouting New ELMs
+Process
+: Create new ELMs by initializing their parameters with a weighted average of the parameters from the existing ELMs in the ELMFOREST. This initialization is based on the relevance of the existing ELMs to the new domain.
+Methods for Setting Weights
+:
+Use the nearest ELM.
+Average parameters according to the domain posterior on the new data.
+Analogy
+: Taking cuttings from the strongest branches of a plant to grow new plants. The selected branches are chosen based on their health and suitability for the new environment.
+Step 2 (Train)
+: Growing the ELMs
+Process
+: Independently train each new ELM (��_k+1) on its assigned data domain (d_k+1) using a standard training objective like log-likelihood. During this phase, there is no communication between the new ELM and the existing ones.
+Analogy
+: Each cutting is planted in its unique environment and nurtured independently, allowing it to grow and adapt without interference from other plants.
+Step 3 (Merge)
+: Transplanting the ELMs
+Process
+: After training, merge the new ELM back into the ELMFOREST, updating the set of models (E) and the domains they cover (D_E).
+Parallelization
+: This process can be done in parallel for multiple ELMs, allowing several new models to be added at once.
+Analogy
+: The matured plants are reintroduced into the main garden, enhancing the overall diversity and strength of the garden.
+Scaling the ELMFOREST
+Incremental Expansion
+: The ELMFOREST can be scaled by repeating the Branch-Train-Merge steps for new batches of domains. This incremental approach allows new ELMs to benefit from the training of existing models, reducing the compute time needed for subsequent models.
+Compute Efficiency
+: By leveraging pre-trained parameters from existing ELMs, new ELMs can be trained more efficiently, amortizing the computational cost over time.
+Analogy
+: The garden continues to expand as new plants are added in batches. Each new batch benefits from the existing plants' root systems and nutrients, allowing them to grow more quickly and robustly.
+Summary
+The BTM process is a scalable, efficient method for training large language models by specializing and integrating multiple Expert Language Models. Starting with a strong seed model, the process involves branching new models from existing ones, training them independently, and then merging them back into the overall model set. This approach reduces the need for extensive multi-node synchronization, making it more accessible and flexible for different computational resources. The incremental expansion of the ELMFOREST ensures continual improvement and adaptability, allowing the system to handle increasingly complex and diverse domains efficiently.
+4o
+ArCHer: Training Language Model Agents via Hierarchical Multi-Turn RL
+Yifei Zhou1, Andrea Zanette1,2, Jiayi Pan1, Sergey Levine1, Aviral Kumar2,3
+1University of California, Berkeley, 2Carnegie Mellon University, 3Google Deepmind
+ 
+ 
+Abstract
+Large language models (LLMs) have the potential to tackle sequential decision-making problems due to their generalist capabilities. Instead of optimizing "myopic" surrogate objectives such as human preferences within a single turn, in such problems, we wish to directly optimize long-term objectives, such as user satisfaction over an entire dialogue with an LLM or delayed success metrics in web navigation. Multi-turn reinforcement learning (RL) provides an appealing approach to directly optimize long-term objectives, but how can we design effective and efficient multi-turn RL algorithms for LLMs? In this work, we propose an algorithmic framework to multi-turn RL for LLMs that preserves the flexibility of token-by-token RL used in single-turn RL problems, while still accommodating long horizons and delayed rewards more effectively. Our framework, the Actor-Critic Framework with a Hierarchical Structure (ArCHer), combines a high-level off-policy RL algorithm that trains a value function with a low-level RL algorithm that trains a token-by-token policy. While ArCHer can be instantiated with multiple RL algorithms, a particularly convenient instantiation is to use temporal difference (TD) learning at the high level and on-policy token-level policy gradient at the low level. Empirically, we show that ArCHer significantly improves efficiency and performance of multi-turn LLM tasks, attaining sample efficiency boosts of about 100x over prior on-policy methods and converging to a much better performance than other off-policy methods.
+
+What is Multi-Turn RL for language?
+Generalist LLMs have the potential of serving as language agents to navigate through the web, make use of external tools, interact with human, and etc. In order to succeed in these problems, an LLM needs to make a sequence of intelligent decisions over multiple turns of interaction with an external environment.
+
+Most prior works for RL for LLMs focus on optimizing greedily for single-turn human preferences (single-turn RLHF), and policies trained in this way lack strategic planning over a long horizon
+ArCHer directly apply "multi-turn" RL to directly maximize the long-term objective of interest (e.g., customer satisfaction at the end of a multi-turn conversation with an LLM assistant), which can be formulated as scalar rewards.
+
+Why do we need a hierarchical structure for RL with LLM?
+Prior works in RL for LLMs either run entirely at the token level or at the utterance (a sequence of tokens) level, but they face different challenges:
+
+Token-level methods face the challenge of an extremely long horizon (number of tokens per round * number of interactions), leading to numerical instabilities and slow convergence
+Utterance-level methods face the challenge of an exponential action space (exponential in the number of tokens per utterance), resulting in difficulty in optimizing over such large action space
+Our ArCHer for RL with language models can enjoy the best of both worlds, where an off-policy temporal difference learning method can train an utterance-level value function at the high level, and any policy gradient algorithm can optimize the token generation at each turn of the interaction at the low level, treating the high-level value function as the terminal reward for that turn.
+
+This allows for sample reuse and faster convergence, while avoiding the need to perform Bellman backups over each individual token, as the high-level critic is trained at a coarser time-scale given by utterances. It also directly inherits tuning implementations from any existing token-level policy gradient algorithm that has been developed for single-turn RL with preferences, but with the utterance-level value function inheriting the role of the reward model. This way we are able to obtain the best of both utterance-based and token-based, and off-policy and on-policy approaches for training LLMs.
+ChatGPT
+ArCHer: Training Language Model Agents via Hierarchical Multi-Turn RL
+The paper "ArCHer: Training Language Model Agents via Hierarchical Multi-Turn RL" introduces a novel framework for training large language models (LLMs) to tackle sequential decision-making problems. Here's a detailed summary and explanation of the key concepts:
+Abstract
+Sequential Decision-Making Problems
+: LLMs can potentially solve these problems by making a series of decisions over multiple interactions, such as maintaining user satisfaction in a conversation or achieving long-term goals in web navigation.
+Multi-Turn Reinforcement Learning (RL)
+: This method aims to optimize long-term objectives by considering multiple interactions rather than just single-turn outcomes.
+ArCHer Framework
+: Combines high-level and low-level RL algorithms to optimize both long-term goals and token-by-token decisions, improving efficiency and performance significantly.
+Multi-Turn RL for Language
+Role of LLMs
+: LLMs can act as language agents to perform tasks like web navigation, tool usage, and human interaction.
+Challenges with Single-Turn RL
+: Traditional RL methods focus on optimizing immediate rewards based on human preferences, which doesn't account for strategic planning over long interactions.
+ArCHer's Approach
+: Applies multi-turn RL to maximize long-term objectives, such as overall customer satisfaction in a conversation, by formulating these objectives as scalar rewards.
+Hierarchical Structure in RL for LLMs
+Challenges with Existing Methods
+:
+Token-Level Methods
+: These face long horizons and numerical instabilities due to the large number of tokens per interaction.
+Utterance-Level Methods
+: These struggle with the exponential action space, making it difficult to optimize large sequences of tokens.
+ArCHer's Solution
+:
+High-Level RL
+: Uses an off-policy temporal difference (TD) learning method to train a value function at the utterance level.
+Low-Level RL
+: Utilizes a policy gradient algorithm to optimize token generation at each interaction turn, using the high-level value function as the reward.
+Advantages of ArCHer Framework
+Combining Best of Both Worlds
+: ArCHer benefits from both token-level and utterance-level approaches:
+Sample Reuse and Faster Convergence
+: High-level TD learning allows for more efficient training by reusing samples.
+Avoiding Bellman Backups for Each Token
+: High-level critic operates at the utterance level, simplifying training.
+Integration with Existing Algorithms
+: Inherits tuning implementations from existing token-level policy gradient algorithms, making it versatile and efficient.
+Empirical Results
+Efficiency and Performance
+: ArCHer shows a 100x improvement in sample efficiency compared to prior on-policy methods and achieves better performance than other off-policy methods.
+Convergence
+: The framework converges more effectively, leading to higher-quality models for multi-turn interactions.
+Summary
+The ArCHer framework provides a hierarchical approach to training LLMs for multi-turn RL tasks, combining high-level utterance-based value functions with low-level token-based policy optimization. This method addresses the challenges of long horizons and large action spaces, resulting in more efficient and effective training of language model agents. The framework's flexibility allows it to leverage existing RL algorithms, making it a robust solution for complex sequential decision-making tasks.
+4o
+Unlike single-step RL (Touvron et al., 2023; Ouyang et al., 2022; Bai et al., 2022), training LLMs via 
+multi-turn RL presents a number of unique challenges. First of all, multi-turn RL would require online 
+interaction with external sources such as humans or web servers, which can be slow and expensive. 
+Due to this, on-policy methods such as PPO (Schulman et al., 2017) quickly become impractical owing 
+to their inability to reuse data from past interaction. While of f -policy fully of l ine methods circumvent 
+this problem, these methods present other challenges: since the number of tokens increase with 
+multiple turns (often substantially so, due to the bias of LLMs towards producing long responses), 
+token-level methods (Snell et al., 2023; Jaques et al., 2020) that consider individual tokens as actions 
+need to now propagate reward signal over extremely long horizons. This results in extremely slow 
+learning speeds over long horizons for token-level algorithms. For example, token-level ILQL (Snell 
+et al., 2023) takes more than 10 days to converge on a task in our experiments, while i ltered behavior 
+cloning takes less than a day. In principle, to address long horizon issues, one can treat the entire 
+utterance for each turn as an action (Verma et al., 2022; Jang et al., 2022), but this comes at the 
+cost of introducing an enormous, variable-size action space, presenting a challenge for of f -policy 
+methods based on temporal-dif f erence (TD) learning that require maximization over the action at 
+each time step. This necessitates a multi-turn RL framework that can attain a sweet spot in terms of 
+the aforementioned challenges. 
+In this paper, we devise a framework for building multi-turn RL algorithms that attains this kind 
+of a sweet spot. Our key insight is that a hierarchical approach for RL with language models 
+that addresses the challenges with both on-policy and of f -policy RL approaches as outlined above. 
+Specif i cally, our framework prescribes an of f -policy temporal dif f erence learning method for training 
+an utterance-level value function at the high level, and any on-policy policy gradient algorithm for 
+optimizing the token generation at each turn of the interaction at the low level, treating the high-level 
+value function as the terminal reward for that turn. Unlike on-policy methods, this allows for sample 
+reuse and faster convergence, while avoiding Bellman backups over individual tokens or maximization 
+over enormous action spaces, as the high-level critic is trained at a coarser time-scale, on tokens 
+produced by the actor. In addition, it also directly inherits implementation details from existing 
+token-level RL algorithms developed for single-turn RL with preferences, for training the policy. This 
+way we are able to obtain the best of both utterance-based and token-based, and of f -policy and 
+on-policy approaches for training LLMs. 2 
+ArCHer: Training Language Model Agents via Hierarchical Multi-Turn RL 
+Our main contribution is a framework for developing hierarchical RL approaches for LLMs, that we 
+call: Actor-Critic framework with a Hierarchical Structure (or ArCHer in short). We study several 
+concrete algorithmic instantations derived from the ArCHer framework by conducting experiments 
+on a range of language ���agent��� tasks with active data collection (i.e., the ���online��� setting). We i nd 
+that algorithms derived from ArCHer are 100x more sample ef i cient than on-policy methods such 
+as PPO, and converge to a better performance than of f -policy methods. Moreover, our methods are 
+easy to build on existing single-turn RL methods and scale to dif f erent transformer architectures and 
+more parameters (we show ef f ectiveness of our approach up to the 7 billion scale), directly enabling 
+plug-and-play choices of RL algorithms and models.
+ChatGPT
+Challenges and Framework for Multi-Turn RL in LLMs
+Unique Challenges of Multi-Turn RL
+Online Interaction Requirements
+:
+Challenge
+: Multi-turn RL necessitates interactions with external sources (e.g., humans, web servers), which can be slow and expensive.
+Issue with On-Policy Methods
+: On-policy methods like Proximal Policy Optimization (PPO) can't reuse past interaction data efficiently, making them impractical for multi-turn RL due to high costs and slow learning speeds.
+Token-Level Methods
+:
+Challenge
+: Token-level methods treat individual tokens as actions, leading to extremely long horizons for reward propagation, especially given LLMs' tendency to produce long responses.
+Example
+: Token-level ILQL takes over 10 days to converge on tasks, whereas filtered behavior cloning is much faster (less than a day).
+Utterance-Level Methods
+:
+Challenge
+: Treating entire utterances as actions introduces a massive, variable-size action space. This is problematic for off-policy methods that rely on temporal-difference (TD) learning, which requires action maximization at each step.
+The ArCHer Framework
+Hierarchical Approach
+: ArCHer (Actor-Critic framework with a Hierarchical Structure) addresses these challenges by combining the strengths of both token-level and utterance-level methods.
+High-Level RL
+:
+Method
+: Utilizes off-policy TD learning to train an utterance-level value function.
+Benefit
+: Operates on a coarser time-scale, simplifying the learning process and avoiding the need for Bellman backups over individual tokens or action maximization over large spaces.
+Low-Level RL
+:
+Method
+: Uses on-policy policy gradient algorithms to optimize token generation at each turn, treating the high-level value function as the terminal reward for each turn.
+Benefit
+: Allows for sample reuse, faster convergence, and integration with existing token-level RL algorithms developed for single-turn RL.
+Main Contribution
+Hierarchical RL Framework
+: ArCHer introduces a hierarchical structure for RL in LLMs, balancing the challenges of both on-policy and off-policy methods.
+Empirical Results
+:
+Sample Efficiency
+: ArCHer is 100x more sample-efficient than on-policy methods like PPO.
+Performance
+: It converges to better performance compared to off-policy methods.
+Scalability and Flexibility
+:
+Scalability
+: Effective for different transformer architectures and large models (up to 7 billion parameters).
+Flexibility
+: Allows for plug-and-play choices of RL algorithms and models, building on existing single-turn RL methods.
+Summary
+The ArCHer framework presents a novel hierarchical approach to multi-turn RL for large language models, addressing the unique challenges posed by long horizons and large action spaces. By combining off-policy TD learning at the utterance level with on-policy policy gradient optimization at the token level, ArCHer achieves significant improvements in sample efficiency and performance. This framework provides a robust and scalable solution for training LLMs to handle complex, multi-turn interactions effectively.
+4o
+ChatGPT puede cometer errores. Comprueba la informaci��n importante.
+?
+ChatGPT
+
