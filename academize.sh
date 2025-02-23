@@ -14,13 +14,15 @@ fi
 base_directory="$PWD"
 
 # List of directories to process
-directories=("agora" "alphabet" "audiobooks" "Centerfuge" "eclectric-oil" "example" "Haplopraxis/IFM" "keen-unicoder" "logical-connectives" "mindgame" "mirror" "negentropy" "phonograph" "prototypes" "psychohistory" "quantum-soup" "standardgalactic.github.io" "technobabble" "unfinished-thoughts" "unscannable-interfaces" "substrate" "xanadu" "zygomindfulness")
+directories=(
+"abraxas" "agora" "arcanum" "alphabet" "antivenom" "backward-compatibility" "brain" "bubble-city" "Centerfuge" "cogniscium" "eclectric-oil" "example" "experiments" "ensign" "Haplopraxis/IFM" "hepastitium"  "human" "hyperspace" "keen-unicoder" "library" "logical-connectives" "mindgame" "mirror" "negentropy" "phonograph" "pacer" "prototypes" "psychohistory" "quadrivium"
+"quantum-soup" "umbilicus" "secret-message"  "sitemap" "spherepop" "standardgalactic.github.io" "substrate" "supercube" "systada" "technobabble" "terminal-simulator" "theory" "transcript" "unscannable-interfaces" "vectorspace" "xanadu" "xylomancy" "zygomindfulness")
 
 # Loop through each specified directory
 for dir in "${directories[@]}"; do
     echo "-----------------------------------------"
     echo "Starting processing for directory: $dir"
-    sleep 2 # 2-second delay
+    sleep 1 # 2-second delay
 
     # Full path to the directory
     full_path="$base_directory/$dir"
@@ -28,39 +30,39 @@ for dir in "${directories[@]}"; do
     # Check if directory exists
     if [ -d "$full_path" ]; then
         echo "Directory exists: $full_path"
-        sleep 2
+        sleep 1
 
         cd "$full_path" || exit
         echo "Changed directory to $full_path"
-        sleep 2
+        sleep 1
 
         primary_branch=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
         echo "Primary branch for $dir is $primary_branch"
-        sleep 2
+        sleep 1
 
         git pull origin "$primary_branch"
         echo "Git pull completed on $primary_branch"
-        sleep 2
+        sleep 1
 
-        git add .
-        echo "Git add completed"
-        sleep 2
+#        git add .
+#        echo "Git add completed"
+#        sleep 1
 
-        git commit -m "Imported from $dir"
-        echo "Git commit completed"
-        sleep 2
+#        git commit -m "Imported from $dir"
+#        echo "Git commit completed"
+#        sleep 1
 
         # Uncomment the next line to enable git push
         # git push origin "$primary_branch"
         # echo "Git push completed on $primary_branch"
-        # sleep 2
+        # sleep 1
     else
         echo "Directory $full_path does not exist"
-        sleep 2
+        sleep 1
     fi
 
     echo "Finished processing for directory: $dir"
-    sleep 2
+    sleep 1
 done
 
 echo "Script completed."
