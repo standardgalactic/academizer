@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Reading Pacer</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css"> <!-- Link to your styles.css file -->
 
   <!-- SEO Meta Tags -->
   <meta name="description" content="Reading Pacer is an interactive terminal-based application that guides your reading pace with customizable font styles and dynamic content loading.">
@@ -15,7 +15,7 @@
   <meta property="og:title" content="Reading Pacer">
   <meta property="og:description" content="Reading Pacer is an interactive terminal-based application that guides your reading pace with customizable font styles and dynamic content loading.">
   <meta property="og:image" content="boilerplate.png">
-  <meta property="og:url" content="http://standardgalactic.github.io/pacer/"> 
+  <meta property="og:url" content="http://standardgalactic.github.io/pacer/">
   <meta property="og:type" content="website">
 
   <!-- Twitter Card Meta Tags -->
@@ -44,28 +44,57 @@
       font-family: 'CursiveGalactic Regular';
     }
 
-    @font-face {
-      font-family: "Nova Mono";
-      src: url("fonts/NovaMonoStandardGalactic.ttf") format("truetype");
-      font-weight: normal;
-      font-style: normal;
+    body {
+      font-family: 'Sga Regular', Arial, sans-serif;
+      color: #00ff00;
+      background: black;
+      margin: 0;
+      overflow: hidden; /* Prevent scrolling */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
 
-    /* Three font classes (cycling) */
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      text-align: left; /* Left-align text */
+      background-color: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border: 2px solid #00ff00;
+      box-shadow: 0 0 20px #00ff00;
+      width: 90%;
+      max-width: 1200px;
+      height: calc(100vh - 60px); /* Full height minus footer space */
+      overflow: hidden; /* Prevent scrolling inside content */
+      box-sizing: border-box; /* Include padding and border in element's total width and height */
+    }
+
     .sga-font {
       font-family: 'Sga Regular', 'Courier New', Courier, monospace;
       font-size: 30px;
     }
+
     .cursive-galactic-font {
       font-family: 'CursiveGalactic Regular', 'Courier New', Courier, monospace;
       font-size: 24px;
     }
+
     .courier-font {
-      font-family: 'Nova Mono', Courier, monospace;
+      font-family: 'Courier New', Courier, monospace;
       font-size: 14px;
     }
 
-    /* Fixed footer pinned at bottom of screen */
     .footer {
       position: fixed;
       bottom: 0;
@@ -78,21 +107,98 @@
       box-sizing: border-box;
       font-size: 18px;
       font-family: 'Sga Regular', 'Courier New', Courier, monospace;
+      z-index: 1;
+      border-top: 2px solid #00ff00; /* Green border on top of the footer */
     }
+
     .footer a {
       color: #44ff44;
       text-decoration: none;
     }
+
     .footer a:hover {
       text-decoration: underline;
       cursor: url('cursor/Link Select v4.1.ani'), pointer;
     }
+
+    /* Flicker effect for "The Rəd Pιll" button */
+    .flicker-effect {
+      animation: flicker 1s ease-in-out;
+    }
+
+    @keyframes flicker {
+      0% { background-color: red; color: yellow; }
+      50% { background-color: orange; color: black; }
+      100% { background-color: green; color: #00ff00; }
+    }
   </style>
 </head>
 <body>
-  <div id="terminal" class="sga-font"></div>
+  <canvas id="starfield"></canvas>
+  <div class="content">
+    <div id="terminal" class="sga-font"></div>
+  </div>
+
+  <div class="footer">
+    This site is open source.
+    <a href="https://github.com/standardgalactic/pacer/edit/main/index.html">
+      Improve this page
+    </a>.
+  </div>
 
   <script>
+    // Starfield background
+    const starCanvas = document.getElementById('starfield');
+    const starContext = starCanvas.getContext('2d');
+    starCanvas.width = window.innerWidth;
+    starCanvas.height = window.innerHeight;
+
+    let stars = [];
+    const numStars = 1000;
+    const speed = 0.05;
+
+    for (let i = 0; i < numStars; i++) {
+      stars.push({
+        x: Math.random() * starCanvas.width,
+        y: Math.random() * starCanvas.height,
+        z: Math.random() * starCanvas.width
+      });
+    }
+
+    function updateStars() {
+      for (let star of stars) {
+        star.z -= speed;
+        if (star.z <= 0) {
+          star.x = Math.random() * starCanvas.width;
+          star.y = Math.random() * starCanvas.height;
+          star.z = starCanvas.width;
+        }
+      }
+    }
+
+    function drawStars() {
+      starContext.clearRect(0, 0, starCanvas.width, starCanvas.height);
+      for (let star of stars) {
+        const x = (star.x - starCanvas.width / 2) * (starCanvas.width / star.z);
+        const y = (star.y - starCanvas.height / 2) * (starCanvas.width / star.z);
+        const size = (starCanvas.width / star.z) * 0.5;
+        starContext.beginPath();
+        starContext.arc(x + starCanvas.width / 2, y + starCanvas.height / 2, size, 0, Math.PI * 2);
+        starContext.fillStyle = '#ffffff';
+        starContext.fill();
+        starContext.closePath();
+      }
+    }
+
+    function animateStars() {
+      updateStars();
+      drawStars();
+      requestAnimationFrame(animateStars);
+    }
+
+    animateStars();
+
+    // Typing logic
     let typingSpeed = 50;
     let index = 0;
     let content = '';
@@ -102,7 +208,7 @@
     const fonts = [
       { className: 'sga-font', footerFont: "'Sga Regular', 'Courier New', Courier, monospace" },
       { className: 'cursive-galactic-font', footerFont: "'CursiveGalactic Regular', 'Courier New', Courier, monospace" },
-      { className: 'courier-font', footerFont: "'Nova Mono', Courier, monospace" }
+      { className: 'courier-font', footerFont: "'Courier New', Courier, monospace" }
     ];
     let currentFontIndex = 0;
 
@@ -187,18 +293,22 @@
         // Prevent normal refresh
         event.preventDefault();
         restartTyping();
-      } else if (event.key === 'F11') {
+      }
+      else if (event.key === 'F11') {
         // Let F11 go fullscreen without toggling font
         return;
-      } else if (event.ctrlKey || event.altKey || event.metaKey) {
+      }
+      else if (event.ctrlKey || event.altKey || event.metaKey) {
         // Ignore ctrl/alt/windows combos (e.g. Ctrl++, screenshots, etc.)
         return;
-      } else if (!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key)) {
+      }
+      else if (!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key)) {
         // Only cycle font if user pressed a letter (A-Z or a-z) or space
         if (/^[a-zA-Z ]$/.test(event.key)) {
           cycleFont();
         }
-      } else {
+      }
+      else {
         // Arrows still control typing direction/speed
         handleArrowKeyPress(event);
         event.preventDefault();
@@ -219,13 +329,5 @@
       startTyping();
     }
   </script>
-
-  <!-- Footer -->
-  <div class="footer">
-    This site is open source.
-    <a href="https://github.com/standardgalactic/pacer/edit/main/index.html">
-      Improve this page
-    </a>.
-  </div>
 </body>
 </html>
