@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wormhole Simulation</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+      color: white;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="wormhole"></canvas>
+
+  <script>
+    const canvas = document.getElementById('wormhole');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const stars = [];
+    const numStars = 1000;
+
+    // Initialize stars
+    for (let i = 0; i < numStars; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        z: Math.random() * canvas.width,
+        speed: 2,
+        color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+      });
+    }
+
+    let speedMultiplier = 1;
+    let colorShift = 0;
+    let viewX = 0;
+    let viewY = 0;
+
+    function draw() {
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      stars.forEach(star => {
+        const k = 128 / star.z;
+        const px = star.x * k + canvas.width / 2 + viewX;
+        const py = star.y * k + canvas.height / 2 + viewY;
+        const size = (1 - star.z / canvas.width) * 5;
+
+        ctx.beginPath();
+        ctx.arc(px, py, size, 0, 2 * Math.PI);
+        ctx.fillStyle = star.color;
+        ctx.fill();
+
+        // Update position
+        star.z -= star.speed * speedMultiplier;
+
+        if (star.z <= 0) {
+          star.z = canvas.width;
+          star.x = (Math.random() - 0.5) * canvas.width;
+          star.y = (Math.random() - 0.5) * canvas.height;
+          star.color = `hsl(${(Math.random() * 360 + colorShift) % 360}, 100%, 50%)`;
+        }
+      });
+
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+
+    window.addEventListener('keydown', (event) => {
+      switch (event.key) {
+        case 'w': // Move up
+          viewY -= 10;
+          break;
+        case 's': // Move down
+          viewY += 10;
+          break;
+        case 'a': // Move left
+          viewX -= 10;
+          break;
+        case 'd': // Move right
+          viewX += 10;
+          break;
+        case 'j': // Look left
+          stars.forEach(star => star.x -= 10);
+          break;
+        case 'l': // Look right
+          stars.forEach(star => star.x += 10);
+          break;
+        case 'i': // Look up
+          stars.forEach(star => star.y -= 10);
+          break;
+        case 'k': // Look down
+          stars.forEach(star => star.y += 10);
+          break;
+        case ';': // Increase speed
+          speedMultiplier += 0.5;
+          break;
+        case 'h': // Decrease speed
+          speedMultiplier = Math.max(0.5, speedMultiplier - 0.5);
+          break;
+        default:
+          // Random color shift for other keys
+          colorShift += 15;
+          stars.forEach(star => {
+            star.color = `hsl(${(Math.random() * 360 + colorShift) % 360}, 100%, 50%)`;
+          });
+          break;
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+  </script>
+</body>
+</html>
