@@ -1,231 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Reading Pacer</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Visualizer</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            overflow: hidden;
+        }
 
-  <!-- SEO Meta Tags -->
-  <meta name="description" content="Reading Pacer is an interactive terminal-based application that guides your reading pace with customizable font styles and dynamic content loading.">
-  <meta name="keywords" content="Reading Pacer, interactive reading, customizable fonts, dynamic content, terminal-based application">
-  <meta name="author" content="Standard Galactic">
+        #container {
+            width: 100vw;
+            height: 100vh;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: start;
+            background: #f4f4f4;
+            position: relative;
+        }
 
-  <!-- Open Graph Meta Tags -->
-  <meta property="og:title" content="Reading Pacer">
-  <meta property="og:description" content="Reading Pacer is an interactive terminal-based application that guides your reading pace with customizable font styles and dynamic content loading.">
-  <meta property="og:image" content="boilerplate.png">
-  <meta property="og:url" content="http://standardgalactic.github.io/pacer/"> 
-  <meta property="og:type" content="website">
+        #output {
+            padding: 20px;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            min-width: 800px;
+            min-height: 600px;
+            max-width: 95%;
+            max-height: 95%;
+            overflow: auto;
+            position: relative;
+            user-select: none;
+        }
 
-  <!-- Twitter Card Meta Tags -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Reading Pacer">
-  <meta name="twitter:description" content="Reading Pacer is an interactive terminal-based application that guides your reading pace with customizable font styles and dynamic content loading.">
-  <meta name="twitter:image" content="boilerplate.png">
-  <meta name="twitter:site" content="@galactromeda"> 
+        .folder {
+            font-weight: bold;
+            color: #333;
+            margin-left: 20px;
+            margin-top: 5px;
+        }
 
-  <style>
-    @font-face {
-      src: url('fonts/Sga-Regular.woff2') format('woff2'),
-           url('fonts/Sga-Regular.woff') format('woff'),
-           url('fonts/Sga-Regular.ttf') format('truetype');
-      font-weight: normal;
-      font-style: normal;
-      font-family: 'Sga Regular';
-    }
+        .file {
+            color: #555;
+            margin-left: 40px;
+            margin-top: 5px;
+        }
 
-    @font-face {
-      src: url('fonts/CursiveGalactic-Regular.woff2') format('woff2'),
-           url('fonts/CursiveGalactic-Regular.woff') format('woff'),
-           url('fonts/CursiveGalactic-Regular.ttf') format('truetype');
-      font-weight: normal;
-      font-style: normal;
-      font-family: 'CursiveGalactic Regular';
-    }
+        /* Custom scrollbars for desktop */
+        #container::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
 
-    @font-face {
-      font-family: "Nova Mono";
-      src: url("fonts/NovaMonoStandardGalactic.ttf") format("truetype");
-      font-weight: normal;
-      font-style: normal;
-    }
+        #container::-webkit-scrollbar-thumb {
+            background: #aaa;
+            border-radius: 6px;
+        }
 
-    /* Three font classes (cycling) */
-    .sga-font {
-      font-family: 'Sga Regular', 'Courier New', Courier, monospace;
-      font-size: 30px;
-    }
-    .cursive-galactic-font {
-      font-family: 'CursiveGalactic Regular', 'Courier New', Courier, monospace;
-      font-size: 24px;
-    }
-    .courier-font {
-      font-family: 'Nova Mono', Courier, monospace;
-      font-size: 14px;
-    }
-
-    /* Fixed footer pinned at bottom of screen */
-    .footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: black;
-      color: #44ff44;
-      text-align: center;
-      padding: 10px;
-      box-sizing: border-box;
-      font-size: 18px;
-      font-family: 'Sga Regular', 'Courier New', Courier, monospace;
-    }
-    .footer a {
-      color: #44ff44;
-      text-decoration: none;
-    }
-    .footer a:hover {
-      text-decoration: underline;
-      cursor: url('cursor/Link Select v4.1.ani'), pointer;
-    }
-  </style>
+        #container::-webkit-scrollbar-track {
+            background: #f4f4f4;
+        }
+    </style>
 </head>
 <body>
-  <div id="terminal" class="sga-font"></div>
 
-  <script>
-    let typingSpeed = 50;
-    let index = 0;
-    let content = '';
-    let direction = 1;
-    let typingInterval;
+<div id="container">
+    <div id="output">Loading...</div>
+</div>
 
-    const fonts = [
-      { className: 'sga-font', footerFont: "'Sga Regular', 'Courier New', Courier, monospace" },
-      { className: 'cursive-galactic-font', footerFont: "'CursiveGalactic Regular', 'Courier New', Courier, monospace" },
-      { className: 'courier-font', footerFont: "'Nova Mono', Courier, monospace" }
-    ];
-    let currentFontIndex = 0;
+<script>
+    async function fetchData() {
+        try {
+            const response = await fetch("./structure.json");
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error("Error loading file:", error.message);
+            document.getElementById("output").textContent = `Error loading file structure: ${error.message}`;
+        }
+    }
 
-    function fetchFile(filePath) {
-      return fetch(filePath)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok: ' + response.statusText);
-          }
-          return response.text();
+    function renderFolder(folder, parent) {
+        const folderEl = document.createElement("div");
+        folderEl.className = "folder";
+        folderEl.textContent = `📁 ${folder.name}`;
+        parent.appendChild(folderEl);
+
+        if (folder.contents) {
+            folder.contents.forEach(item => {
+                if (item.type === "directory") {
+                    renderFolder(item, folderEl);
+                } else {
+                    const fileEl = document.createElement("div");
+                    fileEl.className = "file";
+                    fileEl.textContent = `📄 ${item.name}`;
+                    folderEl.appendChild(fileEl);
+                }
+            });
+        }
+    }
+
+    async function init() {
+        const data = await fetchData();
+        if (data && data.length > 0) {
+            const output = document.getElementById("output");
+            output.textContent = "";
+            renderFolder(data[0], output);
+        }
+    }
+
+    init();
+
+    const container = document.getElementById("container");
+
+    // Detect mobile device
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
+    if (isMobile) {
+        let isDragging = false;
+        let startX, startY, scrollLeft, scrollTop;
+
+        container.addEventListener("touchstart", (e) => {
+            isDragging = true;
+            const touch = e.touches[0];
+            startX = touch.pageX;
+            startY = touch.pageY;
+            scrollLeft = container.scrollLeft;
+            scrollTop = container.scrollTop;
         });
+
+        container.addEventListener("touchmove", (e) => {
+            if (!isDragging) return;
+            e.preventDefault();  // Prevent mobile scroll
+            const touch = e.touches[0];
+            const dx = startX - touch.pageX;
+            const dy = startY - touch.pageY;
+            container.scrollLeft = scrollLeft + dx;
+            container.scrollTop = scrollTop + dy;
+        });
+
+        container.addEventListener("touchend", () => {
+            isDragging = false;
+        });
+    } else {
+        // Enable native scrollbars on desktop
+        container.style.overflow = "auto";
     }
+</script>
 
-    function type() {
-      const terminal = document.getElementById('terminal');
-      if (index < content.length && index >= 0) {
-        if (direction === 1) {
-          terminal.innerHTML += content.charAt(index);
-        } else if (direction === -1 && terminal.innerHTML.length > 0) {
-          terminal.innerHTML = terminal.innerHTML.slice(0, -1);
-        }
-        index += direction;
-        terminal.scrollTop = terminal.scrollHeight; // Ensure the terminal scrolls to follow the text
-      }
-    }
-
-    function startTyping() {
-      clearInterval(typingInterval);
-      typingInterval = setInterval(type, typingSpeed);
-    }
-
-    function restartTyping() {
-      index = 0;
-      direction = 1;
-      document.getElementById('terminal').innerHTML = '';
-      startTyping();
-    }
-
-    /* Load sardonic overviews first, then doom debates */
-    Promise.all([
-      fetchFile('How AI Will Impact Politics & Society in 2024-sardonic.txt'),
-      fetchFile('Pedro Domingos Breaks Down The Symbolist Approach to AI-sardonic.txt'),
-      fetchFile('Pedro Domingos on Bayesians and Analogical Learning in AI-sardonic.txt'),
-      fetchFile('doom-debates/overview.txt'),
-      fetchFile('doom-debates/detailed-summary.txt')
-    ])
-      .then(filesContent => {
-        content = filesContent.join('\n\n'); // Combine files
-        content = content.replace(/\*\*(.*?)\*\*/g, '$1'); // Remove **bold** syntax
-        startTyping();
-      })
-      .catch(error => {
-        console.error('Error loading files:', error);
-        document.getElementById('terminal').innerHTML = 'Error loading files: ' + error.message;
-      });
-
-    /* Cycle to next font in array */
-    function cycleFont() {
-      const terminal = document.getElementById('terminal');
-      const footer = document.querySelector('.footer');
-
-      fonts.forEach(f => terminal.classList.remove(f.className));
-      currentFontIndex = (currentFontIndex + 1) % fonts.length;
-      const newFont = fonts[currentFontIndex];
-
-      terminal.classList.add(newFont.className);
-      footer.style.fontFamily = newFont.footerFont;
-    }
-
-    /* Event listeners */
-    document.addEventListener('click', () => {
-      // No arrow buttons, so a click cycles the font
-      cycleFont();
-    });
-
-    document.addEventListener('touchstart', () => {
-      cycleFont();
-    });
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'F5') {
-        // Prevent normal refresh
-        event.preventDefault();
-        restartTyping();
-      } else if (event.key === 'F11') {
-        // Let F11 go fullscreen without toggling font
-        return;
-      } else if (event.ctrlKey || event.altKey || event.metaKey) {
-        // Ignore ctrl/alt/windows combos (e.g. Ctrl++, screenshots, etc.)
-        return;
-      } else if (!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key)) {
-        // Only cycle font if user pressed a letter (A-Z or a-z) or space
-        if (/^[a-zA-Z ]$/.test(event.key)) {
-          cycleFont();
-        }
-      } else {
-        // Arrows still control typing direction/speed
-        handleArrowKeyPress(event);
-        event.preventDefault();
-      }
-    });
-
-    /* Keyboard arrow logic for direction/speed */
-    function handleArrowKeyPress(event) {
-      if (event.key === 'ArrowUp') {
-        typingSpeed = Math.max(5, typingSpeed - 10);  // speed up
-      } else if (event.key === 'ArrowDown') {
-        typingSpeed = Math.min(1000, typingSpeed + 10); // slow down
-      } else if (event.key === 'ArrowLeft') {
-        direction = -1;
-      } else if (event.key === 'ArrowRight') {
-        direction = 1;
-      }
-      startTyping();
-    }
-  </script>
-
-  <!-- Footer -->
-  <div class="footer">
-    This site is open source.
-    <a href="https://github.com/standardgalactic/pacer/edit/main/index.html">
-      Improve this page
-    </a>.
-  </div>
 </body>
 </html>
