@@ -1,4 +1,4 @@
-for dir in Haplopraxis spherepop abraxas arcanum backward-compatibility calculator ensign library quadrivium sitemap standardgalactic.github.io; do
+for dir in Haplopraxis abraxas arcanum backward-compatibility calculator ensign library quadrivium sitemap standardgalactic.github.io; do
   echo "Processing $dir..."
   cd "$dir" || { echo "Failed to enter $dir"; continue; }
 

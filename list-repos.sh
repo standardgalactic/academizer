@@ -1,21 +1,83 @@
 #!/bin/bash
 
-# Replace 'GITHUB_PERSONAL_ACCESS_TOKEN' with your personal access token
-TOKEN="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"
+username="standardgalactic"
+repos=()
 
-# Output file for repositories with deployed GitHub Pages
-OUTPUT_FILE="repos_with_pages.txt"
+# Function to add unique repos to the list
+add_unique_repos() {
+	  local repo_names=("$@")
+	    for repo in "${repo_names[@]}"; do
+		        if [[ ! " ${repos[@]} " =~ " ${repo} " ]]; then
+				      repos+=("$repo")
+				          fi
+					    done
+				    }
 
-# Clear or create the output file
-> $OUTPUT_FILE
+			    echo "Fetching repositories the user has contributed to via their events..."
+			    page=1
+			    while : ; do
+				      response=$(gh api -H "Accept: application/vnd.github+json" "/users/$username/events?page=$page&per_page=100")
 
-# Iterate through paginated API results
-for page in {1..200}; do
-    echo "Fetching page $page..."
-    curl -s -H "Authorization: token $TOKEN" \
-         "https://api.github.com/user/repos?per_page=100&page=$page" | \
-         jq -r '.[] | select(.has_pages == true) | .full_name' >> $OUTPUT_FILE
-done
+				        if [[ -z "$response" ]]; then
+						    break
+						      fi
 
-echo "Repositories with GitHub Pages deployed have been saved to $OUTPUT_FILE"
+						        repo_names=$(echo "$response" | jq -r '.[] | select(.type == "PushEvent" or .type == "PullRequestEvent") | .repo.name')
+
+							  if [[ -z "$repo_names" ]]; then
+								      break
+								        fi
+
+									  add_unique_repos $repo_names
+									    ((page++))
+								    done
+
+								    echo "Fetching repositories the user has starred..."
+								    page=1
+								    while : ; do
+									      response=$(gh api -H "Accept: application/vnd.github+json" "/users/$username/starred?page=$page&per_page=100")
+
+									        if [[ -z "$response" ]]; then
+											    break
+											      fi
+
+											        repo_names=$(echo "$response" | jq -r '.[].full_name')
+
+												  if [[ -z "$repo_names" ]]; then
+													      break
+													        fi
+
+														  add_unique_repos $repo_names
+														    ((page++))
+													    done
+
+													    echo "Fetching repositories the user owns..."
+													    page=1
+													    while : ; do
+														      response=$(gh api -H "Accept: application/vnd.github+json" "/users/$username/repos?page=$page&per_page=100")
+
+														        if [[ -z "$response" ]]; then
+																    break
+																      fi
+
+																        repo_names=$(echo "$response" | jq -r '.[].full_name')
+
+																	  if [[ -z "$repo_names" ]]; then
+																		      break
+																		        fi
+
+																			  add_unique_repos $repo_names
+																			    ((page++))
+																		    done
+
+																		    # Remove duplicates and sort the repositories
+																		    echo "Removing duplicates and sorting repositories..."
+																		    unique_repos=($(echo "${repos[@]}" | tr ' ' '\n' | sort -u))
+
+																		    echo "Repositories:"
+																		    for repo in "${unique_repos[@]}"; do
+																			      echo "$repo"
+																		      done
+
+																		      echo "Done!"
 
