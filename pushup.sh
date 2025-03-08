@@ -8,12 +8,12 @@ academizer_directory="$base_directory/academizer"
 
 # List of directories to process (full list restored)
 directories=(
-"abraxas" "agora" "arcanum" "alphabet" "antivenom" "backward-compatibility" "brain" "bubble-city" "Centerfuge" "cogniscium" "eclectric-oil" "example" "experiments" "ensign" "Haplopraxis/IFM" "hepastitium"  "human" "hyperspace" "keen-unicoder" "library" "logical-connectives" "mindgame" "mirror" "negentropy" "phonograph" "pacer" "prototypes" "psychohistory" "quadrivium"
+"abraxas" "agora" "arcanum" "alphabet" "antivenom" "backward-compatibility" "brain" "bubble-city" "capstone" "Centerfuge" "cogniscium" "eclectric-oil" "example" "experiments" "ensign" "Haplopraxis/IFM" "hepastitium"  "human" "hyperspace" "keen-unicoder" "library" "logical-connectives" "mindgame" "mirror" "negentropy" "phonograph" "pacer" "prototypes" "psychohistory" "quadrivium"
 "quantum-soup" "umbilicus" "secret-message"  "sitemap" "spherepop" "standardgalactic.github.io" "substrate" "supercube" "systada" "technobabble" "terminal-simulator" "theory" "transcript" "unscannable-interfaces" "vectorspace" "xanadu" "xylomancy" "zygomindfulness"
 )
 
 # File extensions to process
-extensions=("mhtml" "html" "txt")
+extensions=("mhtml" "html" "txt" "py" "sh")
 
 # Only these .txt filenames should get "(1)", "(2)" suffixes:
 special_txt_files=("summaries" "file-list" "summary" "overview" "detailed-overview")
