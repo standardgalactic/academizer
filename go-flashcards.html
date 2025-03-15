@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flashcard Quiz</title>
+    <style>
+      @font-face {
+        src: url('fonts/Sga-Regular.woff2') format('woff2'),
+             url('fonts/Sga-Regular.woff') format('woff'),
+             url('fonts/Sga-Regular.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-family: 'Sga Regular';
+      }
+
+      body {
+        font-family: 'Sga Regular', Arial, sans-serif;
+        color: #00ff00;
+        background: black;
+        margin: 0;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        /* Use full viewport height */
+        min-height: 100vh;
+        flex-direction: column;
+      }
+
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 0;
+      }
+
+      /* Updated container to use responsive units so that full frame is visible on all browsers */
+      #game-container {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        width: 90vw;
+        height: 90vh;
+        background-color: rgba(0, 0, 0, 0.8);
+        padding: 2vh 2vw;
+        box-sizing: border-box;
+        box-shadow: 0 0 20px #00ff00;
+        border: 2px solid #00ff00;
+      }
+
+      .question {
+        font-size: 2.5vh;
+        margin-bottom: 2vh;
+      }
+
+      .choices {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5vh;
+      }
+
+      .choice {
+        padding: 1vh 1vw;
+        border: 2px solid #00ff00;
+        border-radius: 5px;
+        background-color: black;
+        color: #00ff00;
+        cursor: pointer;
+        transition: background-color 0.3s, color 0.3s;
+        font-size: 2.5vh;
+      }
+
+      .choice:hover {
+        background-color: #00ff00;
+        color: black;
+      }
+
+      .scoreboard {
+        margin-top: 2vh;
+        font-size: 2.5vh;
+      }
+
+      button {
+        background-color: black;
+        color: #00ff00;
+        border: 2px solid #00ff00;
+        padding: 1vh 2vw;
+        cursor: pointer;
+        margin-top: 2vh;
+        transition: background-color 0.3s, color 0.3s;
+        font-family: inherit;
+        font-size: 2.5vh;
+      }
+
+      button:hover {
+        background-color: #00ff00;
+        color: black;
+      }
+
+      .note {
+        margin-top: 2vh;
+        font-size: 2vh;
+        color: #00ff00;
+      }
+
+      .note a {
+        color: #00ff00;
+        text-decoration: underline;
+      }
+    </style>
+    <script src="planets.js"></script>
+  </head>
+  <body>
+    <canvas id="starfield"></canvas>
+    <div id="game-container">
+      <h1 style="font-size:3vh; margin:0 0 2vh 0;">Flashcard Quiz</h1>
+      <div class="question" id="question">Question text here</div>
+      <div class="choices">
+        <div class="choice" onclick="checkAnswer(this)">Choice 1</div>
+        <div class="choice" onclick="checkAnswer(this)">Choice 2</div>
+        <div class="choice" onclick="checkAnswer(this)">Choice 3</div>
+        <div class="choice" onclick="checkAnswer(this)">Choice 4</div>
+      </div>
+      <div class="scoreboard">
+        <h2 style="font-size:3vh; margin:2vh 0;">Score: <span id="score">0</span></h2>
+        <p style="font-size:2.5vh;">Press Ctrl+Z or use the button below to toggle between SGA and Latin fonts.</p>
+        <button onclick="toggleFont()">Toggle Font</button>
+      </div>
+    </div>
+    <div class="note" style="z-index: 1; position: relative;">
+      This page is open source, edit it
+      <a
+        href="https://github.com/standardgalactic/standardgalactic.github.io/blob/main/go-flashcards.html"
+        target="_blank"
+      >here</a>
+    </div>
+
+    <script>
+      // Starfield background
+      const starCanvas = document.getElementById("starfield");
+      const starContext = starCanvas.getContext("2d");
+      starCanvas.width = window.innerWidth;
+      starCanvas.height = window.innerHeight;
+
+      let stars = [];
+      const numStars = 1000;
+      const speed = 0.05;
+
+      for (let i = 0; i < numStars; i++) {
+        stars.push({
+          x: Math.random() * starCanvas.width,
+          y: Math.random() * starCanvas.height,
+          z: Math.random() * starCanvas.width
+        });
+      }
+
+      function updateStars() {
+        for (let star of stars) {
+          star.z -= speed;
+          if (star.z <= 0) {
+            star.x = Math.random() * starCanvas.width;
+            star.y = Math.random() * starCanvas.height;
+            star.z = starCanvas.width;
+          }
+        }
+      }
+
+      function drawStars() {
+        starContext.clearRect(0, 0, starCanvas.width, starCanvas.height);
+        for (let star of stars) {
+          const x = (star.x - starCanvas.width / 2) * (starCanvas.width / star.z);
+          const y = (star.y - starCanvas.height / 2) * (starCanvas.width / star.z);
+          const size = (starCanvas.width / star.z) * 0.5;
+          starContext.beginPath();
+          starContext.arc(x + starCanvas.width / 2, y + starCanvas.height / 2, size, 0, Math.PI * 2);
+          starContext.fillStyle = "#ffffff";
+          starContext.fill();
+          starContext.closePath();
+        }
+      }
+
+      function animateStars() {
+        updateStars();
+        drawStars();
+        requestAnimationFrame(animateStars);
+      }
+
+      animateStars();
+
+      // Flashcard quiz logic
+      let flashcards = [];
+      let currentCardIndex = 0;
+      let score = 0;
+      let isUsingCustomFont = true;
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function loadFlashcard() {
+        const card = flashcards[currentCardIndex];
+        document.getElementById("question").textContent = `What does the command '${card.command}' do?`;
+        const choices = document.querySelectorAll(".choice");
+        const correctChoiceIndex = Math.floor(Math.random() * 4);
+        choices[correctChoiceIndex].textContent = card.definition;
+        choices[correctChoiceIndex].dataset.correct = true;
+
+        let choiceIndex = 0;
+        for (let i = 0; i < 4; i++) {
+          if (i !== correctChoiceIndex) {
+            while (flashcards[choiceIndex].definition === card.definition) {
+              choiceIndex++;
+            }
+            choices[i].textContent = flashcards[choiceIndex].definition;
+            choices[i].dataset.correct = false;
+            choiceIndex++;
+          }
+          choices[i].style.backgroundColor = "black"; // Reset background color
+          choices[i].style.color = "#00ff00"; // Reset text color
+        }
+      }
+
+      function checkAnswer(selectedChoice) {
+        if (selectedChoice.dataset.correct === "true") {
+          selectedChoice.style.backgroundColor = "#28a745"; // Green for correct
+          selectedChoice.style.color = "black";
+          score++;
+        } else {
+          selectedChoice.style.backgroundColor = "#dc3545"; // Red for incorrect
+          selectedChoice.style.color = "black";
+        }
+
+        setTimeout(() => {
+          currentCardIndex++;
+          if (currentCardIndex < flashcards.length) {
+            loadFlashcard();
+          } else {
+            displayResults(); // Show results when quiz is done
+            resetQuiz(); // Reset the quiz
+          }
+          document.getElementById("score").innerText = score;
+        }, 1000);
+      }
+
+      function displayResults() {
+        const grade = (score / flashcards.length) * 100;
+        let gradeMessage = "Grade: " + grade.toFixed(2) + "%\n";
+
+        if (grade === 100) {
+          gradeMessage += "Excellent! Perfect score!";
+        } else if (grade >= 80) {
+          gradeMessage += "Great job!";
+        } else if (grade >= 60) {
+          gradeMessage += "Good effort!";
+        } else {
+          gradeMessage += "Keep practicing!";
+        }
+
+        alert(gradeMessage + "\nYour score: " + score + " out of " + flashcards.length);
+      }
+
+      function resetQuiz() {
+        currentCardIndex = 0;
+        score = 0; // Reset score
+        shuffleArray(flashcards); // Shuffle flashcards again
+        loadFlashcard(); // Load the first flashcard again
+      }
+
+      function toggleFont() {
+        if (isUsingCustomFont) {
+          document.body.style.fontFamily = "sans-serif";
+          isUsingCustomFont = false;
+        } else {
+          document.body.style.fontFamily = "Sga Regular";
+          isUsingCustomFont = true;
+        }
+      }
+
+      document.addEventListener("keydown", function (event) {
+        if (event.ctrlKey && event.key === "z") {
+          toggleFont();
+        }
+      });
+
+      async function fetchWordlist() {
+        const response = await fetch("wordlist.json");
+        flashcards = await response.json();
+        shuffleArray(flashcards);
+        loadFlashcard();
+      }
+
+      window.onload = fetchWordlist;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cistercian Number Translator</title>
+    <meta property="og:image" content="beacon-04.webp">
+    <style>
+        @font-face {
+            src: url('fonts/Sga-Regular.woff2') format('woff2'),
+                 url('fonts/Sga-Regular.woff') format('woff'),
+                 url('fonts/Sga-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-family: 'Sga Regular';
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            color: #00ff00;
+            background: black;
+            margin: 0;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+        }
+
+        #container {
+            text-align: center;
+            width: 90%;
+            max-width: 1200px;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            box-shadow: 0 0 20px #00ff00;
+            border: 2px solid #00ff00;
+            margin: 20px 0;
+            z-index: 1;
+            overflow-y: auto;
+        }
+
+        .legend, .example, .translator, .explanation {
+            margin: 20px 0;
+        }
+
+        .example input, .translator input {
+            background-color: black;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px;
+            font-family: inherit;
+        }
+
+        button {
+            background-color: black;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #00ff00;
+            color: black;
+        }
+
+        .result {
+            font-size: 3em;
+            margin-top: 10px;
+            font-family: 'Sga Regular' !important; /* Always use SGA font */
+        }
+
+        .example {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            display: inline-block;
+            width: 18%;
+            box-sizing: border-box;
+            padding: 10px;
+            border: 1px solid #00ff00;
+            margin: 5px;
+            font-family: 'Sga Regular' !important; /* Always use SGA font */
+        }
+
+        @keyframes flashCorrect {
+            from { background-color: black; }
+            to { background-color: #00ff00; }
+        }
+
+        @keyframes flashIncorrect {
+            from { background-color: black; }
+            to { background-color: red; }
+        }
+
+        .hidden-image {
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .heterodox {
+            font-family: Arial, sans-serif;
+            color: white;
+            background: black;
+            box-shadow: none;
+            border: 2px solid black;
+        }
+
+        .heterodox .result, .heterodox .example {
+            color: white;
+            border: 1px solid black;
+            font-family: 'Sga Regular' !important; /* Always use SGA font */
+        }
+
+        .heterodox button {
+            background-color: white;
+            color: black;
+            border: 1px solid black;
+        }
+
+        .heterodox button:hover {
+            background-color: black;
+            color: white;
+        }
+
+        .heterodox .translator input {
+            background-color: white;
+            color: black;
+            border: 1px solid black;
+        }
+
+        /* Mobile-specific styles */
+        @media (max-width: 600px) {
+            #container {
+                width: 100%;
+                padding: 10px;
+            }
+
+            .example {
+                width: 45%;
+            }
+
+            .result {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+    <div id="container">
+        <h1>Cistercian Number Translator</h1>
+        <button onclick="toggleFont()">Toggle Font (Ctrl+Z)</button>
+        <button onclick="toggleTheme()">Switch to Heterodox Version</button>
+        <div class="translator">
+            <h2>Translate Arabic Numbers to <span class="cistercian">Cistercian</span> Numbers</h2>
+            <input type="number" id="arabicNumber" placeholder="Enter a number" min="1">
+            <button onclick="translateNumber()">Translate</button>
+            <p id="cistercianResult" class="result"></p>
+        </div>
+        <div class="examples">
+            <h2>Examples of <span class="cistercian">Cistercian</span> Numbers</h2>
+            <div id="examples-container"></div>
+            <button id="generateAllButton" onclick="generateAllExamples()">Generate All Examples (1-9999)</button>
+            <button id="hideExtraButton" class="hidden" onclick="hideExtraExamples()">Hide Larger Numbers</button>
+        </div>
+    </div>
+
+    <script>
+        let isUsingCustomFont = true;
+        let isHeterodox = false;
+
+        function arabicToCistercian(num) {
+            const cistercianUnits = {
+                0: '\uEBA0', 1: '\uEBA1', 2: '\uEBA2', 3: '\uEBA3', 4: '\uEBA4',
+                5: '\uEBA5', 6: '\uEBA6', 7: '\uEBA7', 8: '\uEBA8', 9: '\uEBA9'
+            };
+            const cistercianTens = {
+                1: '\uEBB1', 2: '\uEBB2', 3: '\uEBB3', 4: '\uEBB4',
+                5: '\uEBB5', 6: '\uEBB6', 7: '\uEBB7', 8: '\uEBB8', 9: '\uEBB9'
+            };
+            const cistercianHundreds = {
+                1: '\uEBC1', 2: '\uEBC2', 3: '\uEBC3', 4: '\uEBC4',
+                5: '\uEBC5', 6: '\uEBC6', 7: '\uEBC7', 8: '\uEBC8', 9: '\uEBC9'
+            };
+            const cistercianThousands = {
+                1: '\uEBD1', 2: '\uEBD2', 3: '\uEBD3', 4: '\uEBD4',
+                5: '\uEBD5', 6: '\uEBD6', 7: '\uEBD7', 8: '\uEBD8', 9: '\uEBD9'
+            };
+
+            let cistercianNumeral = '';
+            while (num > 0) {
+                const chunk = num % 10000;
+                const units = chunk % 10;
+                const tens = Math.floor(chunk / 10) % 10;
+                const hundreds = Math.floor(chunk / 100) % 10;
+                const thousands = Math.floor(chunk / 1000) % 10;
+
+                cistercianNumeral = (cistercianUnits[units] || '') +
+                                    (cistercianTens[tens] || '') +
+                                    (cistercianHundreds[hundreds] || '') +
+                                    (cistercianThousands[thousands] || '') +
+                                    cistercianNumeral;
+
+                num = Math.floor(num / 10000);
+            }
+
+            return cistercianNumeral;
+        }
+
+        function translateNumber() {
+            const arabicNumber = parseInt(document.getElementById('arabicNumber').value, 10);
+            if (!isNaN(arabicNumber) && arabicNumber >= 0) {
+                const cistercianResult = arabicToCistercian(arabicNumber);
+                const resultElement = document.getElementById('cistercianResult');
+                resultElement.innerHTML = `<span class="cistercian">Cistercian</span>: ${cistercianResult}`;
+                resultElement.style.fontFamily = 'Sga Regular'; // Ensure SGA font for the result
+            } else {
+                alert('Please enter a valid number.');
+            }
+        }
+
+        function generateExamples() {
+            const examplesContainer = document.getElementById('examples-container');
+            examplesContainer.innerHTML = '';
+            for (let i = 1; i <= 10; i++) {
+                const exampleDiv = document.createElement('div');
+                exampleDiv.className = 'example';
+                const cistercian = arabicToCistercian(i);
+                exampleDiv.innerHTML = `${i}: ${cistercian}`;
+                examplesContainer.appendChild(exampleDiv);
+            }
+        }
+
+        function generateAllExamples() {
+            const examplesContainer = document.getElementById('examples-container');
+            examplesContainer.innerHTML = '';
+            for (let i = 1; i <= 9999; i++) {
+                const exampleDiv = document.createElement('div');
+                exampleDiv.className = 'example';
+                const cistercian = arabicToCistercian(i);
+                exampleDiv.innerHTML = `${i}: ${cistercian}`;
+                examplesContainer.appendChild(exampleDiv);
+            }
+            document.getElementById('generateAllButton').classList.add('hidden');
+            document.getElementById('hideExtraButton').classList.remove('hidden');
+        }
+
+        function hideExtraExamples() {
+            generateExamples();
+            document.getElementById('generateAllButton').classList.remove('hidden');
+            document.getElementById('hideExtraButton').classList.add('hidden');
+        }
+
+        function toggleFont() {
+            const body = document.body;
+            const inputs = document.querySelectorAll('input, button');
+            const hElements = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            // Exclude the result element and words 'Cistercian' from the list of <p> elements
+            const pElements = Array.from(document.querySelectorAll('p, span.cistercian')).filter(el => el.id !== 'cistercianResult');
+
+            const elementsToChange = [body, ...inputs, ...hElements, ...pElements];
+
+            if (isUsingCustomFont) {
+                elementsToChange.forEach(el => el.style.fontFamily = "Arial, sans-serif");
+                isUsingCustomFont = false;
+            } else {
+                elementsToChange.forEach(el => el.style.fontFamily = "Sga Regular");
+                isUsingCustomFont = true;
+            }
+        }
+
+        function toggleTheme() {
+            const container = document.getElementById('container');
+            if (isHeterodox) {
+                container.classList.remove('heterodox');
+                toggleFont(); // Switch back to SGA when switching off heterodox mode
+            } else {
+                container.classList.add('heterodox');
+                toggleFont(); // Switch to Latin by default when switching to heterodox mode
+            }
+            isHeterodox = !isHeterodox;
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'z') {
+                toggleFont();
+            }
+        });
+
+        // Starfield background
+        const starCanvas = document.getElementById("starfield");
+        const starContext = starCanvas.getContext("2d");
+        starCanvas.width = window.innerWidth;
+        starCanvas.height = window.innerHeight;
+
+        let stars = [];
+        const numStars = 1000;
+        const speed = 0.05;
+
+        for (let i = 0; i < numStars; i++) {
+            stars.push({
+                x: Math.random() * starCanvas.width,
+                y: Math.random() * starCanvas.height,
+                z: Math.random() * starCanvas.width
+            });
+        }
+
+        function updateStars() {
+            for (let star of stars) {
+                star.z -= speed;
+                if (star.z <= 0) {
+                    star.x = Math.random() * starCanvas.width;
+                    star.y = Math.random() * starCanvas.height;
+                    star.z = starCanvas.width;
+                }
+            }
+        }
+
+        function drawStars() {
+            starContext.clearRect(0, 0, starCanvas.width, starCanvas.height);
+            for (let star of stars) {
+                const x = (star.x - starCanvas.width / 2) * (starCanvas.width / star.z);
+                const y = (star.y - starCanvas.height / 2) * (starCanvas.width / star.z);
+                const size = (starCanvas.width / star.z) * 0.5;
+                starContext.beginPath();
+                starContext.arc(x + starCanvas.width / 2, y + starCanvas.height / 2, size, 0, Math.PI * 2);
+                starContext.fillStyle = "#ffffff";
+                starContext.fill();
+                starContext.closePath();
+            }
+        }
+
+        function animateStars() {
+            updateStars();
+            drawStars();
+            requestAnimationFrame(animateStars);
+        }
+
+        animateStars();
+
+        generateExamples();
+    </script>
+</body>
+</html>

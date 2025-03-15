@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Galactic Typing Tutor</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
+        background-color: black;
+      }
+      canvas {
+        display: block;
+      }
+      #stats {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: #00ff00;
+        font-size: 16px;
+        z-index: 100;
+      }
+      #winMessage {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #00ff00;
+        font-size: 48px;
+        z-index: 150;
+        display: none;
+      }
+    </style>
+    <script src="planets.js"></script>
+  </head>
+  <body>
+    <div id="stats">
+      <p>Remaining Planets: <span id="remaining"></span></p>
+    </div>
+    <div id="winMessage">Congratulations! You popped them all!</div>
+    <canvas id="canvas"></canvas>
+    <script>
+      // Set up canvas and context.
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      // DOM elements for stats.
+      const remainingEl = document.getElementById("remaining");
+      const winMessageEl = document.getElementById("winMessage");
+      
+      // Use the planet names from planetsList in planets.js.
+      // Ensure that planetsList contains your 1000 unique names.
+      const planetNames = planetsList.slice();  // Copy of the list.
+      
+      // Game state variables.
+      let bubbles = [];
+      // Global typed word used for matching.
+      let typedWord = "";
+      const totalPlanets = planetNames.length;
+      // Bubble parameters.
+      const maxBubbleSpeed = 2;
+      const minBubbleSpeed = 0.5;
+      const bubbleSize = 20;
+      
+      // Initialize bubbles: one bubble per unique planet name.
+      function initBubbles() {
+        bubbles = [];
+        for (let i = 0; i < planetNames.length; i++) {
+          bubbles.push(createBubble(planetNames[i]));
+        }
+      }
+      initBubbles();
+      updateRemainingDisplay();
+      
+      // Create a bubble (planet) with given name.
+      function createBubble(name) {
+        return {
+          name: name,
+          // Random starting position.
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          // z controls perspective; larger z makes the bubble smaller.
+          z: Math.random() * canvas.width + canvas.width * 0.5,
+          size: bubbleSize,
+          speed: Math.random() * (maxBubbleSpeed - minBubbleSpeed) + minBubbleSpeed
+        };
+      }
+      
+      // Update remaining planet count display.
+      function updateRemainingDisplay() {
+        remainingEl.textContent = bubbles.length;
+      }
+      
+      // Listen for typing input.
+      document.addEventListener("keydown", (e) => {
+        // Allow space as well.
+        if (e.key === "Backspace") {
+          typedWord = typedWord.slice(0, -1);
+        } else if (e.key === " ") {
+          typedWord += " ";
+        } else if (/^[a-zA-Z]$/.test(e.key)) {
+          typedWord += e.key;
+        }
+        checkForMatch();
+      });
+      
+      // Check if typedWord exactly matches any bubble's name (case insensitive).
+      // If a match is found, pop that bubble.
+      function checkForMatch() {
+        for (let i = 0; i < bubbles.length; i++) {
+          if (bubbles[i].name.toLowerCase() === typedWord.toLowerCase()) {
+            bubbles.splice(i, 1);
+            typedWord = "";
+            updateRemainingDisplay();
+            if (bubbles.length === 0) {
+              winMessageEl.style.display = "block";
+            }
+            return;
+          }
+        }
+      }
+      
+      // Update bubble positions.
+      function update() {
+        // Each bubble moves closer by decreasing its z value.
+        for (let bubble of bubbles) {
+          bubble.z -= bubble.speed;
+          // When a bubble passes too close, reset it.
+          if (bubble.z <= 0) {
+            bubble.z = canvas.width + Math.random() * canvas.width * 0.5;
+            bubble.x = Math.random() * canvas.width;
+            bubble.y = Math.random() * canvas.height;
+          }
+        }
+      }
+      
+      // Draw bubbles with green vector circles.
+      // Highlight the letters in each bubble that have been correctly typed.
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        for (let bubble of bubbles) {
+          // Scale depends on z (depth).
+          const scale = canvas.width / bubble.z;
+          // 2D projection relative to canvas center.
+          const x = (bubble.x - canvas.width / 2) * scale + canvas.width / 2;
+          const y = (bubble.y - canvas.height / 2) * scale + canvas.height / 2;
+          const size = bubble.size * scale;
+          
+          // Draw outer green circle.
+          ctx.beginPath();
+          ctx.arc(x, y, size, 0, Math.PI * 2);
+          ctx.strokeStyle = "#00ff00";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.closePath();
+          
+          // Draw the planet name on the bubble.
+          // If the global typedWord is a prefix of bubble.name (case insensitive),
+          // draw the matching part in green and the remainder in white.
+          let name = bubble.name;
+          let lowerName = name.toLowerCase();
+          let lowerTyped = typedWord.toLowerCase();
+          let matchLength = 0;
+          if (lowerName.startsWith(lowerTyped) && lowerTyped.length > 0) {
+            matchLength = typedWord.length;
+          }
+          // Split the name.
+          const matchedPart = name.slice(0, matchLength);
+          const remainingPart = name.slice(matchLength);
+          // Draw text with dynamic font size.
+          const fontSize = 16 * scale;
+          ctx.font = `${fontSize}px Arial`;
+          ctx.textAlign = "center";
+          // Calculate starting position for text (centered).
+          // For simplicity, we draw the full text centered, then overdraw the prefix in green.
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText(name, x, y + size * 0.4);
+          if (matchLength > 0) {
+            // Measure full text width.
+            const fullWidth = ctx.measureText(name).width;
+            // Measure matched text width.
+            const matchedWidth = ctx.measureText(matchedPart).width;
+            // Since text is centered, determine starting x.
+            const startX = x - fullWidth / 2;
+            ctx.fillStyle = "#00ff00";
+            ctx.fillText(matchedPart, startX + matchedWidth / 2, y + size * 0.4);
+          }
+        }
+      }
+      
+      // Main game loop.
+      function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+      }
+      
+      gameLoop();
+    </script>
+  </body>
+</html>
