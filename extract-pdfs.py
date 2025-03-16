@@ -81,12 +81,13 @@ def extract_text_from_epub(epub_path):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        for file in sys.argv[1:]:
-            if file.lower().endswith(".pdf"):
-                process_pdf(file)
-            elif file.lower().endswith(".epub"):
-                process_epub(file)
-            else:
-                print(f"Unsupported file type: {file}")
+        if sys.argv[1] == "*.pdf" or sys.argv[1] == "*.epub":
+            extract_text_from_pdfs_and_epubs(os.getcwd())
+        else:
+            for file in sys.argv[1:]:
+                if file.lower().endswith(".pdf"):
+                    process_pdf(file)
+                elif file.lower().endswith(".epub"):
+                    process_epub(file)
     else:
         extract_text_from_pdfs_and_epubs(os.getcwd())
