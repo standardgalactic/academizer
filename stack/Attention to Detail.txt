@@ -1,0 +1,2379 @@
+Attention to Detail
+Abrir barra lateral
+ChatGPT
+T��
+Attention as an RNN 
+Leo Feng 
+Mila & Borealis AI 
+leo.feng@mila.quebec 
+Frederick Tung 
+Borealis AI 
+frederick.tung@borealisai.com 
+Hossein Hajimirsadeghi 
+Borealis AI 
+hossein.hajimirsadeghi@borealisai.com 
+Mohamed Osama Ahmed 
+Borealis AI 
+mohamed.o.ahmed@borealisai.com 
+Yoshua Bengio 
+Mila ��� Universit�� de Montr��al 
+yoshua.bengio@mila.quebec 
+Greg Mori 
+Borealis AI 
+greg.mori@borealisai.com 
+Abstract 
+The advent of Transformers marked a signif i cant breakthrough in sequence mod- 
+elling, providing a highly performant architecture capable of leveraging GPU 
+parallelism. However, Transformers are computationally expensive at inference 
+time, limiting their applications, particularly in low-resource settings (e.g., mobile 
+and embedded devices). Addressing this, we (1) begin by showing that attention 
+can be viewed as a special Recurrent Neural Network (RNN) with the ability to 
+compute its many-to-one RNN output eff i ciently. We then (2) show that popular 
+attention-based models such as Transformers can be viewed as RNN variants. 
+However, unlike traditional RNNs (e.g., LSTMs), these models cannot be updated 
+eff i ciently with new tokens, an important property in sequence modelling. Tackling 
+this, we (3) introduce a new eff i cient method of computing attention���s many-to- 
+many RNN output based on the parallel pref i x scan algorithm. Building on the 
+new attention formulation, we (4) introduce Aaren, an attention-based module that 
+can not only (i) be trained in parallel (like Transformers) but also (ii) be updated 
+eff i ciently with new tokens, requiring only constant memory for inferences (like 
+traditional RNNs). Empirically, we show Aarens achieve comparable performance 
+to Transformers on38datasets spread across four popular sequential problem 
+settings: reinforcement learning, event forecasting, time series classif i cation, and 
+time series forecasting tasks while being more time and memory-eff i cient. 
+1Introduction 
+Advancements in sequence modelling are highly impactful due to the wide range of applications, 
+including reinforcement learning (e.g., robotics and autonomous driving), time series classif i cation 
+(e.g., i nancial fraud detection and medical diagnoses), and time series forecasting (e.g., weather 
+and energy consumption predictions). Over the past several years, an extensively explored topic 
+in sequence modelling is that of Transformer-based models (Vaswani et al., 2017). This is due to 
+Transformers��� strong performance and ability to leverage GPU parallelism. As a result, numerous 
+Transformer-specif i c survey papers have been written for various sequential settings such as rein- 
+forcement learning (Agarwal et al., 2023; Li et al., 2023), time series (Lin et al., 2022; Jiang et al., 
+2024), and speech processing (Latif et al., 2023). 
+Preprint. Under review. 
+arXiv:2405.13956v1 
+[cs.LG] 
+22 
+May 
+2024 
+With the rapid increase in low-resource domains such as battery-powered devices, deployed models 
+in these domains must be computationally eff i cient. Transformers, on the other hand, are expensive 
+due to their quadratic scaling in memory and computation. Although their eff i ciency can be enhanced 
+at inference time using techniques such as KV-caching (Pope et al., 2023), Transformers remain 
+expensive for low-resource domains due to requiring (1) linear memory in the number of tokens and 
+(2) the caching of all preceding tokens to the model. The effect of these limitations is exacerbated in 
+settings with long contexts (i.e., large number of tokens) such as those common in time series (e.g., 
+climate and economics). 
+To address this issue, we begin by examining attention, the component contributing to Transformers 
+quadratic computational complexity. We show that (1) attention can be viewed as a special Recur- 
+rent Neural Network (RNN) with the ability to compute its many-to-one RNN output eff i ciently. 
+Leveraging the RNN formulation of attention, we (2) show that popular attention-based models (e.g., 
+Transformers and Perceivers) can be viewed as RNNs. However, unlike traditional RNNs such as 
+LSTMs (Hochreiter and Schmidhuber, 1997) and GRUs (Cho et al., 2014), these attention-based 
+models are unable to perform eff i cient updates with new tokens, an important property in sequential 
+problem settings where data is processed in a stream. 
+To address this, we (3) introduce a new formulation of attention based on the parallel pref i x scan 
+algorithm (Blelloch, 1990) that eff i ciently computes attention���s many-to-many RNN output. Building 
+on this new attention formulation, we (4) introduce Aaren ([A]ttention [a]s a [re]current neural 
+[n]etwork), a computationally eff i cient module that can not only (i) be trained in parallel (like 
+Transformers) but also (ii) be eff i ciently updated with new tokens, requiring only constant memory 
+for inferences (like traditional RNNs). Empirically, we show Aarens achieve comparable performance to Transformers on38datasets spread across four popular sequential data settings: reinforcement learning, event forecasting, time series classification, and time series forecasting tasks while being more time and memory-efficient.
+ChatGPT
+ChatGPT
+Attention as an RNN
+Authors:
+Leo Feng (Mila & Borealis AI) -
+leo.feng@mila.quebec
+Frederick Tung (Borealis AI) -
+frederick.tung@borealisai.com
+Hossein Hajimirsadeghi (Borealis AI) -
+hossein.hajimirsadeghi@borealisai.com
+Mohamed Osama Ahmed (Borealis AI) -
+mohamed.o.ahmed@borealisai.com
+Yoshua Bengio (Mila ��� Universit�� de Montr��al) -
+yoshua.bengio@mila.quebec
+Greg Mori (Borealis AI) -
+greg.mori@borealisai.com
+Abstract:
+Transformers revolutionized sequence modeling by leveraging GPU parallelism but suffer from high computational costs, particularly during inference. To address this, we propose viewing attention as a special type of Recurrent Neural Network (RNN). This perspective allows for efficient computation of the many-to-one RNN output. Furthermore, we introduce Aaren, a new attention-based module that can be trained in parallel like Transformers and updated efficiently with new tokens like traditional RNNs. Aaren achieves comparable performance to Transformers across 38 datasets in reinforcement learning, event forecasting, time series classification, and time series forecasting, while being more efficient in terms of time and memory.
+Key Points:
+Attention as an RNN
+: We show that attention mechanisms can be reformulated as a type of RNN capable of efficient many-to-one output computation.
+RNN Perspective on Transformers
+: Popular attention-based models such as Transformers can be seen as RNN variants, although they lack efficient updating mechanisms with new tokens.
+Efficient Attention Computation
+: We introduce a new method for computing attention���s many-to-many RNN output using the parallel prefix scan algorithm.
+Introduction of Aaren
+: A new module, Aaren, combines the parallel training benefits of Transformers with the efficient updating and constant memory requirements of traditional RNNs.
+Empirical Validation
+: Aaren demonstrates comparable performance to Transformers across various sequential problem settings while being more efficient.
+Introduction:
+Sequence modeling advancements have significant applications in areas such as reinforcement learning, time series classification, and forecasting. Transformers have been a dominant approach due to their performance and ability to leverage GPU parallelism. However, their high computational and memory requirements limit their use in low-resource settings. We address this by reformulating attention as a specialized RNN and introducing Aaren, which achieves Transformer-like performance with greater efficiency.
+4o
+T��
+2Background 
+2.1Recurrent Neural Networks 
+Recurrent Neural Networks (RNNs) are specialized models for sequence modelling. In brief, RNNs 
+process sequential data by iteratively computing hidden states as follows: 
+ht= f��(ht���1,xt) 
+wheretdenotes the step index,xrepresents a token,hrepresents the hidden state, andf��is a 
+neural network parameterized by��. The value of the initial hidden stateh0is typically learned 
+via backpropagation. Popular RNNs such as LSTMs (Hochreiter and Schmidhuber, 1997) and 
+GRUs (Cho et al., 2014) i x the size of the hidden stateshtto a constant irrespective of the step 
+index. As such, these models are eff i cient at test time, requiring only constant memory and time 
+per token and can be easily updated with new tokens, an important property in sequence modelling. 
+However, due to being iterative by design, these popular RNNs also suffer scalability issues due 
+to their lack of parallelizability. As such, RNNs were replaced by a parallelizable attention-based 
+module, Transformers (Vaswani et al., 2017), as the standard for many sequence modelling settings. 
+2.2Attention 
+Attention retrieves information from a set ofXCcontext tokens for a given set of query tokensXQ 
+as follows: Attention(Q,K,V ) = softmax(QKT)V 
+whereQ = XQWqis the query matrix,K = XCWkis the key matrix, andV = XCWvis the value 
+matrix.Wq,Wk,Wv��� Rd��dare 
+weight matrices (learned parameters).softmax(QKT)computes 
+weights of the context tokens for a weighted average. Notably, unlike RNNs, attention is not designed 
+to be iterative; instead, it is designed to easily leverage GPU parallelism. Transformers (Vaswani 
+et al., 2017) use self-attention1, a special case of attention, where the query tokens are the same 
+as the context tokens. However, self-attention requires quadratic computation with respect to the 
+1For sequential data, a causal mask is typically used to prevent attending to future timesteps. 
+2 
+number of tokens and is not eff i ciently updateable with new tokens. As a result, Transformers are 
+computationally expensive, limiting their applications in low-resource domains. 
+3Methodology 
+(a) Conventional Attention(b) Transformer���s Self-Attention(c) Perceiver���s Cross-Attention 
+Figure 1: Attention as a many-to-one RNN. The query tokens are the initial hidden states of the 
+RNNs. (a) The conventional method of computing attention only computes its i nal output. As such, 
+it can be viewed as a method of computing attention���s many-to-one RNN output. (b) Transformer���s 
+self-attention (Vaswani et al., 2017) uses the input tokens as the initial hidden states. (c) Perceiver���s 
+cross-attention (Jaegle et al., 2021) uses input-dependent latents as the initial hidden states. 
+Addressing this, we propose an eff i cient attention-based module capable of leveraging GPU paral- 
+lelism while being eff i ciently updateable. We begin by i rst showing in Section 3.1 that attention can 
+be viewed as an RNN with the special ability to compute its many-to-one RNN (Figure 1a) output 
+eff i ciently. Leveraging the RNN formulation of attention, we further show that popular attention- 
+based models such as Transformers (Figure 1b) and Perceivers (Figure 1c) can be viewed as RNNs. 
+However, unlike traditional RNNs, these models are unable to eff i ciently update themselves with new 
+tokens, limiting their potential in sequential problem settings where data arrives as a stream. Tackling 
+this, we introduce in Section 3.2 an eff i cient method for computing attention as a many-to-many RNN 
+based on the parallel pref i x scan algorithm. Building on this, we introduce in Section 3.3 Aaren 
+([A]ttention [a]s a [re]current neural [n]etwork), a computationally eff i cient module that can not only 
+(i) be trained in parallel (like Transformers) but also (ii) be eff i ciently updated with new tokens at 
+inference time, requiring only constant memory for inferences (like traditional RNNs).
+ChatGPT
+ChatGPT
+2. Background
+2.1 Recurrent Neural Networks
+Recurrent Neural Networks (RNNs) are specialized models for sequence modeling. They process sequential data by iteratively computing hidden states as follows:
+h
+t
+=
+f
+��
+(
+h
+t
+���
+1
+,
+x
+t
+)
+h_t = f_{\theta}(h_{t-1}, x_t)
+h
+t
+���
+=
+f
+��
+���
+(
+h
+t
+���
+1
+���
+,
+x
+t
+���
+)
+where
+t
+t
+t
+denotes the step index,
+x
+x
+x
+represents a token,
+h
+h
+h
+represents the hidden state, and
+f
+��
+f_{\theta}
+f
+��
+���
+is a neural network parameterized by
+��
+\theta
+��
+. The value of the initial hidden state
+h
+0
+h_0
+h
+0
+���
+is typically learned via backpropagation. Popular RNNs, such as Long Short-Term Memory (LSTM) networks (Hochreiter and Schmidhuber, 1997) and Gated Recurrent Units (GRUs) (Cho et al., 2014), fix the size of the hidden states
+h
+t
+h_t
+h
+t
+���
+to a constant irrespective of the step index. This allows these models to be efficient at test time, requiring only constant memory and time per token, and to be easily updated with new tokens, which is crucial for sequence modeling. However, due to their iterative nature, these popular RNNs suffer scalability issues due to their lack of parallelizability. Consequently, RNNs were replaced by the parallelizable attention-based module, Transformers (Vaswani et al., 2017), as the standard for many sequence modeling settings.
+2.2 Attention
+Attention retrieves information from a set of
+X
+C
+X_C
+X
+C
+���
+context tokens for a given set of query tokens
+X
+Q
+X_Q
+X
+Q
+���
+as follows:
+Attention
+(
+Q
+,
+K
+,
+V
+)
+=
+softmax
+(
+Q
+K
+T
+)
+V
+\text{Attention}(Q, K, V) = \text{softmax}(QK^T)V
+Attention
+(
+Q
+,
+K
+,
+V
+)
+=
+softmax
+(
+Q
+K
+T
+)
+V
+where
+Q
+=
+X
+Q
+W
+q
+Q = X_QW_q
+Q
+=
+X
+Q
+���
+W
+q
+���
+is the query matrix,
+K
+=
+X
+C
+W
+k
+K = X_CW_k
+K
+=
+X
+C
+���
+W
+k
+���
+is the key matrix, and
+V
+=
+X
+C
+W
+v
+V = X_CW_v
+V
+=
+X
+C
+���
+W
+v
+���
+is the value matrix.
+W
+q
+,
+W
+k
+,
+W
+v
+���
+R
+d
+��
+d
+W_q, W_k, W_v \in \mathbb{R}^{d \times d}
+W
+q
+���
+,
+W
+k
+���
+,
+W
+v
+���
+���
+R
+d
+��
+d
+are weight matrices (learned parameters).
+softmax
+(
+Q
+K
+T
+)
+\text{softmax}(QK^T)
+softmax
+(
+Q
+K
+T
+)
+computes the weights of the context tokens for a weighted average. Notably, unlike RNNs, attention is not designed to be iterative; instead, it is designed to easily leverage GPU parallelism. Transformers (Vaswani et al., 2017) use self-attention, a special case of attention, where the query tokens are the same as the context tokens. However, self-attention requires quadratic computation with respect to the number of tokens and is not efficiently updateable with new tokens. As a result, Transformers are computationally expensive, limiting their applications in low-resource domains.
+3. Methodology
+Figure 1: Attention as a many-to-one RNN
+(a) Conventional Attention
+: Computes its final output and can be viewed as a method of computing attention���s many-to-one RNN output.
+(b) Transformer���s Self-Attention
+: Uses the input tokens as the initial hidden states.
+(c) Perceiver���s Cross-Attention
+: Uses input-dependent latents as the initial hidden states.
+To address the computational inefficiencies, we propose an efficient attention-based module capable of leveraging GPU parallelism while being efficiently updateable. We start by showing that attention can be viewed as an RNN with the ability to compute its many-to-one RNN output efficiently (Figure 1a). Using this RNN formulation of attention, we demonstrate that popular attention-based models, such as Transformers (Figure 1b) and Perceivers (Figure 1c), can be viewed as RNNs. However, these models are unable to efficiently update with new tokens, limiting their potential in sequential problem settings where data arrives as a stream.
+To address this limitation, we introduce an efficient method for computing attention as a many-to-many RNN based on the parallel prefix scan algorithm. Building on this, we introduce Aaren ([A]ttention [a]s a [re]current neural [n]etwork), a computationally efficient module that can be trained in parallel (like Transformers) and efficiently updated with new tokens at inference time, requiring only constant memory for inferences (like traditional RNNs).
+4o
+T��
+Explain it more simply with analogies
+ChatGPT
+ChatGPT
+Background
+Recurrent Neural Networks (RNNs)
+Think of RNNs as a factory assembly line, where each worker (hidden state) takes the product from the previous worker (the previous hidden state) and adds something new to it (the new token) before passing it on. Each worker always uses the same amount of space (constant memory) and can keep working with new parts without any problem. However, because each worker must wait for the previous one to finish, the process is slow and can't easily be done in parallel.
+Attention
+Imagine attention as a smart librarian who, when given a request (query token), looks through a set of books (context tokens) to find the most relevant information quickly. The librarian uses a clever trick (softmax) to decide which books are most important for the request. Unlike the assembly line, this librarian can look at all the books at once, making the process fast with the help of many assistants (GPUs). However, this method requires a lot of space (memory) to keep track of everything, and it's hard to add new books without redoing a lot of work.
+Methodology
+Attention as an RNN
+Think of attention as a special kind of assembly line worker who can look at the entire assembly line at once and make decisions quickly (many-to-one output). This new worker (attention) can be viewed as an RNN but has the added benefit of seeing the whole process in one go.
+Figures Explanation
+(a) Conventional Attention
+: Like a worker who only cares about the final product, focusing on combining everything to get the last piece right.
+(b) Transformer���s Self-Attention
+: Workers use the same initial parts to check and refine their work continuously.
+(c) Perceiver���s Cross-Attention
+: Workers use different parts depending on what needs to be done, adjusting their process based on specific inputs.
+Introducing Aaren
+Now, imagine a new kind of worker, Aaren, who combines the best of both worlds. Aaren can:
+Work in Parallel
+: Like having many workers doing their tasks simultaneously (like Transformers).
+Update Efficiently
+: Able to handle new parts quickly without needing extra space (like traditional RNNs).
+By using a smart method (parallel prefix scan algorithm), Aaren can process information as efficiently as the librarian (attention) while being as adaptable as the assembly line worker (RNN). This makes Aaren both fast and memory-efficient, able to perform well in various tasks like predicting weather, recognizing patterns, and more, just like the best workers in a high-tech factory.
+4o
+T��
+3.1Attention as a (many-to-one) RNN Figure 2: Attention���s RNN Cell. 
+Attention for a query vectorqcan be viewed as a func- 
+tion that mapsNcontext tokensx1:Nvia their keys 
+and values{(ki,vi)}N 
+i=1 to a singular outputoN= 
+Attention(q,k1:N,v1:N). Givensi= dot(q,ki), the 
+output oNcan be formulated as: 
+oN= 
+N X 
+i=1 
+softmax(s)ivi= PN 
+i=1exp(si)vi 
+PN 
+i=1exp(si) 
+= 
+�� aN 
+�� cN 
+where the numerator is�� aN= PN 
+i=1exp(si)vi and the 
+denominatoris�� cN= PN 
+i=1exp(si). Viewingattention 
+as an RNN, we can compute both iteratively as rolling 
+sums�� ak= �� ak���1+exp(sk)vkand�� ck= �� ck���1+exp(sk) 
+fork = 1,...,N. However, in practice, this is an un- 
+stable implementation, running into numerical issues 
+due to limited precision representations and potentially 
+very small or large exponents (i.e.,exp(s)). Mitigating 
+this, we re-write the recurrence with a cumulative maxi- 
+mum term2mk= maxi���{1,...,k}si, computing instead 
+2A common trick for computing softmax numerically stably is to subtract the max term (Goodfellow et al., 
+2016). The cumulative max is an extension of this trick for a recurrent computation of softmax. 
+3 
+ak= Pk 
+i=1exp(si ��� mk)viandck= Pk 
+i=1exp(si ��� mk). 
+Notably, the i nal result is the same 
+oN= 
+�� aN 
+�� cN = aN 
+cN . ak, ck, and mkare thus computed recurrently as follows: 
+ak= ak���1exp(mk���1��� mk) 
++ vkexp(ck��� mk) 
+ck= ck���1exp(mk���1��� mk) 
++ exp(sk��� mk) 
+mk= max(mk���1,sk) 
+By encapsulating the recurrent computation ofak,ck, andmkfromak���1,ck���1, andmk���1, we 
+introduce an RNN cell that iteratively computes the output of attention (see Figure 2). Attention���s 
+RNN cell takes as input(ak���1,ck���1,mk���1,q)and computes(ak,ck,mk,q). Note that the query 
+vectorqiscarriedoverintheRNNcell. Theinitialhiddenstateofattention���sRNNis(a0,c0,m0,q) = 
+(0,0,0,q). 
+Methods for computing attention. By viewing attention as an RNN, we can see that there are 
+different ways to compute attention: (1) recurrently token-by-token (i.e., sequentially) inO(1) 
+memory or (2) in the conventional manner (i.e., in parallel) requiring linearO(N)memory. Since 
+attention can be viewed as an RNN, the conventional method of computing attention can also be 
+viewed as an eff i cient method of computing attention���s many-to-one RNN output, i.e., the output of 
+an RNN that takes as input multiple context tokens but only outputs a single token at the end of the 
+RNN (see Figure 1a). Lastly, instead of fully sequential or fully in parallel, we can also compute 
+attention as (3) an RNN that processes the tokens block-by-block requiringO(b)memory where 
+bis the size of the block. This method, however, is outside the scope of this work. As such, the 
+description of the block-by-block RNN is included in Appendix A. 
+Viewing existing attention-based models as RNNs. By viewing attention as an RNN, existing 
+attention-based models can also be viewed as variations of RNNs. For example, Transformers��� 
+self-attentions are RNNs (Figure 1b) with the context tokens as their initial hidden states. Perceiver���s 
+cross-attentions are RNNs (Figure 1c) with context-dependent latents as their initial hidden states. By 
+leveraging the RNN formulation of their attention mechanisms, these existing models can compute 
+their output memory eff i ciently. Algorithm 1 Parallel Pref i x Scan (Hillis 
+and Steele (1986)���s variation) 
+Require:Associative Operator���and 
+{xi}N 
+i=1 
+Ensure: {zk= Lk 
+i=1xi} 
+N 
+k=1 
+z ��� x 
+for i ��� 1,...,���log(N)��� do 
+forj ��� 0,...,N ���1do in parallel 
+if j < 2ithen 
+z��� j ��� zj 
+else z��� j ��� zj��� zj���2i 
+end if 
+end for 
+z ��� z��� 
+end for 
+Challenges of viewing attention as an RNN for exist- 
+ing models. However, when viewing existing attention- 
+based models such as Transformers as RNNs, the mod- 
+els lack important properties common in traditional 
+RNNs such as LSTMs and GRUs. Notably, LSTMs and 
+GRUs are capable of eff i ciently updating themselves 
+with new tokens in onlyO(1)constant memory and 
+computation, an important feature for sequence mod- 
+elling where data is received in a stream. In contrast, 
+the RNN view of Transformer (see Figure 1b) would 
+handle new tokens by adding a new RNN with the new 
+token as its initial state. The new RNN processes all 
+preceding tokens, requiringO(N)linear computation 
+in the number of tokens. In Perceiver, the latents (Liin 
+Figure 1c) are input-dependent due to their architecture, 
+meaning that their values change when receiving a new 
+token. Since the initial hidden states (i.e., latents) of 
+their RNNs change, Perceiver would thus require re- 
+computing their RNNs from scratch, requiringO(NL) 
+linear computation in the number of tokens (N) and the 
+number of latents (L).
+ChatGPT
+ChatGPT
+3.1 Attention as a (many-to-one) RNN
+Understanding Attention as an RNN
+Imagine you have a query and you need to find the best answers from a pile of documents. Traditional attention works by comparing the query to each document and combining the relevant information into a single output. This is similar to how an RNN (Recurrent Neural Network) processes sequences step-by-step, updating its state as it goes along.
+In more detail:
+Query Vector (
+q
+q
+q
+)
+: Think of this as your question.
+Context Tokens (
+x
+1
+,
+x
+2
+,
+���
+,
+x
+N
+x_1, x_2, \ldots, x_N
+x
+1
+���
+,
+x
+2
+���
+,
+���
+,
+x
+N
+���
+)
+: These are the documents you are looking at.
+Keys (
+k
+i
+k_i
+k
+i
+���
+) and Values (
+v
+i
+v_i
+v
+i
+���
+)
+: Each document has a key (something you compare your query to) and a value (the actual content you might want).
+When you compute attention, you get a score (
+s
+i
+=
+dot
+(
+q
+,
+k
+i
+)
+s_i = \text{dot}(q, k_i)
+s
+i
+���
+=
+dot
+(
+q
+,
+k
+i
+���
+)
+) for each document. You then use these scores to combine the documents' contents into a single output. Mathematically, this is:
+o
+N
+=
+���
+i
+=
+1
+N
+exp
+���
+(
+s
+i
+)
+���
+j
+=
+1
+N
+exp
+���
+(
+s
+j
+)
+v
+i
+o_N = \sum_{i=1}^N \frac{\exp(s_i)}{\sum_{j=1}^N \exp(s_j)} v_i
+o
+N
+���
+=
+���
+i
+=
+1
+N
+���
+���
+j
+=
+1
+N
+���
+e
+x
+p
+(
+s
+j
+���
+)
+e
+x
+p
+(
+s
+i
+���
+)
+���
+v
+i
+���
+We can simplify this as:
+o
+N
+=
+a
+^
+N
+c
+^
+N
+o_N = \frac{\hat{a}_N}{\hat{c}_N}
+o
+N
+���
+=
+c
+^
+N
+���
+a
+^
+N
+���
+���
+where:
+a
+^
+N
+=
+���
+i
+=
+1
+N
+exp
+���
+(
+s
+i
+)
+v
+i
+\hat{a}_N = \sum_{i=1}^N \exp(s_i) v_i
+a
+^
+N
+���
+=
+���
+i
+=
+1
+N
+���
+exp
+(
+s
+i
+���
+)
+v
+i
+���
+c
+^
+N
+=
+���
+i
+=
+1
+N
+exp
+���
+(
+s
+i
+)
+\hat{c}_N = \sum_{i=1}^N \exp(s_i)
+c
+^
+N
+���
+=
+���
+i
+=
+1
+N
+���
+exp
+(
+s
+i
+���
+)
+Making it an RNN
+To make this process iterative (like an RNN), we compute
+a
+^
+\hat{a}
+a
+^
+and
+c
+^
+\hat{c}
+c
+^
+step-by-step:
+a
+^
+k
+=
+a
+^
+k
+���
+1
++
+exp
+���
+(
+s
+k
+)
+v
+k
+\hat{a}_k = \hat{a}_{k-1} + \exp(s_k) v_k
+a
+^
+k
+���
+=
+a
+^
+k
+���
+1
+���
++
+exp
+(
+s
+k
+���
+)
+v
+k
+���
+c
+^
+k
+=
+c
+^
+k
+���
+1
++
+exp
+���
+(
+s
+k
+)
+\hat{c}_k = \hat{c}_{k-1} + \exp(s_k)
+c
+^
+k
+���
+=
+c
+^
+k
+���
+1
+���
++
+exp
+(
+s
+k
+���
+)
+However, this can lead to numerical problems (like very large or very small numbers), so we use a trick called the cumulative max:
+m
+k
+=
+max
+���
+(
+m
+k
+���
+1
+,
+s
+k
+)
+m_k = \max(m_{k-1}, s_k)
+m
+k
+���
+=
+max
+(
+m
+k
+���
+1
+���
+,
+s
+k
+���
+)
+and redefine:
+a
+k
+=
+���
+i
+=
+1
+k
+exp
+���
+(
+s
+i
+���
+m
+k
+)
+v
+i
+a_k = \sum_{i=1}^k \exp(s_i - m_k) v_i
+a
+k
+���
+=
+���
+i
+=
+1
+k
+���
+exp
+(
+s
+i
+���
+���
+m
+k
+���
+)
+v
+i
+���
+c
+k
+=
+���
+i
+=
+1
+k
+exp
+���
+(
+s
+i
+���
+m
+k
+)
+c_k = \sum_{i=1}^k \exp(s_i - m_k)
+c
+k
+���
+=
+���
+i
+=
+1
+k
+���
+exp
+(
+s
+i
+���
+���
+m
+k
+���
+)
+We update these step-by-step (recurrently):
+a
+k
+=
+a
+k
+���
+1
+exp
+���
+(
+m
+k
+���
+1
+���
+m
+k
+)
++
+v
+k
+exp
+���
+(
+s
+k
+���
+m
+k
+)
+a_k = a_{k-1} \exp(m_{k-1} - m_k) + v_k \exp(s_k - m_k)
+a
+k
+���
+=
+a
+k
+���
+1
+���
+exp
+(
+m
+k
+���
+1
+���
+���
+m
+k
+���
+)
++
+v
+k
+���
+exp
+(
+s
+k
+���
+���
+m
+k
+���
+)
+c
+k
+=
+c
+k
+���
+1
+exp
+���
+(
+m
+k
+���
+1
+���
+m
+k
+)
++
+exp
+���
+(
+s
+k
+���
+m
+k
+)
+c_k = c_{k-1} \exp(m_{k-1} - m_k) + \exp(s_k - m_k)
+c
+k
+���
+=
+c
+k
+���
+1
+���
+exp
+(
+m
+k
+���
+1
+���
+���
+m
+k
+���
+)
++
+exp
+(
+s
+k
+���
+���
+m
+k
+���
+)
+So, we can now view attention as an RNN cell that takes in the previous state (
+a
+k
+���
+1
+,
+c
+k
+���
+1
+,
+m
+k
+���
+1
+a_{k-1}, c_{k-1}, m_{k-1}
+a
+k
+���
+1
+���
+,
+c
+k
+���
+1
+���
+,
+m
+k
+���
+1
+���
+) and the query (
+q
+q
+q
+) and computes the new state (
+a
+k
+,
+c
+k
+,
+m
+k
+a_k, c_k, m_k
+a
+k
+���
+,
+c
+k
+���
+,
+m
+k
+���
+).
+Computing Attention
+There are different ways to compute attention:
+Sequentially
+: Token-by-token with
+O
+(
+1
+)
+O(1)
+O
+(
+1
+)
+memory.
+In Parallel
+: All at once, requiring
+O
+(
+N
+)
+O(N)
+O
+(
+N
+)
+memory.
+Block-by-Block
+: As a compromise, which is not detailed here.
+Viewing Attention-Based Models as RNNs
+When we think of attention as an RNN, we can also see attention-based models like Transformers and Perceivers as special types of RNNs:
+Transformers
+: Each token processes all previous tokens, starting with the input tokens as initial states.
+Perceivers
+: Use context-dependent latents (special starting points) as initial states.
+However, these models can't update efficiently with new tokens:
+Transformers
+: Need to process all previous tokens again, requiring
+O
+(
+N
+)
+O(N)
+O
+(
+N
+)
+computation.
+Perceivers
+: Need to recompute from scratch due to changing initial states, requiring
+O
+(
+N
+L
+)
+O(NL)
+O
+(
+N
+L
+)
+computation.
+By understanding attention as an RNN, we can see how to improve these models to handle new data efficiently while leveraging their parallel computation strengths.
+4o
+T��
+3.2Attention as a (many-to-many) RNN 
+Addressing these limitations, we propose to develop an attention-based model capable of leveraging 
+the RNN formulation���s ability to perform eff i cient updates. To do so, we i rst introduce an eff i cient 
+parallelizedmethodofcomputingattentionasamany-to-manyRNN,i.e., aparallelmethodtocompute 
+{oi= Attention(q,x1:i)}N 
+i=1. To do so, we leverage the parallel pref i x scan algorithm (Blelloch, 
+1990) (see Algorithm 1), a parallel computation method for computingNpref i x computations 
+4 
+fromNsequential data points via an associative operator���. 
+The algorithm eff i ciently computes 
+{Lk 
+i=1xi} 
+N k=1from {xk} 
+N 
+k=1. Figure 3: Attention as a many-to-many 
+RNN 
+Figure 4: Stacking Aarens for sequence 
+modelling 
+Recall thatAttention(q,x1:k) = ok= 
+ak 
+ck where 
+ak= Pk 
+i=1exp(si ��� mk)vi,ck= Pk 
+i=1exp(si ��� 
+mk), andmk=maxi���{1,...,k}siTo compute 
+{Attention(q,x1:k)}N 
+k=1 eff i ciently, we can compute 
+{ak}N k=1,{ck} 
+N 
+k=1, and{mk} 
+N 
+k=1via the parallel scan 
+algorithm and afterwards combineakandckto com- 
+pute Attention(q,x1:k). 
+To do so, we propose the following associative oper- 
+ator���that 
+acts on3-tuples3of the form(mA,uA,wA) 
+whereAis a set of indices,mA= maxi���Asi,uA= 
+P 
+i���Aexp(si ��� mA), 
+andwA= P 
+i���Aexp(si ��� 
+mA)vi.The parallel scan algorithm takes as input 
+{(m{i},u{i},w{i})}N 
+i=1 = {(si,1,vi)}N 
+i=1. The algo- 
+rithm recursively applies the operator���which 
+works 
+as follows: 
+(mA,uA,wA)���(mB,uB,wB) 
+= (mA���B,uA���B,wA���B) 
+wheremA���B= max(mA,mB),uA���B= uAexp(mA��� 
+mA���B) + uBexp(mB��� mA���B)andwA���B= 
+wAexp(mA���mA���B)+wBexp(mB���mA���B). 
+Uponcom- 
+pletion of applying the operator recursively, the algo- 
+rithm outputs{(m{1,...,k},u{1,...,k},w{1,...,k})}N 
+k=1 = 
+{(mk, Pk 
+i=1exp(si ���mk), Pk 
+i=1exp(si ��� 
+mk)vi)}N 
+k=1. Also known as{(mk,ck,ak)}N 
+k=1. 
+Combining the last two values of the output tuples, we 
+retrieveAttention(q,x1:k) = ok= 
+ak 
+ck, resulting in an 
+eff i cient parallelized method for computing attention 
+as a many-to-many RNN (Figure 3). 
+3.3Aaren: 
+Attention as a Recurrent Neural Network 
+Leveraging the parallelized many-to-many formulation of attention, we propose Aaren ([A]ttention 
+[a]s a [re]current neural [n]etwork). The interface of Aaren is the same as a Transformer, mapping 
+Ninputs toNoutputs whereas thei-th output is an aggregate of the1st toi-th input. As such, 
+Aaren is also (1) naturally stackable and (2) capable of computing individual loss terms for each 
+sequence token. However, unlike Transformers which use a causal self-attention, Aaren uses the 
+aforementioned method of computing attention as a many-to-many RNN, making it more eff i cient. 
+Aaren functions as follows: h(0) 
+1 ,...,h(0) 
+N ��� x1,...,xN 
+[h(j+1) 
+1 ,...,h(j+1) 
+N ] ��� Aaren(q(j),[h(j) 
+1 ,...,h(j) 
+N ]) 
+Unlike Transformers where the query is one of the input tokens to attention, Aaren���s query tokenqis 
+learned during training via backpropagation. In Figure 4, we include an example of a stacked Aaren 
+model with input context tokensx1:3and outputsy1:3. Notably, since Aaren leverages the RNN 
+formulation of attention, the stacking of Aarens is also the stacking of RNNs. Therefore, Aarens are 
+also able to perform updates with new tokens eff i ciently, i.e., the iterative computation ofykonly 
+requires constant computation as it relies solely onhk���1andxk. Unlike Transformer-based models 
+which (1) require linear memory (when using KV-caching) and (2) require storing all previous 
+tokens, including those in intermediate Transformer layers, Aaren-based models (1) require only 
+constant memory and (2) does not require storing all previous tokens, making Aarens signif i cantly 
+more computationally eff i cient than Transformers. 
+3See Appendix B for proof of the correctness and associative nature of ���.
+ChatGPT
+ChatGPT
+3.2 Attention as a (Many-to-Many) RNN
+Enhancing Efficiency in Attention Models
+To overcome the limitations of traditional attention models, we propose an enhanced method that treats attention as a many-to-many RNN, allowing efficient updates and parallel computation. This approach utilizes the parallel prefix scan algorithm, which processes multiple sequential data points efficiently.
+Parallel Prefix Scan Algorithm
+The parallel prefix scan algorithm is a way to perform operations on a sequence of data points in parallel. Think of it like a group of workers who each handle a part of the task simultaneously, speeding up the overall process. For attention, we use this algorithm to compute the necessary values in parallel.
+Reformulating Attention
+In traditional attention, for a query
+q
+q
+q
+, the attention output
+o
+N
+o_N
+o
+N
+���
+is calculated using the scores
+s
+i
+s_i
+s
+i
+���
+, where
+s
+i
+=
+dot
+(
+q
+,
+k
+i
+)
+s_i = \text{dot}(q, k_i)
+s
+i
+���
+=
+dot
+(
+q
+,
+k
+i
+���
+)
+, and combining these scores with the values
+v
+i
+v_i
+v
+i
+���
+:
+o
+N
+=
+���
+i
+=
+1
+N
+exp
+���
+(
+s
+i
+)
+v
+i
+���
+i
+=
+1
+N
+exp
+���
+(
+s
+i
+)
+o_N = \frac{\sum_{i=1}^N \exp(s_i) v_i}{\sum_{i=1}^N \exp(s_i)}
+o
+N
+���
+=
+���
+i
+=
+1
+N
+���
+e
+x
+p
+(
+s
+i
+���
+)
+���
+i
+=
+1
+N
+���
+e
+x
+p
+(
+s
+i
+���
+)
+v
+i
+���
+���
+This can be broken down into:
+a
+^
+k
+=
+���
+i
+=
+1
+k
+exp
+���
+(
+s
+i
+���
+m
+k
+)
+v
+i
+\hat{a}_k = \sum_{i=1}^k \exp(s_i - m_k) v_i
+a
+^
+k
+���
+=
+���
+i
+=
+1
+k
+���
+exp
+(
+s
+i
+���
+���
+m
+k
+���
+)
+v
+i
+���
+c
+^
+k
+=
+���
+i
+=
+1
+k
+exp
+���
+(
+s
+i
+���
+m
+k
+)
+\hat{c}_k = \sum_{i=1}^k \exp(s_i - m_k)
+c
+^
+k
+���
+=
+���
+i
+=
+1
+k
+���
+exp
+(
+s
+i
+���
+���
+m
+k
+���
+)
+m
+k
+=
+max
+���
+i
+���
+{
+1
+,
+.
+.
+.
+,
+k
+}
+s
+i
+m_k = \max_{i \in \{1, ..., k\}} s_i
+m
+k
+���
+=
+max
+i
+���
+{
+1
+,
+...
+,
+k
+}
+���
+s
+i
+���
+Using the Parallel Prefix Scan
+To compute attention for all steps efficiently, we can use the parallel prefix scan algorithm. The algorithm combines values using an associative operator
+���
+\oplus
+���
+:
+(
+m
+A
+,
+u
+A
+,
+w
+A
+)
+���
+(
+m
+B
+,
+u
+B
+,
+w
+B
+)
+=
+(
+m
+A
+���
+B
+,
+u
+A
+���
+B
+,
+w
+A
+���
+B
+)
+(m_A, u_A, w_A) \oplus (m_B, u_B, w_B) = (m_{A \cup B}, u_{A \cup B}, w_{A \cup B})
+(
+m
+A
+���
+,
+u
+A
+���
+,
+w
+A
+���
+)
+���
+(
+m
+B
+���
+,
+u
+B
+���
+,
+w
+B
+���
+)
+=
+(
+m
+A
+���
+B
+���
+,
+u
+A
+���
+B
+���
+,
+w
+A
+���
+B
+���
+)
+where:
+m
+A
+���
+B
+=
+max
+���
+(
+m
+A
+,
+m
+B
+)
+m_{A \cup B} = \max(m_A, m_B)
+m
+A
+���
+B
+���
+=
+max
+(
+m
+A
+���
+,
+m
+B
+���
+)
+u
+A
+���
+B
+=
+u
+A
+exp
+���
+(
+m
+A
+���
+m
+A
+���
+B
+)
++
+u
+B
+exp
+���
+(
+m
+B
+���
+m
+A
+���
+B
+)
+u_{A \cup B} = u_A \exp(m_A - m_{A \cup B}) + u_B \exp(m_B - m_{A \cup B})
+u
+A
+���
+B
+���
+=
+u
+A
+���
+exp
+(
+m
+A
+���
+���
+m
+A
+���
+B
+���
+)
++
+u
+B
+���
+exp
+(
+m
+B
+���
+���
+m
+A
+���
+B
+���
+)
+w
+A
+���
+B
+=
+w
+A
+exp
+���
+(
+m
+A
+���
+m
+A
+���
+B
+)
++
+w
+B
+exp
+���
+(
+m
+B
+���
+m
+A
+���
+B
+)
+w_{A \cup B} = w_A \exp(m_A - m_{A \cup B}) + w_B \exp(m_B - m_{A \cup B})
+w
+A
+���
+B
+���
+=
+w
+A
+���
+exp
+(
+m
+A
+���
+���
+m
+A
+���
+B
+���
+)
++
+w
+B
+���
+exp
+(
+m
+B
+���
+���
+m
+A
+���
+B
+���
+)
+By applying this operator recursively, we can efficiently compute
+{
+(
+m
+k
+,
+c
+^
+k
+,
+a
+^
+k
+)
+}
+k
+=
+1
+N
+\{(m_k, \hat{c}_k, \hat{a}_k)\}_{k=1}^N
+{(
+m
+k
+���
+,
+c
+^
+k
+���
+,
+a
+^
+k
+���
+)
+}
+k
+=
+1
+N
+���
+.
+Efficient Attention Computation
+Once we have
+{
+(
+m
+k
+,
+c
+^
+k
+,
+a
+^
+k
+)
+}
+k
+=
+1
+N
+\{(m_k, \hat{c}_k, \hat{a}_k)\}_{k=1}^N
+{(
+m
+k
+���
+,
+c
+^
+k
+���
+,
+a
+^
+k
+���
+)
+}
+k
+=
+1
+N
+���
+, the attention output for each step can be calculated as:
+o
+k
+=
+a
+^
+k
+c
+^
+k
+o_k = \frac{\hat{a}_k}{\hat{c}_k}
+o
+k
+���
+=
+c
+^
+k
+���
+a
+^
+k
+���
+���
+This method allows us to compute attention as a many-to-many RNN efficiently.
+3.3 Aaren: Attention as a Recurrent Neural Network
+Introducing Aaren
+Aaren ([A]ttention [a]s a [re]current neural [n]etwork) leverages the efficient, parallelized many-to-many RNN formulation of attention. Aaren operates similarly to Transformers but is designed to be more computationally efficient, especially for sequential data.
+How Aaren Works
+Initialization
+: The input sequence
+x
+1
+,
+x
+2
+,
+.
+.
+.
+,
+x
+N
+x_1, x_2, ..., x_N
+x
+1
+���
+,
+x
+2
+���
+,
+...
+,
+x
+N
+���
+is mapped to initial hidden states
+h
+1
+(
+0
+)
+,
+h
+2
+(
+0
+)
+,
+.
+.
+.
+,
+h
+N
+(
+0
+)
+h_1^{(0)}, h_2^{(0)}, ..., h_N^{(0)}
+h
+1
+(
+0
+)
+���
+,
+h
+2
+(
+0
+)
+���
+,
+...
+,
+h
+N
+(
+0
+)
+���
+.
+Recurrent Updates
+: For each layer
+j
+j
+j
+, the hidden states are updated using the attention mechanism:
+h
+1
+(
+j
++
+1
+)
+,
+h
+2
+(
+j
++
+1
+)
+,
+.
+.
+.
+,
+h
+N
+(
+j
++
+1
+)
+=
+Aaren
+(
+q
+(
+j
+)
+,
+[
+h
+1
+(
+j
+)
+,
+.
+.
+.
+,
+h
+N
+(
+j
+)
+]
+)
+h^{(j+1)}_1, h^{(j+1)}_2, ..., h^{(j+1)}_N = \text{Aaren}(q^{(j)}, [h^{(j)}_1, ..., h^{(j)}_N])
+h
+1
+(
+j
++
+1
+)
+���
+,
+h
+2
+(
+j
++
+1
+)
+���
+,
+...
+,
+h
+N
+(
+j
++
+1
+)
+���
+=
+Aaren
+(
+q
+(
+j
+)
+,
+[
+h
+1
+(
+j
+)
+���
+,
+...
+,
+h
+N
+(
+j
+)
+���
+])
+Here,
+q
+(
+j
+)
+q^{(j)}
+q
+(
+j
+)
+is a learned query vector updated during training.
+Advantages of Aaren
+Stackable
+: Similar to Transformers, Aaren can be stacked to create deep models for complex sequence modeling tasks.
+Efficient Updates
+: Aaren can efficiently update with new tokens, requiring only constant computation and memory, unlike Transformers which need to store and reprocess all previous tokens.
+Memory Efficiency
+: Aaren-based models only require constant memory, significantly reducing computational overhead compared to Transformer-based models, which require linear memory proportional to the sequence length.
+In summary, Aaren combines the strengths of RNNs (efficient updates) and Transformers (parallel computation), resulting in a more efficient model for sequence data.
+4o
+T��
+5Related Work 
+Closest to Aaren are approximations of attention such as those by RWKV (Peng et al., 2023), 
+RetNet (Sun et al., 2023), and Linear Transformer (Katharopoulos et al., 2020). These models 
+proposed linearizations of the standard softmax-based attention that allow them to be formulated as 
+an RNN. However, in doing so, these models also encode an exponential factor that biases tokens 
+based on their timestamp, limiting their potential applications. In contrast, Aaren leverages an exact 
+re-formulation of softmax attention as an RNN, allowing the model itself to compute the weight of 
+each token. 
+Feng et al. (2023) showed attention can be computed recurrently, using it to compress set-based inputs. 
+Rabe and Staats (2022) introduced a recurrent formulation of attention, showing that self-attention 
+can be computed eff i ciently. Katharopoulos et al. (2020) showed that Transformers with a causal 
+mask can be viewed as an RNN. In contrast, we (1) show a more general result whereas any attention 
+model can be viewed as an RNN. Furthermore, we (2) introduce Aaren, a new attention formulation 
+based on parallel pref i x sums, that achieves competitive results with that of Transformers while being 
+more eff i cient. 
+The problem of computing pref i x scans/sums has been well studied with various eff i cient parallelized 
+algorithms proposed for computing them. Since Aaren only requires the output of the pref i x scan, 
+any eff i cient algorithm for computing it can be used. In this work, we outlined the method by 
+Hillis and Steele (1986). This method is time eff i cient for parallel computation, requiringlog2(N) 
+sequential steps andO(N log(N))overall 
+computation. In contrast, the method by Ladner and 
+Fischer (1980) use mores sequential steps (specif i cally,2log2(N) ��� 2) 
+but only performsO(N) 
+overall computation. For a more in-depth introduction to parallel pref i x sums algorithms, we refer the 
+reader to the following work by Blelloch (1990). 
+In this work, we applied Transformers to a subset of applications. For a broad overview of the 
+applications of Transformers, we refer the reader to the following survey by Islam et al. (2023). For 
+an overview of different transformer models applied to the specif i c settings considered in this paper, 
+we refer the reader to the following surveys (1) on transformers in reinforcement learning by Li et al. 
+(2023) and (2) on transformers in event forecasting, time series forecasting, time series classif i cation, 
+and more by Wen et al. (2022). 
+6Conclusion 
+In this work, we showed that attention can be formulated as an RNN whereas the conventional way of 
+computing attention is a parallelized method of computing its many-to-one RNN output. Building on 
+the RNN formulation, we showed that existing attention-based models can be formulated as RNNs. 
+9 
+However, unlike traditional RNNs such as LSTMs and GRUs, these methods cannot be updated 
+eff i ciently with new tokens. Addressing this, we introduced a new parallelized method of computing 
+attention���s many-to-many RNN output based on the parallel pref i x scan algorithm. Building on the 
+new attention formulation, we introduced Aaren, a new module that can not only (i) be trained in 
+parallel (like Transformers) but also (ii) be eff i ciently updated at inference time, thereby requiring only 
+constant memory (like RNNs). Empirically, we showed that Aarens achieve performance competitive 
+with Transformers on38datasets spread across four sequential data settings: reinforcement learning, 
+event forecasting, time series classif i cation, and time series forecasting. Finally, we empirically show 
+that Aarens are signif i cantly more time and memory-eff i cient than Transformers.
+ChatGPT
+ChatGPT
+5 Related Work
+Aaren is closely related to several attention approximations proposed by various researchers. Notable models include:
+RWKV (Peng et al., 2023)
+RetNet (Sun et al., 2023)
+Linear Transformer (Katharopoulos et al., 2020)
+These models attempt to linearize the standard softmax-based attention, allowing them to be reformulated as RNNs. However, they incorporate an exponential factor that introduces a bias based on token timestamps, limiting their application scope. In contrast, Aaren utilizes an exact reformulation of softmax attention as an RNN, enabling the model to compute the weight of each token more precisely.
+Feng et al. (2023) demonstrated that attention could be computed recurrently for compressing set-based inputs. Rabe and Staats (2022) presented a recurrent formulation of attention, showing that self-attention could be computed efficiently. Katharopoulos et al. (2020) revealed that Transformers with a causal mask could be viewed as RNNs. Our work extends these findings by showing that any attention model can be viewed as an RNN. Moreover, we introduce Aaren, a novel attention formulation based on parallel prefix sums, achieving competitive results with Transformers while being more efficient.
+The computation of prefix scans/sums has been extensively studied, with various efficient parallel algorithms proposed. Since Aaren only requires the output of the prefix scan, any efficient algorithm can be employed. We outlined the method by Hillis and Steele (1986), which is time-efficient for parallel computation, requiring
+log
+���
+2
+(
+N
+)
+\log_2(N)
+lo
+g
+2
+���
+(
+N
+)
+sequential steps and
+O
+(
+N
+log
+���
+(
+N
+)
+)
+O(N \log(N))
+O
+(
+N
+lo
+g
+(
+N
+))
+overall computation. In contrast, the method by Ladner and Fischer (1980) uses more sequential steps (specifically,
+2
+log
+���
+2
+(
+N
+)
+���
+2
+2 \log_2(N) - 2
+2
+lo
+g
+2
+���
+(
+N
+)
+���
+2
+) but only performs
+O
+(
+N
+)
+O(N)
+O
+(
+N
+)
+overall computation. For a detailed introduction to parallel prefix sums algorithms, we refer readers to Blelloch (1990).
+Our work applied Transformers to a subset of applications. For a comprehensive overview of Transformer applications, see the survey by Islam et al. (2023). For specific Transformer model applications in settings like reinforcement learning and event forecasting, see the surveys by Li et al. (2023) and Wen et al. (2022), respectively.
+6 Conclusion
+In this work, we demonstrated that attention could be formulated as an RNN, where the conventional way of computing attention is a parallelized method for computing its many-to-one RNN output. Building on the RNN formulation, we showed that existing attention-based models could also be formulated as RNNs. However, unlike traditional RNNs such as LSTMs and GRUs, these methods cannot be efficiently updated with new tokens.
+To address this, we introduced a new parallelized method of computing attention���s many-to-many RNN output based on the parallel prefix scan algorithm. Building on this new attention formulation, we introduced Aaren, a module that can (i) be trained in parallel like Transformers and (ii) be efficiently updated at inference time, requiring only constant memory like RNNs. Empirically, we demonstrated that Aarens achieve performance competitive with Transformers across 38 datasets in four sequential data settings: reinforcement learning, event forecasting, time series classification, and time series forecasting. Finally, we showed that Aarens are significantly more time and memory-efficient than Transformers.
+4o
+T��
+Some more analogies and metaphors.
+ChatGPT
+ChatGPT
+Analogies and Metaphors for Aaren and Related Concepts
+RNNs vs. Transformers: The Relay Race vs. the All-at-Once Competition
+RNNs:
+Imagine a relay race where each runner passes a baton to the next runner. Each runner's performance depends on how well the previous runners did. This is how RNNs work���they process information step by step, one token at a time.
+Transformers:
+In contrast, Transformers are like a group of athletes all competing simultaneously in their own lanes. They can see all the other athletes' performances and adjust their strategies accordingly. This allows them to leverage parallel processing, making them faster for certain tasks but requiring more resources.
+Attention Mechanism: The Spotlight
+Think of attention as a spotlight on a stage. The spotlight operator can focus on different actors (tokens) based on their relevance to the current scene (query). This helps in highlighting the most important parts of the scene while still keeping an eye on the overall context.
+Softmax in Attention: The Voting System
+Imagine a council where each member (token) has a vote on a decision (output). The importance (weight) of each vote is determined by a softmax function, which ensures that all votes are taken into account proportionally to their significance. This is how the softmax mechanism works in attention, distributing focus based on relevance.
+Prefix Scan Algorithm: The Conveyor Belt Sorting
+The prefix scan algorithm can be compared to a conveyor belt sorting system in a factory. As items move along the belt, each station adds or processes information about the items that have passed. By the end of the belt, each item has accumulated all the necessary information, ready for the next stage. This efficient parallel processing allows for quick and organized handling of data.
+Aaren: The Smart Librarian
+Imagine a smart librarian (Aaren) who not only knows the location of every book (token) in the library but can also remember the most relevant details from all the books seen so far. When a new book arrives, the librarian updates their knowledge without having to re-read all previous books. This is how Aaren updates its attention mechanism efficiently with new information.
+Efficient Updates: The Modular Puzzle
+Traditional models like Transformers are like a large, complex puzzle that you have to complete all at once. If you add a new piece, you might need to rearrange many parts. Aaren, however, is like a modular puzzle where you can add new pieces without disturbing the existing structure, allowing for easy and efficient updates.
+Memory Efficiency: The Backpacker vs. the Warehouse
+RNNs and models like Aaren are like backpackers who carry only the essentials with them, making them nimble and efficient. They update their knowledge continuously without needing to store everything. Transformers, on the other hand, are like warehouses storing every single piece of information, which can be exhaustive and resource-intensive.
+Parallel Processing: The Orchestra vs. Soloist
+The parallel prefix scan algorithm in Aaren is like an orchestra where each musician plays their part simultaneously, creating a harmonious result quickly and efficiently. Traditional RNNs, like a soloist, play each note sequentially, which takes more time but requires less coordination at each step.
+These analogies aim to simplify the concepts and mechanisms behind Aaren and its comparison to traditional RNNs and Transformers, making the technical details more relatable and easier to understand.
+4o
+T��
+I wonder if it is similar to the observation that when I took more than the required courses my grades went up, because I could use intersectional knowledge?
+ChatGPT
+ChatGPT
+Yes, that's a great analogy and it aligns well with the concept of how Aaren and its approach to attention work. Here's how we can relate your observation to Aaren's methodology:
+Intersectional Knowledge and Improved Grades
+When you took more than the required courses, your grades improved because you could leverage knowledge from different subjects and see connections between them. This intersectional knowledge allowed you to understand concepts better and apply them more effectively.
+Aaren and Efficient Attention Mechanism
+Similarly, Aaren leverages an efficient way of computing attention by treating it as a recurrent neural network (RNN). This allows it to process new information while efficiently updating its understanding based on previously learned context. Here's a breakdown:
+Intersectional Knowledge (Analogous to Parallel Processing):
+Just as taking multiple courses allowed you to make connections between different fields, Aaren uses the parallel prefix scan algorithm to efficiently combine information from multiple tokens. This allows it to maintain a holistic understanding without having to reprocess everything from scratch.
+This method of combining and updating information is akin to integrating knowledge from various courses to get a better grasp of the subject matter.
+Improved Grades (Analogous to Improved Efficiency):
+Your grades improved because the intersectional knowledge provided a more comprehensive understanding. Similarly, Aaren's ability to efficiently update its attention mechanism with new tokens allows it to perform better in tasks that require sequential data processing.
+By not having to store and reprocess all previous tokens (like the warehouse analogy for Transformers), Aaren can focus on the most relevant information, making it more efficient and effective, much like how you could focus better with broader knowledge.
+Efficient Updates (Analogous to Continuous Learning):
+Just as you continuously updated your knowledge by taking new courses, Aaren continuously updates its understanding by efficiently incorporating new tokens. This avoids the need for extensive reprocessing, similar to how you didn't need to relearn old material but could build on it with new insights.
+In summary, your experience of improved grades through intersectional knowledge is quite similar to how Aaren enhances its performance by efficiently updating and integrating new information. Both processes benefit from a comprehensive, interconnected approach to learning and processing information.
+4o
+T��
+A list of all the topics we've talked about.
+2 / 2
+ChatGPT
+ChatGPT
+Certainly! Here's a list of the topics we've covered:
+Attention Mechanism
+Recurrent Neural Networks (RNNs)
+Transformers
+Parallel Prefix Scan Algorithm
+Aaren (Attention as a Recurrent Neural Network)
+Softmax Function
+Memory Efficiency
+Intersectional Knowledge
+Efficient Updates
+Parallel Processing
+Analogies and Metaphors
+If you have any specific questions or need further elaboration on any of these topics, feel free to ask!
+3.5
+T��
+A brief explanation of each.
+ChatGPT
+ChatGPT
+Of course! Here's a brief explanation of each topic:
+Attention Mechanism:
+A mechanism in neural networks that focuses on relevant parts of input data while ignoring irrelevant parts, often used in natural language processing and sequence modeling tasks.
+Recurrent Neural Networks (RNNs):
+Neural networks designed to process sequences of data by maintaining a hidden state that captures information about previous elements in the sequence, commonly used in tasks like time series prediction and natural language processing.
+Transformers:
+A type of neural network architecture introduced in the paper "Attention is All You Need," widely used in natural language processing tasks, consisting of self-attention mechanisms to weigh the importance of different words in a sentence.
+Parallel Prefix Scan Algorithm:
+An efficient parallel computation algorithm used to compute prefix sums or other associative operations on sequences of data, often employed in parallel computing tasks like GPU programming.
+Aaren (Attention as a Recurrent Neural Network):
+A novel attention-based module that leverages the recurrent neural network formulation of attention to efficiently process sequences of data while updating its understanding with new tokens.
+Softmax Function:
+A mathematical function that converts a vector of real numbers into a probability distribution, commonly used in neural networks to compute the probabilities of different classes or tokens.
+Memory Efficiency:
+Refers to the ability of a computational system to manage and utilize memory resources effectively, often crucial for large-scale machine learning models to handle complex tasks efficiently.
+Intersectional Knowledge:
+The concept of integrating knowledge from different domains or fields to gain a deeper understanding or solve complex problems, analogous to how combining multiple courses can improve comprehension.
+Efficient Updates:
+Refers to the ability of a system to incorporate new information or data while minimizing computational resources and time required for processing, crucial for tasks where data arrives sequentially or in real-time.
+Parallel Processing:
+The simultaneous execution of multiple computational tasks or operations, often used to speed up the processing of large datasets or complex algorithms by distributing the workload across multiple processors or cores.
+Analogies and Metaphors:
+Literary devices used to explain complex concepts by drawing comparisons to familiar situations or objects, often employed to make technical topics more accessible and understandable.
+These explanations provide a basic understanding of each topic, but if you have any specific questions or need further clarification, feel free to ask!
+3.5
+T��
+What were the metaphors we used?
+ChatGPT
+ChatGPT
+Here are the metaphors we used:
+Intersectional Knowledge:
+We compared the concept of intersectional knowledge to taking more courses than required to improve grades, illustrating how combining diverse knowledge from different subjects can lead to a deeper understanding and better performance.
+Warehouse Analogy for Transformers:
+In explaining the limitations of Transformers in handling sequential data, we used a metaphor of a warehouse storing all previous tokens, highlighting the memory-intensive nature of Transformers' computation.
+Continuous Learning:
+We drew an analogy between Aaren's efficient updating process and continuous learning, likening Aaren's ability to incorporate new tokens without extensive reprocessing to continuously updating knowledge without needing to revisit all previous material.
+These metaphors were used to make complex concepts more relatable and understandable by comparing them to familiar experiences or scenarios.
+3.5
+ChatGPT puede cometer errores. Comprueba la informaci��n importante.
+?
+ChatGPT

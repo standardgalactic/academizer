@@ -1,0 +1,889 @@
+Cached Transformer for Improved Attention
+Open sidebar
+ChatGPT
+4
+You
+Cached Transformers: Improving Transformers with Differentiable Memory 
+Cache 
+Zhaoyang Zhang1, Wenqi Shao1, Yixiao Ge3, Xiaogang Wang1, Jinwei Gu1, Ping Luo2 
+1The Chinese University of Hong Kong2The University of Hong Kong3Tencent Inc 
+Abstract 
+This work introduces a new Transformer model called 
+Cached Transformer, which uses Gated Recurrent Cached 
+(GRC) attention to extend the self-attention mechanism with 
+a differentiable memory cache of tokens. GRC attention en- 
+ables attending to both past and current tokens, increasing the 
+receptive i eld of attention and allowing for exploring long- 
+range dependencies. By utilizing a recurrent gating unit to 
+continuouslyupdatethecache,ourmodelachievessignif i cant 
+advancements in six language and vision tasks, including lan- 
+guage modeling, machine translation, ListOPs, image classi- 
+i cation, object detection, and instance segmentation. Further- 
+more, our approach surpasses previous memory-based tech- 
+niques in tasks such as language modeling and displays the 
+ability to be applied to a broader range of situations. 
+Introduction 
+The design of Transformer (Vaswani et al. 2017), a deep 
+model stacking self-attention and feed-forward layers, has 
+achieved remarkable progress in various tasks. Compared 
+to the traditional deep models, a key characteristic of 
+Transformer is the self-attention mechanism, which enables 
+global receptive i eld and allows each token to access all the 
+other tokens in a data batch, providing a l exible scheme 
+to capture contextual representation (Vaswani et al. 2017; 
+Dosovitskiy et al. 2021; Carion et al. 2020) . Such paradigm 
+is however in a complexity square to sequence length, thus 
+not suitable to model long-term dependencies. In this work, 
+we aim to extend the conventional transformer models using 
+attention with a long-term token representation in a mem- 
+ory cache, which enables larger and longer receptive i eld at 
+minimal additional computations. 
+Capturing long-range relationships between tokens and 
+samples is crucial for various tasks due to several reasons. 
+(i) In sequential data such as language sentences, there can 
+exist dependencies between tokens that are far away from 
+each other. For example, an event or character can be re- 
+ferred to from time to time across multiple paragraphs in an 
+article. Failing to capture such dependencies can result in 
+poor performance in natural language processing tasks. (ii) 
+Modeling cross-sample relationships can also be useful for 
+non-sequential data like images. For example, incorporating 
+Copyright �� 2024, Association for the Advancement of Artif i cial 
+Intelligence (www.aaai.org). All rights reserved.
+ChatGPT
+ChatGPT
+The abstract of "Cached Transformers: Improving Transformers with Differentiable Memory Cache" by Zhaoyang Zhang, Wenqi Shao, Yixiao Ge, Xiaogang Wang, Jinwei Gu, and Ping Luo, presents a novel Transformer model called Cached Transformer. This model integrates a differentiable memory cache of tokens into the self-attention mechanism, using Gated Recurrent Cached (GRC) attention. This enhancement allows the Transformer to attend to both past and current tokens, thereby expanding its receptive field and improving its ability to explore long-range dependencies. The model incorporates a recurrent gating unit to update the cache continuously, leading to significant advancements in six language and vision tasks, including language modeling, machine translation, ListOPs, image classification, object detection, and instance segmentation. This approach not only surpasses previous memory-based techniques in tasks like language modeling but also shows versatility in a broader range of applications.
+The introduction further explains that while the original Transformer design significantly advanced various tasks, its self-attention mechanism, despite offering a global receptive field, is limited in handling long-term dependencies due to its quadratic complexity relative to sequence length. The Cached Transformer addresses this limitation by adding a memory cache for long-term token representation, which allows for a larger and longer receptive field with minimal additional computational demand. The ability to capture long-range relationships between tokens is vital in both sequential and non-sequential data, such as natural language processing and image processing tasks, improving overall performance in these areas.
+You
+Introduction 
+The design of Transformer (Vaswani et al. 2017), a deep 
+model stacking self-attention and feed-forward layers, has 
+achieved remarkable progress in various tasks. Compared 
+to the traditional deep models, a key characteristic of 
+Transformer is the self-attention mechanism, which enables 
+global receptive i eld and allows each token to access all the 
+other tokens in a data batch, providing a l exible scheme 
+to capture contextual representation (Vaswani et al. 2017; 
+Dosovitskiy et al. 2021; Carion et al. 2020) . Such paradigm 
+is however in a complexity square to sequence length, thus 
+not suitable to model long-term dependencies. In this work, 
+we aim to extend the conventional transformer models using 
+attention with a long-term token representation in a mem- 
+ory cache, which enables larger and longer receptive i eld at 
+minimal additional computations. 
+Capturing long-range relationships between tokens and 
+samples is crucial for various tasks due to several reasons. 
+(i) In sequential data such as language sentences, there can 
+exist dependencies between tokens that are far away from 
+each other. For example, an event or character can be re- 
+ferred to from time to time across multiple paragraphs in an 
+article. Failing to capture such dependencies can result in 
+poor performance in natural language processing tasks. (ii) 
+Modeling cross-sample relationships can also be useful for 
+non-sequential data like images. For example, incorporating 
+Copyright �� 2024, Association for the Advancement of Artif i cial 
+Intelligence (www.aaai.org). All rights reserved. 
+510152025 
+Model Capacity (G FLOPs) 
+76 
+78 
+80 
+82 
+84 
+Accuracy ViT 
+PVT 
+Cached PVT (ours) 
+PVTv2 
+Cached PVTv2 (ours) 
+Swin 
+CvT 
+Figure1:Performance-ComplexityCurve:Top-1accu- 
+racy(%) comparisons on ImageNet with respect to model ca- 
+pacity(G FLOPs) using vision transformers(Parameter-eff i ciency 
+curves).Curves of our cached models are consistently on top of 
+their corresponding baselines (PVT and PVTv2), indicating the ef- 
+fectiveness of GRC-cached models considering both complexity 
+and accuracy. 
+a memory module that stores prototypical feature represen- 
+tations can enable instance-invariant feature learning, lead- 
+ing to improved performance in vision tasks (Long et al. 
+2022; Deng et al. 2022). Furthermore, other studies (Wang 
+et al. 2020b; Zhong et al. 2019) have demonstrated that us- 
+ing cross-batch memory to store previous embeddings can 
+be benef i cial for visual representation learning. (iii) Longer- 
+range attention has also been shown to enhance the represen- 
+tation learning ability of models, as demonstrated in works 
+like (Dai et al. 2019; Wu et al. 2022; Tay et al. 2021b). 
+However, longer dependency modeling makes computa- 
+tions more expensive. For example, the vanilla Transformer 
+has O(T2) computational complexity in each attention mod- 
+ule when handling a token sequence of length T. Although 
+someworksapplyeff i cientalternatives,suchaslow-rankde- 
+composition (Wang et al. 2020a; Zhu et al. 2021), block- 
+based sparsif i cation (Zaheer et al. 2020), and local sensi- 
+tive hashing (Kitaev, Kaiser, and Levskaya 2020), they still 
+have complexity linear to the token length (O(T)) and thus 
+unable to eff i ciently capture sparse long-range dependency. 
+Another line of research (Wu et al. 2022) reduces the com- 
+plexity of attention module by selecting top-k token pairs 
+arXiv:2312.12742v1 
+[cs.CV] 
+20 
+Dec 
+2023 
+from a memory cache for the current tokens, but the cost 
+of maintaining a huge cache of tokens for all layers is still 
+signif i cant. Hence, developing eff i cient and effective mech- 
+anisms for capturing long-range dependencies remains an 
+active area of research. 
+To address these issues, we propose a novel family of 
+Transformer models called Cached Transformer, which has 
+a Gated Recurrent Cache (GRC) that enables Transform- 
+ers to access historical knowledge, as ilustrated in Fig. 2. 
+The GRC is implemented as a meta-learner that compresses 
+the historical representation into embedding vectors and up- 
+dates them adaptively with a gating mechanism, avoiding 
+the need for a large memory cache. The GRC updates the 
+past representation with a reset gate that suppresses histor- 
+ical caches and an update gate that further updates the sup- 
+pressed caches using the current token sequences. This de- 
+sign allows the GRC to access previously seen knowledge 
+in a computationally eff i cient way. Based on the GRC, we 
+implement a semi-cached attention mechanism that attends 
+to both the latent and current tokens.
+ChatGPT
+ChatGPT
+The introduction to "Cached Transformers: Improving Transformers with Differentiable Memory Cache" discusses the advancements and limitations of the original Transformer model, and introduces the novel Cached Transformer to address these limitations.
+Original Transformer Model Limitations:
+The Transformer model, introduced by Vaswani et al. in 2017, made significant progress in various tasks by stacking self-attention and feed-forward layers.
+A key feature of the Transformer is its self-attention mechanism, which allows each token to access all other tokens in a data batch, aiding in capturing contextual representation.
+However, the self-attention mechanism's computational complexity is quadratic to the sequence length, making it unsuitable for modeling long-term dependencies.
+Importance of Capturing Long-Range Relationships:
+Sequential Data
+: In language processing, it's crucial to capture dependencies between distant tokens, like recurring references to an event or character across an article.
+Non-Sequential Data
+: In image processing, incorporating memory modules for feature representation improves performance.
+Enhanced Representation Learning
+: Longer-range attention has been shown to improve representation learning in various models.
+Challenges in Modeling Long Dependencies:
+The vanilla Transformer's computational complexity increases with token sequence length.
+Although there are efficient alternatives (like low-rank decomposition, block-based sparsification, and local sensitive hashing), these still struggle to efficiently capture sparse long-range dependencies.
+Cached Transformer Solution:
+The Cached Transformer introduces a Gated Recurrent Cache (GRC) mechanism.
+The GRC acts as a meta-learner, compressing historical representation into embedding vectors and updating them with a gating mechanism.
+This avoids the need for a large memory cache and allows efficient access to historical knowledge.
+The model uses a semi-cached attention mechanism that attends to both latent and current tokens, effectively balancing computational efficiency and the ability to capture long-range dependencies.
+This innovative approach aims to enhance the Transformer's ability to model long-term dependencies while maintaining computational efficiency, making it a significant advancement in the field of Transformer models and their applications.
+You
+We propose Cached Transformer with Gated Recurrent 
+Cache (GRC) and make the following contributions, which 
+make it more appealing than prior arts in several aspects. 
+��� GRC is built on a general differentiable formulation and 
+is compatible with various attention schemes, Trans- 
+former networks, and tasks. We demonstrate that GRC 
+can be easily plugged into diverse Transformer-variants 
+such as Transformer-XL (Dai et al. 2019), ViT (Doso- 
+vitskiy et al. 2021), PVT (Wang et al. 2021, 2022), 
+Swin (Liu et al. 2021) Bigbird (Zaheer et al. 2020), and 
+Reformer (Kitaev, Kaiser, and Levskaya 2020). 
+��� GRC can cache all representations of arbitrary length re- 
+currently, independent of sequence length, while exist- 
+ing cache-based methods can only capture recent tokens 
+(Rae et al. 2019; Dai et al. 2019) or require KNN search- 
+ing at each step (Wu et al. 2022). 
+��� Besides eff i ciency, GRC surpasses previous memory- 
+based methods (Dai et al. 2019; Burtsev et al. 2020; Bu- 
+latov, Kuratov, and Burtsev 2022) by a large margin on 
+both vision (Table 2) and language tasks (Table 5). 
+��� GRC yields consistent improvements not only in sequen- 
+tial data such as texts but also in spatial context such as 
+image classif i cation (Table 1) and object detection (Ta- 
+ble3).Toourknowledge,existingworksofVisionTrans- 
+formers mainly focused on learning intra-sample tokens, 
+while GRC is the i rst attempt to model cross-sample re- 
+lationships by attending over inter-sample tokens, such 
+as tokens from different independent images. 
+��� We observe that models with GRC may attend more 
+over the cache than the regular self-attention. We inves- 
+tigate this behavior in image classif i cation and i nd that 
+GRC can separate features into two parts, attending over 
+caches yielding instance-invariant features, as well as 
+attending over self, yielding instance-specif i c features 
+(See in Fig. 4). This behavior is similar to that of a vec- 
+tor prototype (Caron et al. 2020), which enables cross- 
+sample regularization to avoid overf i tting. 
+Extensive experiments show that the Cached Transformer 
+with GRC achieves promising results on various vision 
+and language Transformer backbones. (i) Language: In 
+the IWSLT14 De-En benchmark for machine translation, 
+PreNormed Transformer+GRC yields 36.0 BLEU, outper- 
+forming the baselines by 0.5. In the challenging long-range- 
+arenabenchmark (Tayetal.2021a),GRCimprovesstate-of- 
+the-art methods with different attention types including Re- 
+former (Kitaev, Kaiser, and Levskaya 2020), Bigbird (Za- 
+heer et al. 2020), and regular Transformer (Vaswani et al. 
+2017) consistently by up to 1.2% accuracy. (ii) Vision: For 
+image classif i cation on ImageNet (Krizhevsky, Sutskever, 
+and Hinton 2012), we plug GRC into the recent vision trans- 
+formers of different scales, such as ViT (Dosovitskiy et al. 
+2021), PVT (Wang et al. 2021), PVTv2 (Wang et al. 2022), 
+Swin (Liu et al. 2021), and obtain up to 3.3% accuracy gain. 
+As shown in Fig. 1, our cached model with PVTv2 backbone 
+achieves superior performance considering both the model 
+complexity and accuracy. We further evaluate GRC on the 
+COCO (Lin et al. 2014) dataset for object detection and in- 
+stance segmentation, where PVT+GRC can yield more than 
+4.0 box AP improvement.
+ChatGPT
+ChatGPT
+The authors of "Cached Transformer with Gated Recurrent Cache (GRC)" highlight several key contributions of their work, emphasizing the advantages of their approach over previous methods:
+General Differentiable Formulation and Compatibility:
+GRC is based on a versatile differentiable formulation.
+It's compatible with a wide range of attention schemes, Transformer networks, and tasks.
+Demonstrated integration with diverse Transformer variants like Transformer-XL, ViT, PVT, Swin, Bigbird, and Reformer.
+Efficient Caching of Representations:
+GRC can cache representations of arbitrary length recurrently, independent of sequence length.
+This surpasses existing cache-based methods that are limited to recent tokens or require KNN searching.
+Performance Advantages:
+GRC outperforms previous memory-based methods significantly in both vision and language tasks.
+Improvements in Sequential and Spatial Data:
+Consistent improvements are observed not only in sequential data (texts) but also in spatial contexts (images).
+GRC is the first to model cross-sample relationships by attending over inter-sample tokens, a novel approach for Vision Transformers.
+Distinct Attention Behavior:
+Models with GRC tend to attend more over the cache than regular self-attention.
+In image classification, GRC separates features into instance-invariant and instance-specific features, similar to vector prototype, aiding in cross-sample regularization.
+Extensive Experimental Results:
+Language Tasks: Significant improvements in benchmarks like IWSLT14 De-En for machine translation and long-range arena benchmark.
+Vision Tasks: Notable accuracy gains in image classification on ImageNet and improvements in object detection and instance segmentation on the COCO dataset.
+These contributions highlight the versatility and efficacy of the Cached Transformer with GRC in handling both language and vision tasks, offering improvements in model efficiency, accuracy, and the ability to capture long-range dependencies in diverse data types. The model's ability to efficiently cache and process information overcomes the limitations of traditional Transformer models, making it a significant advancement in the field.
+You
+Related works 
+Cached Language Models.Cache models are effective in 
+long-range modeling , and are i rstly introduced by (Kupiec 
+1989; Kuhn and De Mori 1990) for speech recognition. In 
+general, a cache model stores representations of the past, 
+which are usually unigrams or key-value pairs for future 
+computation. Transformer-XL (Dai et al. 2019) further ap- 
+plies this technique to transformers, where the cache stores 
+previous key-value pairs in attentions from previous training 
+steps. Many memory-based methods are explored following 
+Transformer-XL: For instance, MT (Burtsev et al. 2020) and 
+RMT (Bulatov, Kuratov, and Burtsev 2022) use extra mem- 
+ory tokens to store local and global information for different 
+segments of inputs. (Rae et al. 2019) compress the tokens 
+before they���re saved in the cache to reduce memories and 
+computations. However, these methods often use cache in a 
+i xed-length and i rst-in-f i rst-out (FIFO) manner, which lim- 
+its the amount of tokens that can be memorized in sequence. 
+In contrast, our proposed GRC-based Cached Transformers 
+learn to build the cache adaptively with a complexity that is 
+independent of the attention range. 
+Vision Transformers.Vision transformers and their vari- 
+ants have recently achieved remarkable success in various 
+vision tasks. The original Vision Transformer (ViT) model 
+(Dosovitskiy et al. 2021) was the i rst to split images into 
+patch sequences and feed them into transformer encoders. 
+Despite producing competitive results compared to convolu- 
+tional neural networks (CNNs), ViTs require costly pretrain- 
+ing on large-scale datasets like JFT-300M (Sun et al. 2017). 
+To address this issue, several works (Shao et al. 2022) at- 
+tribute it to the lack of inductive bias in ViTs and propose 
+introducing convolutional priors to encode inductive bias 
+such as local context. For example, DeiT (Touvron et al. 
+2021b) uses a convolutional teacher to distill knowledge for 
+the transformers, Swin-Transformer (Liu et al. 2021) con- 
+ducts attention in sliding windows, and ConViT (d���Ascoli
+
+Figure 2:Comparisons of vanilla self-attention and cached atten- 
+tions at training stage. The self-attention only attends to the token 
+itself (Xt). While in cached attention, outputs at training step t 
+(denoted by Yt) are derived by attending over a Gated Recurrent 
+Cache (GRC, i.e., Ctderived from historical tokens X0to Xt), 
+and the current token (Xt). 
+et al. 2021) uses a ���soft��� convolutional module to encode 
+locality. However, existing methods focus mainly on intra- 
+sample tokens, whereas our proposed GRC enhances vision 
+transformers by learning instance-invariant features via at- 
+tending over inter-sample tokens. This allows GRC-based 
+transformers to capture richer contextual information and 
+achieve even better performance on vision tasks.
+ChatGPT
+ChatGPT
+In the "Related Works" section of their paper, the authors discuss the background and developments in the areas of Cached Language Models and Vision Transformers, providing context for their own innovations with the Cached Transformer featuring Gated Recurrent Cache (GRC).
+Cached Language Models:
+Early Developments
+: Cache models, useful for long-range modeling, were first introduced in the context of speech recognition (Kupiec 1989; Kuhn and De Mori 1990).
+Cache Models
+: These models store past representations, typically as unigrams or key-value pairs, for future computation.
+Transformer-XL
+: This model applied caching to transformers by storing previous key-value pairs in attentions from previous training steps.
+Subsequent Innovations
+: Methods like MT and RMT used extra memory tokens for storing local and global information. Rae et al. (2019) compressed tokens before saving them to reduce memory and computation needs. However, these approaches often used a fixed-length, first-in-first-out (FIFO) cache, limiting the number of tokens that could be remembered.
+GRC-Based Cached Transformers
+: In contrast, the authors' proposed model uses GRC to build an adaptive cache with complexity independent of the attention range.
+Vision Transformers:
+ViT
+: The Vision Transformer (ViT) model was the first to split images into patch sequences and feed them into transformer encoders. Although competitive, ViTs required extensive pretraining on large datasets.
+Addressing Inductive Bias
+: To resolve issues like costly pretraining, methods like DeiT, Swin-Transformer, and ConViT introduced convolutional priors or modules to encode local context.
+GRC's Contribution
+: Existing methods primarily focused on intra-sample tokens. The authors' GRC model enhances vision transformers by attending over inter-sample tokens, allowing for the learning of instance-invariant features. This approach enables the capture of richer contextual information and improves performance in vision tasks.
+This section underscores how the authors' work with Cached Transformers and GRC is situated within the broader context of advancements in language and vision modeling, highlighting the novel aspects of their approach in comparison to existing methods.
+You
+Cached Transformer 
+To extend receptive i elds of both language and vision trans- 
+formers, in this section we will introduce our implementa- 
+tions of Cached Transformers, which maintains a continu- 
+ous cache termed Gated Recurrent Cache (GRC) to support 
+eff i cient long-term representation learning. The core idea 
+is to hold token embedding as caches which can dynam- 
+ically record historical samples according to their signif i- 
+cance. The Cached Transformer will then gain additional ca- 
+pabilities to encode both the current and accumulated infor- 
+mation by attending to the gathering of caches C and inputs 
+X.SuchanattentionschemeisdescribedasGRC-Attention, 
+and the following parts present more details. 
+General implementations. The proposed Cached Trans- 
+formers enable attending over caches on arbitrary multi- 
+layers architectures accepting sequential inputs. Typically, 
+the Cached Transformer models can be derived by replac- 
+ing their self-attention blocks with the proposed GRC- 
+Attention. Fig. 3 (b) gives overall illustrations of how the 
+GRC-Attention is conducted. 
+Considering input sequence Xt��� RB��T��D, 
+where B is 
+the batch size and t denotes training steps, GRC-attention 
+attends to both the memory cache and the current tokens. 
+We formulate GRC-attention by 
+Oh= ��(��h) ��� oh mem+ (1 ��� ��(��h)) ��� o 
+h 
+self, (2) 
+where Ohand oh 
+mem are the outputs of the GRC-attention 
+and Cached attention (i.e., attention over memory cache) 
+in the head h, respectively. oh 
+self is the output of the self- 
+attention in Eqn.(1). Moreover, in Eqn.(2), ��(��) is the sig- 
+moid function and ��his a head-wise learnable ratio trading 
+off self-attention and Cached attention 1. 
+To construct the triplet key, query and value for Cached 
+attention, we choose a portion of Xtas input �� 
+Xt��� 
+RB��T��Dm, which is derived by slicing Xton channel di- 
+mension. Note that Dm= rD2indicates channels used 
+for memorizing the past tokens embedding, where r is the 
+caching ratio. With �� 
+Xt, the accumulated cache Ct���1will 
+then be updated to Ctaccording to the GRC update rules 
+as shown in Fig. 3. We describe the construction of GRC in 
+Sec in detail. The Cached attention can be then conducted 
+1All of the ��h is initialized to be 0. 
+2At most cases we adopt Dm = 
+D 
+2 to reduce the complexity 
+of Cached attention , which means we choose half of the inputs to 
+update caches 
+Tokens 
+Caches 
+FC Updated caches 
+Self-Attention 
+GRC 
+Updates Cached Attention + Outputs 
+(a) GRC Updates(b) GRC-Attention 
+Reset caches 
+: reset gates 
+: update gates 
+Figure 3:The illustration of proposed GRC-Attention in Cached Transformers. (a) Details of the updating process of Gated Recurrent Cache. 
+The updated cache Ctis derived based on current tokens �� 
+Xtand cache of last step Ct���1. The reset gates grreset the previous cache Ct���1 
+to reset cache �� 
+Ct, and the update gates gucontrols the update intensity. (b) Overall pipeline of GRC-Attention. Inputs will attend over cache 
+and themselves respectively, and the outputs are formulated as interpolation of the two attention results. 
+by using �� 
+Xtas queries and Ctas keys and values, written 
+as: oh 
+mem= softmax( �� 
+Qh��KT 
+h/ p 
+Dm/H)��Vh,(3) 
+where �� 
+Qh, �� 
+Khand �� 
+Vhare obtained by linear projections of 
+h-th head of �� 
+Xt, Ctand Ctrespectively. 
+Generalizations. Note that while we typically formulate 
+Cached Transformer as a self-attention based model, it can 
+also be an arbitrary transformer variant. In other words, 
+the attention mechanism used to acquire oh 
+self and oh 
+memin 
+Eqn.(2) can be substituted by any other attention-like func- 
+tions, such as sparse attentions (Zaheer et al. 2020) or local 
+hashing (Kitaev, Kaiser, and Levskaya 2020). Further ex- 
+periments will provide validations of Cached Transformers 
+on several transformer variants.
+ChatGPT
+ChatGPT
+The section on "Cached Transformer" delves into the implementation details of the Cached Transformer model, emphasizing its core component: the Gated Recurrent Cache (GRC). Here's an overview of the key aspects:
+Core Concept of GRC
+Purpose
+: The GRC is designed to support efficient long-term representation learning in both language and vision transformers.
+Functionality
+: It dynamically records historical samples based on their significance, holding token embeddings as caches.
+Capability
+: The Cached Transformer can encode both current and accumulated information by attending to the caches (C) and inputs (X), a process termed as GRC-Attention.
+Implementation Details
+General Implementations
+:
+The Cached Transformer can be applied to various multi-layer architectures that accept sequential inputs.
+Models can be adapted by replacing self-attention blocks with GRC-Attention.
+GRC-Attention Mechanism
+:
+It involves attending to both the memory cache and current tokens.
+The attention output (
+Oh
+) is a combination of memory cache attention output (
+oh_mem
+) and self-attention output (
+oh_self
+), weighted by a head-wise learnable ratio (
+��h
+).
+The sigmoid function (
+��
+) is used to balance between self-attention and Cached attention.
+Cache Construction
+:
+A portion of the input (
+Xt
+) is selected to form
+X��t
+, used for memory cache updating.
+The channel dimension is sliced to reduce complexity, with half of the inputs typically used to update caches.
+The cache (
+Ct
+) is updated based on
+X��t
+and the previous cache (
+Ct-1
+).
+Updating Process
+:
+Involves reset gates (
+gr
+) and update gates (
+gu
+) to control the updating intensity and resetting of previous cache.
+Cached Attention Execution
+:
+Queries (
+Q��h
+), keys (
+K��h
+), and values (
+V��h
+) are derived from linear projections for the Cached attention.
+Generalizations
+:
+While typically based on self-attention, the model can incorporate other attention mechanisms, like sparse attentions or local hashing.
+Experiments and Validation
+:
+The effectiveness of the Cached Transformer is validated through experiments on several transformer variants.
+This detailed explanation underscores the flexibility, efficiency, and adaptability of the Cached Transformer model, particularly in its ability to handle long-term dependencies and integrate with various Transformer architectures.
+You
+Gated Recurrent Cache Update 
+This section describes the formulation and updating of pro- 
+posed Gated Recurrent Cache (GRC). 
+Cache Initialization. The GRC is characterized to be 
+i xed-length vectors Ct��� RTm��Dm. 
+Unlike previous works 
+that formulate cache to be tokens or words directly (Tu et al. 
+2018; Dai et al. 2019), GRC embeds historical tokens im- 
+plicitly. By learning to embed arbitrary length samples into 
+Ct, GRC allows traversing caches in constant time that is 
+independent of the number of memorized tokens. The cache 
+C0will be initialized to be Tm-length zero vectors before 
+training, and then updated as depicted in Fig. 3(a). 
+Gating Mechanism. Inspired by gated RNNs (Cho et al. 
+2014), we adopt the gating mechanism to enable GRC to 
+dynamically capture dependencies at different time scales. 
+Specif i cally, the updating process of Ctis i ltered by update 
+gates guand reset gates gr. Considering updating GRC at 
+time step t, we i rst calculate the gates guand gr: 
+gu= ��(Wu[��Xt,Ct���1]) 
+and gr= ��(Wr[��Xt,Ct���1]), (4) 
+where �� denotes sigmoid function and [��,��] concatenates to- 
+kens in channel dimension. For valid concatenation, �� 
+Xtis 
+interpolated into a Tm-by-Dmtoken. The updated cache Ct 
+is formulated by a linear interpolation as given by: 
+Ct= (1 ��� gu)Ct���1+ gu��Ctand �� 
+Ct= Wc[��Xt,gr��� Ct���1] 
+(5) 
+where ��� is element-wise multiplication. In above process, 
+the update gates gudecides how much current sample �� 
+Xt 
+updates the cache and the reset gates grsuppress the accu- 
+mulated cache to forget unimportant components. Note that 
+shape of the derived Ctis B �� Tm�� Dmas Xtis involved, 
+and we therefore average across the batch dimension to i t 
+the cache size.
+ChatGPT
+ChatGPT
+The "Gated Recurrent Cache Update" section details the formulation and updating process of the Gated Recurrent Cache (GRC) in the Cached Transformer model. Here's a breakdown of the key components:
+Cache Initialization
+GRC Structure
+: GRC consists of fixed-length vectors
+C
+t
+���
+R
+T
+m
+��
+D
+m
+C_t \in \mathbb{R}^{T_m \times D_m}
+C
+t
+���
+���
+R
+T
+m
+���
+��
+D
+m
+���
+.
+Embedding Historical Tokens
+: Unlike prior works that used tokens or words as caches directly, GRC implicitly embeds historical tokens, allowing for efficient traversing of caches.
+Initialization
+: The cache
+C
+0
+C_0
+C
+0
+���
+is initialized as zero vectors of length
+T
+m
+T_m
+T
+m
+���
+before training and then updated as shown in the model's architecture.
+Gating Mechanism
+Inspiration
+: The gating mechanism is inspired by gated RNNs and is crucial for the dynamic capture of dependencies at different time scales.
+Update and Reset Gates
+:
+Formulation
+: The update gates
+g
+u
+g_u
+g
+u
+���
+and reset gates
+g
+r
+g_r
+g
+r
+���
+are calculated at each time step
+t
+t
+t
+using the sigmoid function
+��
+\sigma
+��
+and concatenating tokens in the channel dimension.
+Equation
+:
+Update gates:
+g
+u
+=
+��
+(
+W
+u
+[
+X
+��
+t
+,
+C
+t
+���
+1
+]
+)
+g_u = \sigma(W_u[\bar{X}_t, C_{t-1}])
+g
+u
+���
+=
+��
+(
+W
+u
+���
+[
+X
+��
+t
+���
+,
+C
+t
+���
+1
+���
+])
+Reset gates:
+g
+r
+=
+��
+(
+W
+r
+[
+X
+��
+t
+,
+C
+t
+���
+1
+]
+)
+g_r = \sigma(W_r[\bar{X}_t, C_{t-1}])
+g
+r
+���
+=
+��
+(
+W
+r
+���
+[
+X
+��
+t
+���
+,
+C
+t
+���
+1
+���
+])
+Cache Updating
+:
+Linear Interpolation
+: The updated cache
+C
+t
+C_t
+C
+t
+���
+is a linear interpolation of the previous cache
+C
+t
+���
+1
+C_{t-1}
+C
+t
+���
+1
+���
+and a new cache
+C
+~
+t
+\tilde{C}_t
+C
+~
+t
+���
+.
+New Cache Formation
+:
+C
+~
+t
+=
+W
+c
+[
+X
+��
+t
+,
+g
+r
+���
+C
+t
+���
+1
+]
+\tilde{C}_t = W_c[\bar{X}_t, g_r \odot C_{t-1}]
+C
+~
+t
+���
+=
+W
+c
+���
+[
+X
+��
+t
+���
+,
+g
+r
+���
+���
+C
+t
+���
+1
+���
+]
+, where
+���
+\odot
+���
+denotes element-wise multiplication.
+Role of Gates
+:
+The update gates
+g
+u
+g_u
+g
+u
+���
+determine how much the current sample
+X
+��
+t
+\bar{X}_t
+X
+��
+t
+���
+updates the cache.
+The reset gates
+g
+r
+g_r
+g
+r
+���
+suppress the accumulated cache to forget unimportant components.
+Cache Shape and Batch Dimension
+:
+The shape of
+C
+t
+C_t
+C
+t
+���
+is
+B
+��
+T
+m
+��
+D
+m
+B \times T_m \times D_m
+B
+��
+T
+m
+���
+��
+D
+m
+���
+since
+X
+��
+t
+\bar{X}_t
+X
+��
+t
+���
+is involved.
+To fit the cache size, the model averages across the batch dimension.
+This update mechanism allows the GRC to effectively and efficiently manage the information in the cache, dynamically adjusting to capture relevant historical data while discarding less significant information. The use of gating mechanisms (inspired by RNNs) contributes to this adaptive and flexible approach to cache management in the Transformer architecture.
+You
+Discussion 
+We introduce Cached Transformer with Gated Recurrent 
+Cache (GRC), a simple extension to Transformer-based 
+models that signif i cantly increases the length of attention 
+context by allowing access to historical states through a gat- 
+ing mechanism. GRC embeds previous tokens, whether they 
+are close or distant, as i xed-length vectors, without com- 
+plexity dependence on the number of cached tokens. Con- 
+sequently, GRC model token dependencies over a broader 
+range of input, resulting in improved accuracy and perfor- 
+mance across diverse Transformers-variants with different 
+architectures and attention functions, on a variety of vision 
+and language tasks.
+ChatGPT
+ChatGPT
+In the "Discussion" section of their paper, the authors summarize the key aspects and benefits of their innovation, the Cached Transformer with Gated Recurrent Cache (GRC):
+Simple yet Effective Extension
+: The GRC is a straightforward modification to existing Transformer-based models, demonstrating how a minimal change can lead to significant improvements.
+Increased Attention Context Length
+: One of the primary advantages of the GRC is its ability to substantially extend the length of the attention context. This is achieved by providing access to historical states through an efficient gating mechanism.
+Efficient Embedding of Previous Tokens
+: The GRC embeds previous tokens as fixed-length vectors. This approach is independent of the complexity that usually arises with the number of cached tokens, making it a more scalable solution.
+Broader Range of Token Dependencies
+: By incorporating GRC, the model can account for token dependencies over a wider range of input. This capability is crucial for understanding and processing sequences where long-range dependencies are important.
+Improved Accuracy and Performance
+: The introduction of GRC has led to enhanced accuracy and overall performance in a diverse array of tasks. This improvement is consistent across different variants of Transformers, each with their unique architectures and attention functions.
+Applicability to Vision and Language Tasks
+: The GRC's benefits aren't limited to a single type of task or dataset. It shows marked improvements in both vision and language tasks, underscoring its versatility and effectiveness in different domains.
+In essence, the Cached Transformer with GRC represents a significant step forward in Transformer technology, offering a more capable and efficient model for handling complex sequences in various applications.
+You
+A basic explanation of the main points.
+ChatGPT
+ChatGPT
+Certainly! The Cached Transformer with Gated Recurrent Cache (GRC) is a modified version of the traditional Transformer model used in machine learning. Here are its main points in simple terms:
+Extended Memory
+: The GRC adds a kind of "memory" to the Transformer model. This memory allows the model to remember and use information from earlier data, not just the current data it's processing.
+Gating Mechanism
+: The GRC uses something called a gating mechanism. This is like a filter that decides which pieces of past information are important and should be remembered and which can be forgotten. This helps the model focus on relevant information over time.
+Fixed-Length Vectors
+: The model stores past information as fixed-length vectors. This means it can remember information without getting overwhelmed, no matter how much data it has seen before.
+Improved Performance
+: By being able to look back at more information and decide what's important, the Cached Transformer with GRC performs better, especially in tasks where understanding the context or history is crucial. This is true for both language tasks (like translation) and vision tasks (like image recognition).
+Versatile and Efficient
+: This new model works well across various types of Transformer models and tasks. It's also efficient, as it doesn't get more complicated or slower when dealing with more information.
+In summary, the Cached Transformer with GRC is like an advanced version of the Transformer model that has a better memory system, helping it to understand and process information more effectively.
+ChatGPT can make mistakes. Consider checking important information.
+?
+ChatGPT
+

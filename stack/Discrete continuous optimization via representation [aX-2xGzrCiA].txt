@@ -1,0 +1,278 @@
+So I don't like my title, but I haven't been able to find a better one. And what it means will
+become apparent as I go through the talk. First, I'm going to give a brief introduction to a field
+called evolutionary computation since I'm using it. And some of you may not have seen it. Then
+I'm going to talk about the first fractal representation for optimization that turned
+out to have a bunch of cool properties except it didn't scale. And then we found a way to fix it.
+And that led to something called the walking triangle representation, which there's sort
+of a picture of over there on the right. And it turns out that it's an address book for all of
+Euclidean space. And then I'm going to talk about how this and one other representation that I'll
+introduce, open up at least two new sorts of algorithms. Okay, so, onward. That is a picture
+of Charles Darwin when he was a young lad before he got the discouraged expression in the long
+beard. And the upper thing is an outcome of evolutionary computation in which it's a map
+for a video game. And the player that can walk through the red walls can get everywhere quickly.
+And the player that can walk through the blue walls has a long winding maze. So that's an
+example of something you can do with evolutionary computation. Similarly, that network of one and
+10 ohm resistors has resistance of 3.14159 ohms, completely useless, but sort of an interesting
+demonstration that you can ask it to solve problems for you. So, evolutionary computation
+is any algorithm based on Darwin's theory of evolution. And a lot of people thought of this.
+In fact, there's a book called evolutionary computation, the fossil record that includes
+the 12 times people thought of it before computers had enough power to make it possible.
+The people that thought of it just as computers became powerful enough include
+Holland and Goldberg who invented genetic algorithms, Lawrence Fogel's evolutionary
+programming, Ingo Reichenberg and Hans Paul Schreifels, evolution strategies, and there's a
+bunch of other flavors. In general, they're best used on problems you don't understand well yet.
+They're very easy to code but run slowly. And there's a lot of design choices you have to make.
+You need to have a problem with a well-defined measure for quality of solutions, a data structure
+that can store solutions, a technique for taking two solutions and blending them and then modifying
+the results, a technique for picking which solutions you like, so picking with a pro-quality bias,
+a technique for throwing out solutions, and a way to decide it's time to stop. Now, one thing to
+note, a lot of people have been talking about things that use like gradients and so on. Evolutionary
+computation is a population-based technique and that means it just operates on a whole bunch of
+different solutions using comparison between different population members to direct search.
+This permits it to do hill climbing like things when there is no gradient available.
+Okay, the basic loop is simple. You go get some structures, you find out how good they are,
+then over and over you pick parents with that quality bias, you generate children, evaluate
+their quality, pick people that might die, and then replace those people with the children if the
+children are at least as good until you've got a good enough answer. The techniques for blending
+parents are called crossover operators, the techniques for modifying individuals are called
+mutation operators, and collectively we call those variation operators. They produce variations in
+the solutions. There are other variation operators, that's something I do research on but not today,
+and the quality measures for the solutions are called the fitness function. Picking and discarding
+are the selection, are called selection within the algorithm. And so to give you an idea of what
+the choices are like, if the parent and the child had some sort of linear structure like DNA or a
+list of real parameters, which is what I'm interested in today, then you could exchange tail, middle
+segment, or for every entry in the genome you could flip a coin to decide which parent contributes
+what information to which child. So after years of doing this, I'm fairly sure that getting the
+fitness function right is critical. The representation or data structure used to store your potential
+solutions is critical. The selection and replacement technique are very important. The population size
+can be very important by which I mean there are problems where it is and there are problems where
+it isn't and I really don't understand why yet. The variation operators are usually very important
+and the rate at which you apply those operators are moderately important, sort of like infection with
+the plague. If you get it wrong, the plague spreads faster. If you get it right, the plague
+spreads slower, but that parameter isn't important because all it does is slow things down a little.
+There's also a technical theorem called the no-free lunch theorem. It has important consequences
+in evolutionary computation. The good choices of all of the parameters you can set depend on your
+problem. Performance is improved by correctly specializing the algorithm to your problem
+and when possible, you really want to incorporate anything you know about the problem. Okay,
+I'm going to take a sip of coffee and let the audio track catch up.
+You may recognize the Sierpinski gasket, which is the leftmost of those pictures,
+but if you take any polygon, start at one corner of it and then jump toward a random corner of the
+polygon and plot a point where you go and by jump toward, I mean move halfway toward, you fill in some
+sort of fractal, except in the case of the square where if you can jump toward any corner, you
+completely fill in the square. That's cool though because when the figure fills in, you can use a
+string of averaging commands as a representation. If I say corner one, corner one, corner two, corner
+one, corner three, corner four, corner one, corner two, corner three, corner one, corner four,
+then I've arrived at some point in the interior of the square by averaging toward those corners
+and that string of averaging commands is a representation. So instead of specifying x and
+y as numbers, I specify a character string. This actually works for any sheared hypercube in d
+dimensions, but there's a problem with it, which is you need to be able to average toward every
+single corner, giving you an exponential number of letters in the alphabet you're using.
+Okay. Now Leon Palladian, who has since passed away about two years ago, an Australian mathematician
+pointed out to me that if instead, what you did was you started with a simplex, a triangle in
+two dimensions and instead of averaging toward corners, you moved a vertex of the triangle
+through the center of mass of the triangle repeatedly, then you could still partition space,
+but instead of needing two to the power d letters in your alphabet, you only need one for each corner.
+A triangle has three corners in two dimensions and in general, you need
+one more character than you have dimensions. This representation is still a string of commands
+that selects a point. The point encoded is the center of mass of the final simplex,
+but it scales better with dimension. So why would you want to store your real parameter
+string or your set of real parameters as a character string? That sounds a bit nuts in some
+ways. And the reason is is that it lets you save those strings in a dictionary. So you can go find
+an optimum, use it to initialize a dictionary, then rerun your evolutionary algorithm to locate
+more optima, but you award the worst fitness you have going to anyone that shares a prefix of a
+certain length with a member of the dictionary. That means the dictionary lets you blow holes in
+the search space surrounding the optimum you've already found and the length of the prefix tells
+you how big those holes are. You then put each of those new optimum in the dictionary. This is the
+multi-optima Serpinsky's searcher and by using it, we can enumerate the optimum present in an area
+being searched. This is very similar for those of you familiar with evolutionary computation to
+niche specialization, but instead of needing to compute the differences between all the solutions
+we found, we simply use a dictionary, which means the time to exclude optima already located is
+constant. That's wonderful. So here is a test problem. You probably recognize the mental
+brought set and the mental brought set has all sorts of cool fractals inside it. My representation is
+is x, y and s. So x plus i, y is a corner of the fractal I'm looking at and s is the side length
+and that picture at left shows the location of a thousand optima located using moss with the
+fitness function being rms error with the desired appearance mask. In this case, what I have is a
+square somewhere and what I want is for the fractal to have long escape times near the middle of the
+square and very short ones near the edge. Essentially, I put a hill over the square and what that should
+locate is the small copies of the mental brought set inside the mental brought set and there are
+the first 300 optima and as you can see it does exactly that. It locates mini brats as they're
+called. Next three slides are going to show you the 24 best, the 24 middle and the 24 worst optima
+located. Lots of big fat mini brats in the top 24. In the middle we're getting much smaller mini
+brats and also spirals and starbursts and other things that have a lot of action near the center
+and less near the edges but not so much and this makes me think I found a substantial fraction of
+all the mini brats within the search domain which was the mental brought set and up to e to the minus
+tenth power of zoom. They're actually an infinite number of these things but if you cut the zoom
+off at some point you only get a finite number and those last 24 optima are awful compared to the
+first 24. Okay pause to lift the audio track catch up again.
+Now the original Serpinski representation averaging toward corners of a hypercube
+didn't scale well and instead Leon Palladian helped me find the contracting triangle on which
+does scale well but it also reminded me of something else and I'll mention this again
+which is the Nelder Mead optimization technique which was first published in 1965.
+So now what I'm going to do is I'm going to take that triangle and or simplex and n dimensions
+whose center of mass represents the parameters I'm actually trying to find and a vertex is just
+a vertex a face is the simplest one dimension lower consisting of all but one vertex I'm going
+to call that the opposite face and the center of mass is what it usually is. There are the
+moves you can make in walking triangle you can either flip one vertex across a face you can move
+vertex to the center of mass you can reverse that it turns out that's an invertible operation
+or you can contract or to expand away from a vertex and that means we have five moves
+each one also has to say a vertex so we've got five times the number of dimensions which is a
+not terribly large number of moves and it scales linearly with the dimension.
+Okay um I'll go since I have half an hour I'll go through this a little quickly but
+there is a formula for the walk move there is a formula for the center and uncenter move
+and there are is the formula for the growing and shrinking move the walking triangle moves are all
+bijections of the set of simplices in n dimensions this means the strings of the walking triangle
+commands can be viewed as words over a group and notice that the walk command is self-inverse
+and then the center and uncenter commands and the growing shrink commands with the same growing
+shrink factor are all group inverses of one another. The mathematical formalism isn't gratuitous
+it turns out we can prove things and here's one of my favorite things about this for any epsilon
+greater than zero if p is a point in general position and d is the distance from the center
+of mass of simplex as 2p and there exists a finite sequence of walking triangle moves q1
+through qm that places the center of mass of s as modified by those moves within epsilon of p
+this is true for walk uncenter center walk grow shrink and walk uncenter center grow shrink
+as sets of moves the nut and okay so um finite cool how big the number of moves in the sequence
+is proportional to the log of the distance these results demonstrate the walking triangle
+representation permits a completely different kind of evolutionary real optimization and
+i'll give you at least one demonstration of this so here's a sketch of the proof the grow
+and uncenter operations can be used to enlarge a simplex with a little care in any direction
+and the hyper volume increases exponentially with the number of enlargements
+that means we can grow the simplex to include the target point p you sometimes need one walk
+command to get oriented correctly but then you can center or shrink in a fashion that decreases
+the hyper volume exponentially while leaving the point within the simplex so i have exponential
+growth to capture exponential shrinkage to get as close as i want that's why it's log moves now
+when you're doing um evolutionary computation you need to worry about the variation operators
+the mutation operator that just makes a tweak to one structure is simply replace one move with
+another but the um crossover operator that mimics natural sex that mixes the chromosomes
+is best one point because the walking triangle operations do not commute there's a very high
+degree of epistasis or to put it another way the worth and meaning of later moves depends
+on what the earlier moves are so you want to do as little mixing as possible
+though we tried no crossover and that's worse than one point so one of the things i did was
+to try to demonstrate that the walking triangle representation can go out and find things that
+a normal evolutionary algorithm can't and so what we did was we initialized near the origin the whole
+population of points and had them go hunting for a hill at the origin centered at 40 by 40 away
+from the origin and centered at 100 by 100 away from the origin evolutionary computation is pretty
+good we still had 30 out of 30 runs of a standard evolutionary algorithm find the way off in the
+distance hill when it was at 40 but when it got to 100 walking trial walking triangle continued
+to always find it whereas the other one had um 27 failures and three successes so walking triangle
+representation is robust to bad initialization now we then picked the three-dimensional version
+with the hill displaced 10 and looked at the walk on center center and then we tried a bunch of
+different copulation sizes and tabulated both the log of time to solution and the number of
+failures and there it turns out that if you have a larger population it works better failures go down
+time to solution gets better but time to solution starts to go up when you get the failures to be
+down near zero we then check the mutation rate and it turned out that you know there was a favorite
+mutation rate in the sense that you need enough but then it flattens out similarly the um normally
+when you're doing optimization in n dimensions you have n parameters but in this case since all our
+length of gene is doing or the number of commands we're using is doing is letting you do more
+operations um it turns out that the length of the gene you're using is another thing you can study
+and then once we got these three initial runs we fiddled and it turned out that of the ones we
+studied population size 178 three mutations in gene length 30 gave us the best performance
+and in case you're wondering where on earth i got those population sizes that's an equally spaced
+grid in the logarithm okay so what is a walking triangle representation chromosome
+i've been talking about them as strings of letters but if we have the string of letters walk one
+uncenter zero center one it's actually center one function of uncenter zero function of walk one
+function of the original simplex and so the walking triangle chromosomes say what to do with simplex
+but they don't say where to start and what i've been using so far is a very simple starting
+simplex the standard basis plus the origin and just letting the fact that it can go search a long
+distance save my life but what if we actually got better starting simplices okay so i don't know
+where they are but one thing you can do is run the walking triangle for a while until it finds a
+simplex as much better fitness in your starting one then restart the whole thing with that simplex
+as the new starting point since some of the operations let it make very local search if
+you're in a really good place it can stay there and that picture there shows you how this
+recentering and recentering works so here's a comparison of just running the algorithm i ran
+before with running it with five recenterings the recenterings have pretty much no additional cost
+and the thing to look at there is the time solution remained fairly similar but the number of failures
+plummeted when we reset it so it's a good technique and so another thing that's a little odd about
+this is the gene length matters but it matters less than you think because the representation
+is free to put inverse members in the group beside one another and there's some genes where we ran
+three more of these displaced hill functions and fitness maximum was 1.0 so even with the difficult
+one where the hill center was displaced in different directions we still found the right
+answer and the adjacent inverses showed up a good deal more often than they should so evolution is
+in some sense exploiting the existence of inverses to seek the correct gene length cool
+okay now this is a completely artificial function i thought up to test how good an evolutionary
+algorithm is at exploring in this case what i have is a very low slope plane slope roughly
+one over 20 in each dimension with cosine waves added to make it confusing it's maximum rises in
+the direction of one one one one one one one one one one so this is a very simple plot of the log
+of the fitness located as a function of the gene length when i let the algorithm run long enough
+that it's stabilized and as you can see it's almost certainly completely ignoring the cosines
+it just finds the right direction and runs that way okay and yeah that's exactly what happened
+i showed you the trend wave i have a couple other examples of these open-ended functions
+and as you can see the genes that found the good results were just maybe get pointed in the right
+direction and then uncenter in that direction over and over and over and after about three
+on centerings as it jumps it's jumping past hundreds or thousands of cosine waves and so it
+just ignores the confusing cosine noise okay almost done so a similar optimizing a function
+and end dimensions and we have a starting point this representation takes three parameters delta
+the initial value for modifying the value of a coordinate and l and s a large and small scaling
+factor this is another thing where i'm turning real parameter location into a um game or string
+language and there are five commands that are always there negate the coordinate value or scale
+it up or down by a factor of s or l the remaining commands say add delta to one of the n real
+parameters under consideration so that gives us n plus five commands which is a very reasonable
+number again linear in the dimension and it works better with two scaling factors than with one
+that's something we actually tested um and i'm going to call this the rescaling vector jumper
+representation we have one paper on this which is currently being reviewed um but let's wind up
+discrete representations i've looked at include the syrpinsky representation the averaging toward
+corners of a hyper cube that scales to higher dimensions poorly the syrpinsky palladian
+representation which is just the centering commands from the walk on center center version
+of the walking triangle representation the full walking triangle representation which is a little
+complicated and the rescaling vector jump representation that i just showed you one slide
+ago the first two uniquely represent points in the string language and so it can be used
+for the multi-optimist syrpinsky searcher that i showed you all those mini brats with all the
+representations reduced specifying a vector of real parameters to a sequence of commands
+which can also be thought of as moves and again i said this earlier but the walking
+triangle is the result of seeing if we could generalize neldermid optimization
+so new opportunity one that thing on the left is a Monte Carlo tree search diagram
+and these were like key to the um alpha go that google had that got us to um algorithms being the
+best go players 20 years sooner than everybody thought but in fact once you've discretized
+the specification of real parameters any discrete search algorithm including all those
+tree search algorithms that we teach people in second and third year computer science
+can be used to do real parameter optimization and i'm just starting to explore that space
+i know that other people have used Monte Carlo tree search to do um traveling salesman problems
+successfully and one of my students and i are exploring using it to do real parameter
+optimization this is what we actually did with that funny new um vector jump representation this
+is what this submitted paper about is lighting optimization it's a technique that's designed
+for use with discrete representations every configuration that arises all of the triangle
+walks or all of the vector jumps during the expression of these discrete chromosomes from
+the first one to the last one specify a vector of real parameters that means we could find this
+fitness of each of the intermediate states if we value if we visualize the sequence of intermediate
+stages the sequence of steps across a fitness landscape there is no particular reason the
+most fit configuration in the sequence is the final one for this reason the fitness of the
+chromosome used in lightning optimization is the best fitness of any of the intermediate
+solutions visited including both the initial and final one the term lightning is evocative
+of a stroke of lightning whose impact is checked at each twist and turn as it moves through a fitness
+landscape we turn the sequence of configurations generated during the expression of full lightning
+optimization chromosome as a stroke the major impact of lightning optimization is to smooth
+the search landscape by taking a best of several approaches to fitness we've tested it on several
+rough fitness landscapes and there it definitely outperforms a normal optimizer and before anybody
+charges me with potential stupidity yes if we had 20 checks in the lightning then the normal
+optimizer got 20 times as many fitness evaluations so the actual consultation of the fitness function
+was the same in both and so that's it i'd like to thank the money um and my collaborators who
+worked with me on this on Yong Kim Cameron McGinnis Collin Lee and Jeremy Gilbert okay ready for
+questions perfect thank you very much dan um so if you have any questions please give your name in
+the chat or give your questions um in the meantime i have a very small one for you dan um so when you
+do these uh recentering steps yes when you're starting the trial how do you how do you choose
+how how many times you do this or how do you handle this um i did it five times
+yeah but why five why not six or four um so that's a really good question and the answer is the good
+number of recenterings depends almost entirely on what fitness landscape you're exploring so it's
+the experimental parameter which you check for each function you work on sorry bad answer but
+at least true no okay i mean if you were doing this on a single hill the answer would be don't
+yeah okay okay unless you unless you had optimized way off in you know deep space away from that hill
+if you're anywhere near a unimodal set just don't even bother if on the other hand you have something
+like the metalbrot search which is an unbelievably rough surface then you probably want to do it
+fairly often mm yeah i way too much for my work is ah we've located a new parameter let's do an
+experiment no no no but i agree because i have used similar techniques in for local optimization
+and like the same questions always pop up so i was wondering i'm going to stop my share so that
+i can actually see the chat there we go um so we have time for more questions if some of you guys
+have some um i i'm gonna prompt dan into an answer because i know uh him and i at some point
+collaborated on on some work with one of our students of some years ago and i think she
+used some of your serpentski type representations to solve generalized Nash games the ones without
+shared constraints so that will be am i right yes you are and the generalized Nash games often have
+a relatively low dimension at which point the problem with that representation doesn't kick in
+and so if you want to find a whole lot of optima in the low dimensional space the basic average
+toward the corner's moss algorithm is brilliant and yes she did right right but we were not testing
+it we did not test it on any like a real hands-on many players problem i guess then then we would
+have seen the same the same uh the same issues that you're seeing it dies at about six players
+maybe seven oh darn all right the the palladian serpentski one could probably be used to do it
+in any number of dimensions however let me then go back and say something the original average
+toward the corner ones has equal density in every part of the space and it covers the space at one
+over two to the end where n is the length of the string of commands the one based on contracting
+a triangle has irregular coverage it covers points near the boundary of a triangle a larger
+triangle more than in the interior and so in that sense it's inferior so if low dimensional
+use the hypercube high dimensional you're stuck with the triangles

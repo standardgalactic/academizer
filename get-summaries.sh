@@ -1,110 +1,88 @@
-#!/usr/bin/env bash
-set -Eeuo pipefail
+#!/bin/bash
 
-CHUNK_LINES=100
+# Define progress and summary files
+progress_file="progress.log"
+summary_file="detailed-summary.txt"
+main_dir=$(pwd)
 
-MODEL_COMMAND=("ollama" "run" "vanilj/phi-4")
-PROGRESS_FILE="progress.log"
-SUMMARY_OVERVIEW_FILE="overview.txt"
-
-main_dir="$(pwd)"
-touch "$main_dir/$PROGRESS_FILE"
-touch "$main_dir/$SUMMARY_OVERVIEW_FILE"
-
-log() {
-  local message="[${USER:-$(whoami)}@$(hostname)] [$(date '+%Y-%m-%d %H:%M:%S')] $*"
-  echo "$message"
-  echo "$message" >> "$main_dir/$PROGRESS_FILE"
-}
-
+# Function to check if a file is already processed
 is_processed() {
-  local file_path="$1"
-  grep -Fxq "$file_path" "$main_dir/$PROGRESS_FILE"
+    grep -Fxq "$1" "$main_dir/$progress_file"
 }
 
-mark_processed() {
-  local file_path="$1"
-  echo "$file_path" >> "$main_dir/$PROGRESS_FILE"
-}
+# Create progress and summary files if they don't exist
+touch "$main_dir/$progress_file"
+touch "$main_dir/$summary_file"
 
-cleanup_tempdirs() {
-  if [[ -n "${TEMP_DIRS_CREATED:-}" ]]; then
-    for tmpd in $TEMP_DIRS_CREATED; do
-      [[ -d "$tmpd" ]] && rm -rf "$tmpd"
-      log "Cleaned up temporary directory: $tmpd"
+# Start logging script progress
+echo "Script started at $(date)" >> "$main_dir/$progress_file"
+echo "Summaries will be saved to $summary_file" >> "$main_dir/$progress_file"
+
+# Function to process text files in a directory
+process_files() {
+    local dir=$1
+    echo "Processing directory: $dir"
+    
+    # Iterate over each .txt file in the specified directory
+    for file in "$dir"/*.txt; do
+        # Skip if no .txt files are found
+        if [ ! -e "$file" ]; then
+            continue
+        fi
+
+        # Process the file if it's a regular file
+        if [ -f "$file" ]; then
+            local file_name=$(basename "$file")  # Get the file name only
+            
+            # Process only if not processed before
+            if ! is_processed "$file_name"; then
+                echo "Processing $file_name"
+                echo "Processing $file_name" >> "$main_dir/$progress_file"
+
+                # Create a temporary directory for the file's chunks
+                sanitized_name=$(basename "$file" | tr -d '[:space:]')
+                temp_dir=$(mktemp -d "$dir/tmp_${sanitized_name}_XXXXXX")
+                echo "Temporary directory created: $temp_dir" >> "$main_dir/$progress_file"
+
+                # Split the file into chunks of 200 lines each
+                split -l 200 "$file" "$temp_dir/chunk_"
+                echo "File split into chunks: $(find "$temp_dir" -type f)" >> "$main_dir/$progress_file"
+
+                # Summarize each chunk and append to the summary file
+                for chunk_file in "$temp_dir"/chunk_*; do
+                    [ -f "$chunk_file" ] || continue
+                    echo "Summarizing chunk: $(basename "$chunk_file")"
+                    ollama run vanilj/phi-4 "Summarize:" < "$chunk_file" | tee -a "$main_dir/$summary_file"
+                    echo "" >> "$main_dir/$summary_file"
+                done
+
+                # Remove the temporary directory
+                rm -rf "$temp_dir"
+                echo "Temporary directory $temp_dir removed" >> "$main_dir/$progress_file"
+
+                # Mark the file as processed
+                echo "$file_name" >> "$main_dir/$progress_file"
+            fi
+        fi
     done
-  fi
 }
-trap cleanup_tempdirs EXIT
 
-log "Script started."
-
-process_files_in_directory() {
-  local dir="$1"
-  log "Processing directory: $dir"
-
-  shopt -s nullglob
-  local all_files=("$dir"/*.txt)
-  shopt -u nullglob
-
-  [[ ${#all_files[@]} -eq 0 ]] && {
-    log "No .txt files found in $dir"
-    return
-  }
-
-  for file in "${all_files[@]}"; do
-    [[ -f "$file" && ! -L "$file" ]] || continue
-
-    local file_name="$(basename "$file")"
-
-    if is_processed "$file"; then
-      log "Skipping (already processed): $file"
-      continue
-    fi
-
-    log "Processing file: $file"
-
-    local sanitized_name
-    sanitized_name="$(echo "$file_name" | tr -d '[:space:]')"
-    local temp_dir
-    temp_dir="$(mktemp -d "$dir/tmp_${sanitized_name}_XXXXXX")"
-    TEMP_DIRS_CREATED="${TEMP_DIRS_CREATED:-} $temp_dir"
-    log "Created temporary directory: $temp_dir"
-
-    local preprocessed_file="$temp_dir/preprocessed.txt"
-    cp "$file" "$preprocessed_file"
-
-    split -l "$CHUNK_LINES" -- "$preprocessed_file" "$temp_dir/chunk_"
-    log "Split $file into chunks of $CHUNK_LINES lines each."
-
-    {
-      echo "============================================="
-      echo "Summary for file: $file_name"
-      echo "============================================="
-    } >> "$SUMMARY_OVERVIEW_FILE"
-
-    for chunk_file in "$temp_dir"/chunk_*; do
-      [[ -f "$chunk_file" ]] || continue
-      local chunk_name
-      chunk_name="$(basename "$chunk_file")"
-      log "Summarizing chunk: $chunk_name"
-
-      {
-        echo "Summarize the following text from \"$file_name\"."
-        echo "Focus on main ideas, ignoring extraneous details."
-        echo "---------------"
-        cat "$chunk_file"
-      } | "${MODEL_COMMAND[@]}" 2>>"$main_dir/$PROGRESS_FILE" \
-        >> "$SUMMARY_OVERVIEW_FILE"
-
-      echo "" >> "$SUMMARY_OVERVIEW_FILE"
+# Recursively process subdirectories
+process_subdirectories() {
+    local parent_dir=$1
+    
+    # Iterate over all subdirectories
+    for dir in "$parent_dir"/*/; do
+        if [ -d "$dir" ]; then
+            process_files "$dir"  # Process files in the subdirectory
+            process_subdirectories "$dir"  # Recursive call for nested subdirectories
+        fi
     done
-
-    mark_processed "$file"
-    log "Marked $file as processed."
-  done
 }
 
-process_files_in_directory "$main_dir"
+# Main execution
+process_files "$main_dir"  # Process files in the main directory
+process_subdirectories "$main_dir"  # Process files in subdirectories
 
-log "Script completed."
+# Mark script completion
+echo "Script completed at $(date)" >> "$main_dir/$progress_file"

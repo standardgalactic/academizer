@@ -1,0 +1,5592 @@
+Flying Camera Through Columns
+Skip to content
+Abrir barra lateral
+ChatGPT
+o3-mini-high
+ChatGPT
+o3-mini-high
+Compartir
+PLUS
+Dijiste:
+I wonder if you can make me a scene in blender with a camera flying of a bunch of vertical columns of different widths and heights like flying through a forest or a death star using bpy python
+ChatGPT dijo:
+Reasoned about Blender camera animation setup for 11 seconds
+Below is an example Blender Python (bpy) script that clears the scene, creates a bunch of vertical columns of various widths and heights (like random "trees" or columns), and then sets up a camera that flies along a curved path through them. You can run this script in Blender’s scripting workspace.
+python
+Copiar código
+import
+bpy
+import
+random
+import
+math
+# ---------- Clear the scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Create vertical columns ----------
+num_columns =
+50
+# Adjust how many columns you want
+for
+i
+in
+range
+(num_columns):
+# Random position within a specified range
+x = random.uniform(-
+20
+,
+20
+)
+    y = random.uniform(-
+20
+,
+20
+)
+# Random radius (width) and height for the column
+radius = random.uniform(
+0.5
+,
+2.0
+)
+    height = random.uniform(
+2.0
+,
+20.0
+)
+# Place the cylinder so its base sits on the ground (z = height/2)
+bpy.ops.mesh.primitive_cylinder_add(radius=radius, depth=height, location=(x, y, height /
+2
+))
+# ---------- Create a curve path for the camera ----------
+# Create a new curve data block
+curve_data = bpy.data.curves.new(name=
+"CameraPath"
+,
+type
+=
+'CURVE'
+)
+curve_data.dimensions =
+'3D'
+# Create a new NURBS spline in that curve
+spline = curve_data.splines.new(
+type
+=
+'NURBS'
+)
+num_points =
+6
+# Number of control points for the path
+spline.points.add(num_points -
+1
+)
+# one point already exists
+# Define points along a path (here a smooth curve along X with some random Z variation)
+for
+i, point
+in
+enumerate
+(spline.points):
+# Spread out along the X axis and add some randomness in Z (height)
+x = i *
+5
+y =
+0
+z = random.uniform(
+5
+,
+15
+)
+    point.co = (x, y, z,
+1
+)
+# Increase the resolution for a smoother path
+curve_data.resolution_u =
+12
+# Create an object from the curve data and link it to the scene
+curve_object = bpy.data.objects.new(
+"CameraPath"
+, curve_data)
+bpy.context.collection.objects.link(curve_object)
+# ---------- Add a camera and set up animation along the path ----------
+# Add a camera to the scene
+bpy.ops.
+object
+.camera_add(location=(
+0
+,
+0
+,
+10
+))
+camera = bpy.context.active_object
+# Add a Follow Path constraint to the camera targeting the curve
+follow_path = camera.constraints.new(
+type
+=
+'FOLLOW_PATH'
+)
+follow_path.target = curve_object
+follow_path.use_fixed_location =
+True
+# Use a fixed location along the path
+follow_path.forward_axis =
+'FORWARD_X'
+follow_path.up_axis =
+'UP_Z'
+# Set up the timeline for the animation
+bpy.context.scene.frame_start =
+1
+bpy.context.scene.frame_end =
+250
+# Animate the camera along the path by keyframing the offset factor
+follow_path.offset_factor =
+0.0
+camera.constraints[
+"Follow Path"
+].keyframe_insert(data_path=
+"offset_factor"
+, frame=
+1
+)
+follow_path.offset_factor =
+1.0
+camera.constraints[
+"Follow Path"
+].keyframe_insert(data_path=
+"offset_factor"
+, frame=
+250
+)
+# Optionally, set the camera as the active scene camera
+bpy.context.scene.camera = camera
+How It Works
+Clearing the Scene:
+The script first removes all objects.
+Creating Columns:
+It then creates 50 (modifiable) cylinders with random positions, widths (radius), and heights. The cylinders’ origins are adjusted so they sit on the ground.
+Camera Path:
+A NURBS curve is created with a series of control points forming a smooth 3D path. You can adjust the number of points or their placement for a different flight path.
+Camera Setup & Animation:
+A camera is added, and a “Follow Path” constraint makes it follow the curve. Keyframes are inserted at frame 1 and frame 250 so that when you play the animation, the camera moves from the beginning to the end of the path.
+You can run this script in Blender’s Scripting tab, then hit
+Play
+(or press
+Alt+A
+) in the timeline to see the camera fly through your randomly generated column "forest" or "Death Star" corridor. Enjoy experimenting with the parameters to get the scene that best fits your vision!
+Dijiste:
+The camera is facing straigh down and doesn't move through the scene like through the x axis
+ChatGPT dijo:
+Reasoned about camera movement and orientation for 16 seconds
+You can fix this by making the camera actually “follow” the curve’s direction. In the follow path constraint, enable the curve follow option and adjust the forward/up axis so that the camera points along the curve rather than straight down. For example, try updating the constraint section like this:
+python
+Copiar código
+# Add a Follow Path constraint to the camera targeting the curve
+follow_path = camera.constraints.new(
+type
+=
+'FOLLOW_PATH'
+)
+follow_path.target = curve_object
+follow_path.use_fixed_location =
+True
+# Use a fixed location along the path
+follow_path.use_curve_follow =
+True
+# Enable curve following so the camera rotates along the path
+# Adjust the axes: setting FORWARD_Y often works better with cameras
+follow_path.forward_axis =
+'FORWARD_Y'
+follow_path.up_axis =
+'UP_Z'
+This tells Blender to rotate the camera along the curve’s tangent. If the camera still appears off, you might need to adjust the camera’s initial rotation or experiment with different forward_axis settings. For instance, sometimes using
+'FORWARD_Z'
+or its negative variant can yield the desired orientation depending on your scene’s layout.
+Let me know if you need any further tweaks!
+Dijiste:
+no the z axis is facing down, the camera is looking down at the feet of the columns instead of starting over on the side like on x or y and flying through it
+ChatGPT dijo:
+Reasoned for 29 seconds
+You can try aligning the camera’s natural view direction (which is along its local –Z) with the path by setting the follow path’s forward axis to “-FORWARD_Z” and the up axis to “UP_Y”. For example, replace the follow path constraint section with:
+python
+Copiar código
+# Add a Follow Path constraint to the camera targeting the curve
+follow_path = camera.constraints.new(
+type
+=
+'FOLLOW_PATH'
+)
+follow_path.target = curve_object
+follow_path.use_fixed_location =
+True
+# Use a fixed location along the path
+follow_path.use_curve_follow =
+True
+# Make the camera rotate to match the curve's tangent
+# This makes the camera’s natural -Z (its view direction) point along the path.
+follow_path.forward_axis =
+'-FORWARD_Z'
+follow_path.up_axis =
+'UP_Y'
+If the camera still appears to be looking down, you might also try one of these adjustments:
+Adjust the curve or camera starting location:
+Ensure your curve’s control points and the camera’s initial location are set so that the camera flies horizontally through the columns rather than from an overhead position. For instance, you could modify the curve’s points to have non-zero Y values.
+Add a Track To constraint:
+Create an empty positioned slightly ahead of the camera along the path and add a “Track To” constraint so the camera always points toward that empty. For example:
+python
+Copiar código
+# Create an empty for tracking
+bpy.ops.
+object
+.empty_add(
+type
+=
+'PLAIN_AXES'
+, location=camera.location)
+tracker = bpy.context.active_object
+# Add a Track To constraint so the camera always looks at the empty
+track_to = camera.constraints.new(
+type
+=
+'TRACK_TO'
+)
+track_to.target = tracker
+track_to.track_axis =
+'TRACK_NEGATIVE_Z'
+# Camera views along -Z by default
+track_to.up_axis =
+'UP_Y'
+Then, animate or parent the empty so that it remains a short distance ahead of the camera along the path.
+These changes should help the camera to fly along the curve in a more horizontal manner rather than facing straight down at the columns’ bases. Adjust the axis settings or the positions as needed to best suit your scene’s layout.
+Dijiste:
+Ok it's not working just take the camera and flight path out.
+ChatGPT dijo:
+Reasoned about camera path and constraints for 4 seconds
+Below is a simplified Blender Python (bpy) script that creates a scene with a series of vertical columns (cylinders) of random widths and heights. This version removes any camera and flight path setup so you can focus solely on generating the column "forest" or corridor.
+python
+Copiar código
+import
+bpy
+import
+random
+# ---------- Clear the scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Create vertical columns ----------
+num_columns =
+50
+# Adjust the number of columns as needed
+for
+i
+in
+range
+(num_columns):
+# Random position within a specified range
+x = random.uniform(-
+20
+,
+20
+)
+    y = random.uniform(-
+20
+,
+20
+)
+# Random radius (width) and height for the column
+radius = random.uniform(
+0.5
+,
+2.0
+)
+    height = random.uniform(
+2.0
+,
+20.0
+)
+# Place the cylinder so its base sits on the ground (z = height/2)
+bpy.ops.mesh.primitive_cylinder_add(radius=radius, depth=height, location=(x, y, height /
+2
+))
+How It Works
+Clearing the Scene:
+This part removes all existing objects.
+Creating Columns:
+The script then creates 50 cylinders (modifiable via
+num_columns
+) with random positions, radii, and heights. The cylinders are placed so that their bases sit on the ground.
+Simply run this script in Blender’s Scripting workspace, and you'll see a field of columns without any camera or animation involved. Enjoy experimenting with the parameters to suit your scene!
+Dijiste:
+try to create the craziest thing you can like a physics similation using swarm behaviour of birds maybe
+ChatGPT dijo:
+Reasoned about swarm behavior simulation for 18 seconds
+Below is a wild Blender Python script that sets up a crude “swarm” simulation using Blender’s built‐in boid physics. In this example, a simple “bird” (a cone) is instanced via a particle system on a plane. The boid settings and extra force fields (like turbulence) help create unpredictable, flocking behavior.
+Paste this script into Blender’s Scripting workspace and run it. (You might need to hit play in the timeline to see the simulation evolve.) Feel free to tweak the settings for even crazier results!
+python
+Copiar código
+import
+bpy
+import
+random
+import
+math
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Create a simple Bird object ----------
+# We use a cone as a placeholder for a bird.
+bpy.ops.mesh.primitive_cone_add(radius1=
+0.2
+, depth=
+0.5
+, location=(
+0
+,
+0
+,
+0
+))
+bird = bpy.context.active_object
+bird.name =
+"Bird"
+# Rotate so the tip (which will be the front) points along the -Y axis (default view direction for boids)
+bird.rotation_euler[
+0
+] = math.radians(
+90
+)
+# Optionally, give the bird a material for some flair.
+mat = bpy.data.materials.new(name=
+"BirdMat"
+)
+mat.diffuse_color = (
+1
+,
+0.5
+,
+0.1
+,
+1
+)
+bird.data.materials.append(mat)
+# ---------- Create an Emitter ----------
+# This plane will emit the birds. They will be created as particles using boid physics.
+bpy.ops.mesh.primitive_plane_add(size=
+10
+, location=(
+0
+,
+0
+,
+1
+))
+emitter = bpy.context.active_object
+emitter.name =
+"Emitter"
+# ---------- Add Particle System for Boid Simulation ----------
+ps_mod = emitter.modifiers.new(
+"BoidSystem"
+,
+type
+=
+'PARTICLE_SYSTEM'
+)
+psys = emitter.particle_systems[-
+1
+]
+psettings = bpy.data.particles.new(name=
+"BoidParticles"
+)
+psys.settings = psettings
+# Set particle system to work as an emitter
+psettings.
+type
+=
+'EMITTER'
+psettings.frame_start =
+1
+psettings.frame_end =
+1
+# Emit all at once
+psettings.lifetime =
+250
+psettings.count =
+100
+# Number of birds
+# Use object instancing: our bird object will be instanced for each particle
+psettings.render_type =
+'OBJECT'
+psettings.instance_object = bird
+# ---------- Set Up Boid Physics ----------
+psettings.physics_type =
+'BOIDS'
+boid = psettings.boid_settings
+boid.use_flight =
+True
+# Allow 3D movement
+boid.max_speed =
+2.0
+# Maximum speed
+boid.max_acceleration =
+0.5
+# Maximum acceleration
+# Add boid behavior rules to simulate swarm behavior
+# (These rules adjust how the boids steer, avoid, and flock together)
+# Note: Adjust the weights (value) to get different behaviors.
+rule_follow = boid.rules.add()
+rule_follow.
+type
+=
+'FOLLOW'
+rule_follow.value =
+0.5
+rule_avoid = boid.rules.add()
+rule_avoid.
+type
+=
+'AVOID'
+rule_avoid.value =
+1.0
+rule_flock = boid.rules.add()
+rule_flock.
+type
+=
+'FLOCK'
+rule_flock.value =
+0.8
+# ---------- Add a Goal for the Swarm ----------
+# Create an empty that serves as a goal or target for the boids.
+bpy.ops.
+object
+.empty_add(
+type
+=
+'PLAIN_AXES'
+, location=(
+0
+, -
+5
+,
+3
+))
+goal = bpy.context.active_object
+goal.name =
+"BoidGoal"
+boid.goal_object = goal
+boid.use_goal =
+True
+boid.goal_weight =
+0.3
+# Optionally animate the goal to create a dynamic target
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+1
+)
+goal.location = (
+0
+,
+5
+,
+5
+)
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+150
+)
+goal.location = (
+0
+, -
+5
+,
+3
+)
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+250
+)
+# ---------- Add a Turbulence Force Field for Extra Craziness ----------
+bpy.ops.
+object
+.effector_add(
+type
+=
+'TURBULENCE'
+, location=(
+0
+,
+0
+,
+3
+))
+turbulence = bpy.context.active_object
+turbulence.field.strength =
+5.0
+turbulence.field.size =
+2.0
+# ---------- Set the Scene Timeline ----------
+bpy.context.scene.frame_start =
+1
+bpy.context.scene.frame_end =
+250
+# Finished! Press Play in the Timeline to see your crazy boid simulation.
+How It Works
+Bird Object:
+A cone is created and rotated so its tip (the “front”) points in the direction the boid will travel.
+Emitter & Particle System:
+A plane is used to emit particles that are instanced as “birds.” The particle system’s physics is set to BOIDS.
+Boid Settings:
+The boid physics parameters (max speed, acceleration, and rules for following, avoiding, and flocking) are adjusted for a dynamic swarm.
+Goal & Turbulence:
+An empty object acts as a moving target (animated over time) and a turbulence force field adds randomness to the swarm’s movement.
+Enjoy watching your virtual flock perform a wild dance across the scene!
+Dijiste:
+I kind of think it looks like an ising synchronization it started random and than they gathered into like three flocks, sort of like congealing. can you explain this?
+ChatGPT dijo:
+Reasoned about Ising model and flocking for 8 seconds
+The behavior you're seeing is a common emergent property of flocking simulations. In these systems, simple local rules—like trying to stay close to your neighbors (cohesion), matching their speed (alignment), and avoiding collisions (separation)—can lead to complex, organized patterns. In your simulation, it appears that the cohesion (or "flocking") rule is strong enough that the boids end up synchronizing their motion and grouping together into a few distinct flocks.
+This phenomenon is similar in spirit to what happens in an Ising model in physics, where individual spins (or agents) interact locally and can spontaneously align when the conditions are right. Just like spins can synchronize below a critical temperature, the boids here "synchronize" their motion due to their local interactions, resulting in what looks like a phase transition from randomness to order.
+If you're aiming for a more chaotic or evenly distributed behavior, you might consider adjusting the weights of the boid rules—especially reducing the influence of cohesion or increasing the separation factor. That way, the boids won't clump together as easily, and you'll see a more dispersed, dynamic swarm.
+Dijiste:
+I liked it I just want to try with a larger space and preferably in 3D
+ChatGPT dijo:
+Reasoned about boid simulation in 3D for 15 seconds
+Below is an example script that expands the simulation into a larger 3D volume. In this version, we use a cube as the emitter so that particles (our “birds”) are generated throughout a volume instead of just on a flat plane. The boid physics remain in place, and the goal is animated in full 3D to encourage more spatial movement.
+Paste this into Blender’s Scripting workspace and run it. Then press
+Play
+in the timeline to watch your birds swarm in a much larger, 3D space!
+python
+Copiar código
+import
+bpy
+import
+random
+import
+math
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Create a simple Bird object ----------
+# Using a cone as a placeholder for a bird.
+bpy.ops.mesh.primitive_cone_add(radius1=
+0.2
+, depth=
+0.5
+, location=(
+0
+,
+0
+,
+0
+))
+bird = bpy.context.active_object
+bird.name =
+"Bird"
+# Rotate so the tip points along the -Y axis (typical boid forward direction)
+bird.rotation_euler[
+0
+] = math.radians(
+90
+)
+# Add a simple material for visibility.
+mat = bpy.data.materials.new(name=
+"BirdMat"
+)
+mat.diffuse_color = (
+1
+,
+0.5
+,
+0.1
+,
+1
+)
+bird.data.materials.append(mat)
+# ---------- Create a Cube Emitter for 3D Volume ----------
+# A larger cube means the boids will be spawned throughout a sizable volume.
+bpy.ops.mesh.primitive_cube_add(size=
+40
+, location=(
+0
+,
+0
+,
+20
+))
+emitter = bpy.context.active_object
+emitter.name =
+"Emitter"
+# ---------- Add Particle System for Boid Simulation ----------
+ps_mod = emitter.modifiers.new(
+"BoidSystem"
+,
+type
+=
+'PARTICLE_SYSTEM'
+)
+psys = emitter.particle_systems[-
+1
+]
+psettings = bpy.data.particles.new(name=
+"BoidParticles"
+)
+psys.settings = psettings
+# Set up the emitter properties.
+psettings.
+type
+=
+'EMITTER'
+psettings.frame_start =
+1
+psettings.frame_end =
+1
+# Emit all particles at once
+psettings.lifetime =
+250
+psettings.count =
+200
+# Increase number for more birds
+psettings.emit_from =
+'VOLUME'
+# Emit from the volume of the cube
+# Use object instancing to render each particle as our bird.
+psettings.render_type =
+'OBJECT'
+psettings.instance_object = bird
+# ---------- Set Up Boid Physics ----------
+psettings.physics_type =
+'BOIDS'
+boid = psettings.boid_settings
+boid.use_flight =
+True
+# Allow free 3D movement
+boid.max_speed =
+3.0
+# Increased speed for a larger space
+boid.max_acceleration =
+0.7
+# Increased acceleration
+# Add boid rules to simulate flocking.
+rule_follow = boid.rules.add()
+rule_follow.
+type
+=
+'FOLLOW'
+rule_follow.value =
+0.5
+rule_avoid = boid.rules.add()
+rule_avoid.
+type
+=
+'AVOID'
+rule_avoid.value =
+1.0
+rule_flock = boid.rules.add()
+rule_flock.
+type
+=
+'FLOCK'
+rule_flock.value =
+0.8
+# ---------- Add a 3D Goal for the Swarm ----------
+# Create an empty to serve as a moving target, animated in 3D.
+bpy.ops.
+object
+.empty_add(
+type
+=
+'PLAIN_AXES'
+, location=(-
+10
+, -
+10
+,
+10
+))
+goal = bpy.context.active_object
+goal.name =
+"BoidGoal"
+boid.goal_object = goal
+boid.use_goal =
+True
+boid.goal_weight =
+0.3
+# Animate the goal through 3D space.
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+1
+)
+goal.location = (
+10
+,
+10
+,
+20
+)
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+150
+)
+goal.location = (-
+10
+,
+0
+,
+15
+)
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+250
+)
+# ---------- Add a Turbulence Force Field for Extra Chaos ----------
+bpy.ops.
+object
+.effector_add(
+type
+=
+'TURBULENCE'
+, location=(
+0
+,
+0
+,
+30
+))
+turbulence = bpy.context.active_object
+turbulence.field.strength =
+10.0
+turbulence.field.size =
+5.0
+# ---------- Set the Scene Timeline ----------
+bpy.context.scene.frame_start =
+1
+bpy.context.scene.frame_end =
+250
+# Finished! Play the animation to see your boids fill a large 3D volume.
+How It Works
+3D Emitter:
+Instead of a plane, we use a cube (size 40) so particles are spawned from within a large volume.
+Volume Emission:
+The particle system is set to emit from the volume, allowing birds to originate anywhere within the cube.
+Boid Physics:
+Basic boid rules (follow, avoid, and flock) drive the simulation, now with increased speed and acceleration for a more dynamic flight in a larger space.
+3D Goal & Turbulence:
+An animated empty moves through 3D space to guide the swarm, while a turbulence force field adds random motion for extra visual interest.
+Enjoy exploring this more expansive, three-dimensional boid simulation!
+Dijiste:
+Ok it seemed good but I can't see anything at the points is it possible to import an object tetraorthodrome.obj to put at each of the points you might have to make them smaller. Maybe try to specify that it is in the folder C:\Users\Mechachleopteryx\OneDrive\Documents\GitHub\Centerfuge
+ChatGPT dijo:
+Reasoned for 14 seconds
+Below is a modified Blender Python (bpy) script that imports your custom object from the specified folder, scales it down, and then uses it as the instance object in a boid simulation. In this example, a cube emitter emits particles throughout a 3D volume, and each particle is replaced by your imported object (tetraorthodrome.obj). Adjust the scale and other parameters as needed.
+python
+Copiar código
+import
+bpy
+import
+random
+import
+math
+import
+os
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Import Your Custom Object ----------
+# Specify the full path to your .obj file.
+obj_path =
+r"C:\Users\Mechachleopteryx\OneDrive\Documents\GitHub\Centerfuge\tetraorthodrome.obj"
+bpy.ops.import_scene.obj(filepath=obj_path)
+# Assume the imported object is among the selected objects.
+imported_obj = bpy.context.selected_objects[
+0
+]
+imported_obj.name =
+"Tetraorthodrome"
+# Scale down the object to make it fit better in the simulation.
+imported_obj.scale = (
+0.2
+,
+0.2
+,
+0.2
+)
+# ---------- Create a Cube Emitter for 3D Volume ----------
+# This cube will emit particles from its volume.
+bpy.ops.mesh.primitive_cube_add(size=
+40
+, location=(
+0
+,
+0
+,
+20
+))
+emitter = bpy.context.active_object
+emitter.name =
+"Emitter"
+# ---------- Add Particle System for Boid Simulation ----------
+ps_mod = emitter.modifiers.new(
+"BoidSystem"
+,
+type
+=
+'PARTICLE_SYSTEM'
+)
+psys = emitter.particle_systems[-
+1
+]
+psettings = bpy.data.particles.new(name=
+"BoidParticles"
+)
+psys.settings = psettings
+# Configure emitter settings.
+psettings.
+type
+=
+'EMITTER'
+psettings.frame_start =
+1
+psettings.frame_end =
+1
+# Emit all particles at once.
+psettings.lifetime =
+250
+psettings.count =
+200
+# Adjust the number for more or fewer instances.
+psettings.emit_from =
+'VOLUME'
+# Emit from the entire volume of the cube.
+# Use object instancing: your imported object will be instanced for each particle.
+psettings.render_type =
+'OBJECT'
+psettings.instance_object = imported_obj
+# ---------- Set Up Boid Physics ----------
+psettings.physics_type =
+'BOIDS'
+boid = psettings.boid_settings
+boid.use_flight =
+True
+# Allow free 3D movement.
+boid.max_speed =
+3.0
+# Increase speed for a larger space.
+boid.max_acceleration =
+0.7
+# Increase acceleration for dynamic motion.
+# Add boid behavior rules.
+rule_follow = boid.rules.add()
+rule_follow.
+type
+=
+'FOLLOW'
+rule_follow.value =
+0.5
+rule_avoid = boid.rules.add()
+rule_avoid.
+type
+=
+'AVOID'
+rule_avoid.value =
+1.0
+rule_flock = boid.rules.add()
+rule_flock.
+type
+=
+'FLOCK'
+rule_flock.value =
+0.8
+# ---------- Add a 3D Goal for the Swarm ----------
+# Create an empty that serves as a moving target for the boids.
+bpy.ops.
+object
+.empty_add(
+type
+=
+'PLAIN_AXES'
+, location=(-
+10
+, -
+10
+,
+10
+))
+goal = bpy.context.active_object
+goal.name =
+"BoidGoal"
+boid.goal_object = goal
+boid.use_goal =
+True
+boid.goal_weight =
+0.3
+# Animate the goal in 3D space to encourage more varied motion.
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+1
+)
+goal.location = (
+10
+,
+10
+,
+20
+)
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+150
+)
+goal.location = (-
+10
+,
+0
+,
+15
+)
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+250
+)
+# ---------- Add a Turbulence Force Field for Extra Chaos ----------
+bpy.ops.
+object
+.effector_add(
+type
+=
+'TURBULENCE'
+, location=(
+0
+,
+0
+,
+30
+))
+turbulence = bpy.context.active_object
+turbulence.field.strength =
+10.0
+turbulence.field.size =
+5.0
+# ---------- Set the Scene Timeline ----------
+bpy.context.scene.frame_start =
+1
+bpy.context.scene.frame_end =
+250
+# Finished!
+How It Works
+Importing the Object:
+The script imports your custom
+tetraorthodrome.obj
+from the specified folder. It then scales the object down so that it fits well when instanced as a particle.
+Cube Emitter:
+A large cube emitter is created so particles are spawned throughout a significant 3D volume.
+Particle System:
+The particle system is configured to emit from the volume of the cube, and it uses your imported object for each particle.
+Boid Physics & Goal:
+Boid settings are applied to simulate flocking behavior. A moving empty (goal) is animated in 3D space to influence the boid dynamics, while a turbulence force field adds randomness.
+Timeline:
+The scene’s timeline is set up so you can play the animation to see the simulation evolve.
+Run this script in Blender’s Scripting workspace, then press
+Play
+in the timeline to observe your custom objects in a 3D boid simulation. Enjoy tweaking the parameters for even more interesting behavior!
+Dijiste:
+Ok it just imported one and it didn't move. It will need to be smaller and maybe spinning rappidly. Try to link them with the particle locations.
+ChatGPT dijo:
+Reasoned about imported objects and particles for 24 seconds
+Below is a revised Blender Python script that imports your custom tetraorthodrome.obj, scales it down, and then uses it as the instance object for a boid particle system. In this version we enable particle rotation (so each instance inherits its particle’s rotation) and add a vortex force field to help make the objects spin rapidly. Each instance is linked to its particle location, so they follow the boid simulation. Adjust the parameters as needed.
+python
+Copiar código
+import
+bpy
+import
+random
+import
+math
+import
+os
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Import Your Custom Object ----------
+# Specify the full path to your .obj file.
+obj_path =
+r"C:\Users\Mechachleopteryx\OneDrive\Documents\GitHub\Centerfuge\tetraorthodrome.obj"
+bpy.ops.import_scene.obj(filepath=obj_path)
+# Assume the imported object is among the selected objects.
+imported_obj = bpy.context.selected_objects[
+0
+]
+imported_obj.name =
+"Tetraorthodrome"
+# Scale down the object to make it small enough for the simulation.
+imported_obj.scale = (
+0.05
+,
+0.05
+,
+0.05
+)
+# Optionally, hide the original so only the instanced copies are visible.
+imported_obj.hide_render =
+True
+imported_obj.hide_viewport =
+True
+# ---------- Create a Cube Emitter for 3D Volume ----------
+# This cube emits particles throughout a large volume.
+bpy.ops.mesh.primitive_cube_add(size=
+40
+, location=(
+0
+,
+0
+,
+20
+))
+emitter = bpy.context.active_object
+emitter.name =
+"Emitter"
+# ---------- Add Particle System for Boid Simulation ----------
+ps_mod = emitter.modifiers.new(
+"BoidSystem"
+,
+type
+=
+'PARTICLE_SYSTEM'
+)
+psys = emitter.particle_systems[-
+1
+]
+psettings = bpy.data.particles.new(name=
+"BoidParticles"
+)
+psys.settings = psettings
+# Configure emitter settings.
+psettings.
+type
+=
+'EMITTER'
+psettings.frame_start =
+1
+psettings.frame_end =
+1
+# Emit all particles at once.
+psettings.lifetime =
+250
+psettings.count =
+200
+# Adjust for more or fewer instances.
+psettings.emit_from =
+'VOLUME'
+# Enable rotation so the instanced objects inherit particle orientation.
+psettings.use_rotations =
+True
+psettings.rotation_mode =
+'VELOCITY'
+# Align rotation with movement.
+# Optionally, add a phase factor to vary the initial rotation.
+psettings.phase_factor =
+1.0
+# Use object instancing: each particle will display your imported object.
+psettings.render_type =
+'OBJECT'
+psettings.instance_object = imported_obj
+# ---------- Set Up Boid Physics ----------
+psettings.physics_type =
+'BOIDS'
+boid = psettings.boid_settings
+boid.use_flight =
+True
+# Allow free 3D movement.
+boid.max_speed =
+3.0
+# Increased speed for a larger space.
+boid.max_acceleration =
+0.7
+# More dynamic acceleration.
+# Add boid rules to simulate flocking behavior.
+rule_follow = boid.rules.add()
+rule_follow.
+type
+=
+'FOLLOW'
+rule_follow.value =
+0.5
+rule_avoid = boid.rules.add()
+rule_avoid.
+type
+=
+'AVOID'
+rule_avoid.value =
+1.0
+rule_flock = boid.rules.add()
+rule_flock.
+type
+=
+'FLOCK'
+rule_flock.value =
+0.8
+# ---------- Add a 3D Goal for the Swarm ----------
+# Create an empty as a moving target to guide the boids.
+bpy.ops.
+object
+.empty_add(
+type
+=
+'PLAIN_AXES'
+, location=(-
+10
+, -
+10
+,
+10
+))
+goal = bpy.context.active_object
+goal.name =
+"BoidGoal"
+boid.goal_object = goal
+boid.use_goal =
+True
+boid.goal_weight =
+0.3
+# Animate the goal through 3D space.
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+1
+)
+goal.location = (
+10
+,
+10
+,
+20
+)
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+150
+)
+goal.location = (-
+10
+,
+0
+,
+15
+)
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+250
+)
+# ---------- Add a Vortex Force Field for Rapid Spinning ----------
+# This vortex force field will impart a spinning motion to the particles.
+bpy.ops.
+object
+.effector_add(
+type
+=
+'VORTEX'
+, location=(
+0
+,
+0
+,
+20
+))
+vortex = bpy.context.active_object
+vortex.field.strength =
+20.0
+# Increase for more rapid spinning.
+# ---------- Set the Scene Timeline ----------
+bpy.context.scene.frame_start =
+1
+bpy.context.scene.frame_end =
+250
+# Finished!
+Explanation
+Object Import & Scaling:
+Your custom object is imported from the specified folder and scaled down to 5% of its original size.
+Cube Emitter & Particle System:
+A large cube emitter is created so that particles are emitted throughout a wide 3D volume. The particle system is set to use your object as its instance, with rotations enabled to inherit each particle’s orientation.
+Boid Simulation:
+The particle system is configured with boid physics so the objects follow swarm behaviors (with follow, avoid, and flock rules). A moving empty (goal) is animated to guide their flight.
+Vortex Force Field:
+A vortex force field is added to impart rapid spinning, making the simulation appear more chaotic.
+Linking:
+The objects are linked to the particle locations, so as the boid simulation updates the particle positions and rotations, the instanced objects follow accordingly.
+Run this script in Blender’s Scripting workspace and press
+Play
+in the timeline. You should see a swarm of small tetraorthodrome instances, spinning rapidly and moving through a larger 3D volume. Enjoy experimenting with the parameters to further tweak the behavior!
+Dijiste:
+it was fine before, now I see them as little dots and they are falling, but it only still imported one object file, and not associating it with the boid particle locations
+ChatGPT dijo:
+Reasoned about boid simulation issues for 25 seconds
+Below is a revised script that does the following:
+Imports your tetraorthodrome.obj once, scales it to a reasonable size, and hides the original so that only its instances are visible.
+Uses a cube emitter with a particle system set to emit from its volume.
+Disables gravity so that the boid particles don’t fall.
+Sets up boid physics so that each particle uses your imported object as its instance.
+Adds a vortex force field to spin the objects rapidly.
+Try running this script in Blender’s Scripting workspace:
+python
+Copiar código
+import
+bpy
+import
+random
+import
+math
+import
+os
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Import Your Custom Object ----------
+# Specify the full path to your .obj file.
+obj_path =
+r"C:\Users\Mechachleopteryx\OneDrive\Documents\GitHub\Centerfuge\tetraorthodrome.obj"
+bpy.ops.import_scene.obj(filepath=obj_path)
+# Assume the imported object is among the selected objects.
+imported_obj = bpy.context.selected_objects[
+0
+]
+imported_obj.name =
+"Tetraorthodrome"
+# Scale down the object so it fits well in the simulation.
+imported_obj.scale = (
+0.1
+,
+0.1
+,
+0.1
+)
+# Hide the original so only the instanced copies appear.
+imported_obj.hide_viewport =
+True
+imported_obj.hide_render =
+True
+# ---------- Create a Cube Emitter for 3D Volume ----------
+# This cube emits particles from its volume.
+bpy.ops.mesh.primitive_cube_add(size=
+40
+, location=(
+0
+,
+0
+,
+20
+))
+emitter = bpy.context.active_object
+emitter.name =
+"Emitter"
+# ---------- Add Particle System for Boid Simulation ----------
+ps_mod = emitter.modifiers.new(
+"BoidSystem"
+,
+type
+=
+'PARTICLE_SYSTEM'
+)
+psys = emitter.particle_systems[-
+1
+]
+psettings = bpy.data.particles.new(name=
+"BoidParticles"
+)
+psys.settings = psettings
+# Configure emitter settings.
+psettings.
+type
+=
+'EMITTER'
+psettings.frame_start =
+1
+psettings.frame_end =
+1
+# Emit all particles at once.
+psettings.lifetime =
+250
+psettings.count =
+200
+# Adjust for more or fewer instances.
+psettings.emit_from =
+'VOLUME'
+# Disable gravity so particles don't fall.
+psettings.use_gravity =
+False
+# Enable rotation so particles can spin.
+psettings.use_rotations =
+True
+psettings.rotation_mode =
+'VELOCITY'
+psettings.phase_factor =
+1.0
+# Use object instancing: each particle will display your imported object.
+psettings.render_type =
+'OBJECT'
+psettings.instance_object = imported_obj
+# ---------- Set Up Boid Physics ----------
+psettings.physics_type =
+'BOIDS'
+boid = psettings.boid_settings
+boid.use_flight =
+True
+# Allow free 3D movement.
+boid.max_speed =
+3.0
+# Speed of the particles.
+boid.max_acceleration =
+0.7
+# How quickly they can change direction.
+# Add boid rules to simulate flocking behavior.
+rule_follow = boid.rules.add()
+rule_follow.
+type
+=
+'FOLLOW'
+rule_follow.value =
+0.5
+rule_avoid = boid.rules.add()
+rule_avoid.
+type
+=
+'AVOID'
+rule_avoid.value =
+1.0
+rule_flock = boid.rules.add()
+rule_flock.
+type
+=
+'FLOCK'
+rule_flock.value =
+0.8
+# ---------- Add a 3D Goal for the Swarm ----------
+# Create an empty that serves as a moving target.
+bpy.ops.
+object
+.empty_add(
+type
+=
+'PLAIN_AXES'
+, location=(-
+10
+, -
+10
+,
+10
+))
+goal = bpy.context.active_object
+goal.name =
+"BoidGoal"
+boid.goal_object = goal
+boid.use_goal =
+True
+boid.goal_weight =
+0.3
+# Animate the goal through 3D space.
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+1
+)
+goal.location = (
+10
+,
+10
+,
+20
+)
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+150
+)
+goal.location = (-
+10
+,
+0
+,
+15
+)
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+250
+)
+# ---------- Add a Vortex Force Field for Rapid Spinning ----------
+bpy.ops.
+object
+.effector_add(
+type
+=
+'VORTEX'
+, location=(
+0
+,
+0
+,
+20
+))
+vortex = bpy.context.active_object
+vortex.field.strength =
+20.0
+# Increase for more rapid spinning.
+# ---------- Set the Scene Timeline ----------
+bpy.context.scene.frame_start =
+1
+bpy.context.scene.frame_end =
+250
+# Finished!
+Explanation
+Object Import & Scaling:
+The script imports your tetraorthodrome.obj from the specified folder, scales it down to 10% of its original size, and hides the original so that only its instanced copies show up.
+Cube Emitter & Particle System:
+A large cube emitter is created to spawn particles throughout a 3D volume. The particle system is set to use the imported object for instancing, and gravity is disabled so that the particles don’t fall.
+Boid Physics:
+Boid physics are enabled with flight allowed, and basic rules (follow, avoid, and flock) are added to simulate swarm behavior.
+Vortex Force Field:
+A vortex force field is added to impart rapid spinning to the particles.
+Run this script and press
+Play
+on the timeline. You should now see many small, rapidly spinning instances of your tetraorthodrome object moving according to the boid simulation. Adjust the scale, particle count, or vortex strength as needed to achieve your desired effect.
+Dijiste:
+More like this maybe: import bpy
+import random
+import math
+import os
+
+# ---------- Clear the Scene ----------
+bpy.ops.object.select_all(action='SELECT')
+bpy.ops.object.delete(use_global=False)
+
+# ---------- Import Your Custom Object ----------
+# Specify the full path to your .obj file.
+obj_path = r"C:\Users\Mechachleopteryx\OneDrive\Documents\GitHub\Centerfuge\tetraorthodrome.obj"
+bpy.ops.import_scene.obj(filepath=obj_path)
+
+# Assume the imported object is among the selected objects.
+imported_obj = bpy.context.selected_objects[0]
+imported_obj.name = "Tetraorthodrome"
+# Scale down the object to make it fit better in the simulation.
+imported_obj.scale = (0.05, 0.05, 0.05)
+
+# ---------- Create a Cube Emitter for 3D Volume ----------
+# This cube will emit particles from its volume.
+bpy.ops.mesh.primitive_cube_add(size=40, location=(0, 0, 20))
+emitter = bpy.context.active_object
+emitter.name = "Emitter"
+
+# ---------- Add Particle System for Boid Simulation ----------
+ps_mod = emitter.modifiers.new("BoidSystem", type='PARTICLE_SYSTEM')
+psys = emitter.particle_systems[-1]
+psettings = bpy.data.particles.new(name="BoidParticles")
+psys.settings = psettings
+
+# Configure emitter settings.
+psettings.type = 'EMITTER'
+psettings.frame_start = 1
+psettings.frame_end = 1       # Emit all particles at once.
+psettings.lifetime = 250
+psettings.count = 200         # Adjust the number for more or fewer instances.
+psettings.emit_from = 'VOLUME' # Emit from the entire volume of the cube.
+
+# Use object instancing: your imported object will be instanced for each particle.
+psettings.render_type = 'OBJECT'
+psettings.instance_object = imported_obj
+
+# Add rotation to particles.
+psettings.rotation_mode = 'GLOB_X'  # Set the rotation mode to global X axis.
+psettings.angular_velocity_mode = 'VELOCITY'  # Rotate particles based on their velocity.
+psettings.angular_velocity_factor = 2.0  # Adjust the rotation speed.
+
+# ---------- Set Up Boid Physics ----------
+psettings.physics_type = 'BOIDS'
+
+# Ensure boid settings are accessed correctly.
+boid = psettings.boids
+
+boid.use_flight = True         # Allow free 3D movement.
+boid.max_speed = 3.0           # Increase speed for a larger space.
+boid.max_acceleration = 0.7    # Increase acceleration for dynamic motion.
+
+# Add boid behavior rules.
+rule_follow = boid.rules.add()
+rule_follow.type = 'FOLLOW'
+rule_follow.value = 0.5
+
+rule_avoid = boid.rules.add()
+rule_avoid.type = 'AVOID'
+rule_avoid.value = 1.0
+
+rule_flock = boid.rules.add()
+rule_flock.type = 'FLOCK'
+rule_flock.value = 0.8
+
+# ---------- Add a 3D Goal for the Swarm ----------
+# Create an empty that serves as a moving target for the boids.
+bpy.ops.object.empty_add(type='PLAIN_AXES', location=(-10, -10, 10))
+goal = bpy.context.active_object
+goal.name = "BoidGoal"
+boid.goal_object = goal
+boid.use_goal = True
+boid.goal_weight = 0.3
+
+# Animate the goal in 3D space to encourage more varied motion.
+goal.keyframe_insert(data_path="location", frame=1)
+goal.location = (10, 10, 20)
+goal.keyframe_insert(data_path="location", frame=150)
+goal.location = (-10, 0, 15)
+goal.keyframe_insert(data_path="location", frame=250)
+
+# ---------- Add a Turbulence Force Field for Extra Chaos ----------
+bpy.ops.object.effector_add(type='TURBULENCE', location=(0, 0, 30))
+turbulence = bpy.context.active_object
+turbulence.field.strength = 10.0
+turbulence.field.size = 5.0
+
+# ---------- Set the Scene Timeline ----------
+bpy.context.scene.frame_start = 1
+bpy.context.scene.frame_end = 250
+
+# Finished!
+ChatGPT dijo:
+Reasoned for 30 seconds
+Below is an updated version of your script. It imports your custom object, scales it down, and then uses it as an instance for a boid-based particle system that emits from a cube volume. The particles have a set rotation mode (using the global X axis) with angular velocity based on their movement. You can adjust the angular velocity factor for faster spinning. Try running this script in Blender’s Scripting workspace:
+python
+Copiar código
+import
+bpy
+import
+random
+import
+math
+import
+os
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Import Your Custom Object ----------
+# Specify the full path to your .obj file.
+obj_path =
+r"C:\Users\Mechachleopteryx\OneDrive\Documents\GitHub\Centerfuge\tetraorthodrome.obj"
+bpy.ops.import_scene.obj(filepath=obj_path)
+# Assume the imported object is among the selected objects.
+imported_obj = bpy.context.selected_objects[
+0
+]
+imported_obj.name =
+"Tetraorthodrome"
+# Scale down the object to make it fit better in the simulation.
+imported_obj.scale = (
+0.05
+,
+0.05
+,
+0.05
+)
+# Optionally hide the original so only instanced copies are visible.
+imported_obj.hide_viewport =
+True
+imported_obj.hide_render =
+True
+# ---------- Create a Cube Emitter for 3D Volume ----------
+# This cube will emit particles from its volume.
+bpy.ops.mesh.primitive_cube_add(size=
+40
+, location=(
+0
+,
+0
+,
+20
+))
+emitter = bpy.context.active_object
+emitter.name =
+"Emitter"
+# ---------- Add Particle System for Boid Simulation ----------
+ps_mod = emitter.modifiers.new(
+"BoidSystem"
+,
+type
+=
+'PARTICLE_SYSTEM'
+)
+psys = emitter.particle_systems[-
+1
+]
+psettings = bpy.data.particles.new(name=
+"BoidParticles"
+)
+psys.settings = psettings
+# Configure emitter settings.
+psettings.
+type
+=
+'EMITTER'
+psettings.frame_start =
+1
+psettings.frame_end =
+1
+# Emit all particles at once.
+psettings.lifetime =
+250
+psettings.count =
+200
+# Adjust the count for more or fewer instances.
+psettings.emit_from =
+'VOLUME'
+# Emit from the entire volume of the cube.
+# Use object instancing: your imported object will be instanced for each particle.
+psettings.render_type =
+'OBJECT'
+psettings.instance_object = imported_obj
+# Add rotation to particles.
+psettings.use_rotations =
+True
+psettings.rotation_mode =
+'GLOB_X'
+# Use the global X axis for rotation.
+psettings.angular_velocity_mode =
+'VELOCITY'
+# Rotate based on particle velocity.
+psettings.angular_velocity_factor =
+2.0
+# Adjust to control spin speed.
+# ---------- Set Up Boid Physics ----------
+psettings.physics_type =
+'BOIDS'
+# Ensure boid settings are accessed correctly.
+boid = psettings.boids
+# Note: In some Blender versions this might be psettings.boid_settings
+boid.use_flight =
+True
+# Allow free 3D movement.
+boid.max_speed =
+3.0
+# Increase speed for a larger space.
+boid.max_acceleration =
+0.7
+# Increase acceleration for dynamic motion.
+# Add boid behavior rules.
+rule_follow = boid.rules.add()
+rule_follow.
+type
+=
+'FOLLOW'
+rule_follow.value =
+0.5
+rule_avoid = boid.rules.add()
+rule_avoid.
+type
+=
+'AVOID'
+rule_avoid.value =
+1.0
+rule_flock = boid.rules.add()
+rule_flock.
+type
+=
+'FLOCK'
+rule_flock.value =
+0.8
+# ---------- Add a 3D Goal for the Swarm ----------
+# Create an empty that serves as a moving target for the boids.
+bpy.ops.
+object
+.empty_add(
+type
+=
+'PLAIN_AXES'
+, location=(-
+10
+, -
+10
+,
+10
+))
+goal = bpy.context.active_object
+goal.name =
+"BoidGoal"
+boid.goal_object = goal
+boid.use_goal =
+True
+boid.goal_weight =
+0.3
+# Animate the goal in 3D space to encourage more varied motion.
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+1
+)
+goal.location = (
+10
+,
+10
+,
+20
+)
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+150
+)
+goal.location = (-
+10
+,
+0
+,
+15
+)
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+250
+)
+# ---------- Add a Turbulence Force Field for Extra Chaos ----------
+bpy.ops.
+object
+.effector_add(
+type
+=
+'TURBULENCE'
+, location=(
+0
+,
+0
+,
+30
+))
+turbulence = bpy.context.active_object
+turbulence.field.strength =
+10.0
+turbulence.field.size =
+5.0
+# ---------- Set the Scene Timeline ----------
+bpy.context.scene.frame_start =
+1
+bpy.context.scene.frame_end =
+250
+# Finished!
+How It Works
+Object Import & Scaling:
+Your tetraorthodrome.obj is imported and scaled down. The original is hidden so that only instanced copies from the particle system are visible.
+Cube Emitter & Particle System:
+A large cube is created as an emitter, with particles emitted from its volume. Each particle uses your custom object as its instance.
+Rotation Settings:
+The particle system is set to use rotations based on velocity along the global X axis, with an angular velocity factor of 2.0 to achieve rapid spinning.
+Boid Physics:
+Boid physics are enabled for the particles, with rules for following, avoiding, and flocking. A moving goal (an empty object) is animated to guide the swarm’s behavior.
+Force Field:
+A turbulence force field is added to add extra chaotic motion.
+Run this script and press
+Play
+in the timeline. The particles (with your custom object) should now appear at the particle locations, spinning and moving in 3D according to the boid simulation. Adjust parameters as needed to further refine the effect.
+Dijiste:
+Traceback (most recent call last):
+  File "C:\Users\Mechachleopteryx\OneDrive\Documents\GitHub\Centerfuge\boid-plane.blend\Text", line 61, in <module>
+AttributeError: 'BoidSettings' object has no attribute 'max_speed'
+Error: Python script failed, check the message in the system console
+ChatGPT dijo:
+Reasoned for 17 seconds
+Below is an updated version of your script. In this version, the boid physics settings are accessed via
+psettings.boid_settings
+and we use attribute checks before setting speed and acceleration values (since your Blender version may not support those attributes). This script imports your custom object, scales it down, and uses it as the instance for a boid-based particle system with rotation and turbulence.
+python
+Copiar código
+import
+bpy
+import
+random
+import
+math
+import
+os
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Import Your Custom Object ----------
+# Specify the full path to your .obj file.
+obj_path =
+r"C:\Users\Mechachleopteryx\OneDrive\Documents\GitHub\Centerfuge\tetraorthodrome.obj"
+bpy.ops.import_scene.obj(filepath=obj_path)
+# Assume the imported object is among the selected objects.
+imported_obj = bpy.context.selected_objects[
+0
+]
+imported_obj.name =
+"Tetraorthodrome"
+# Scale down the object to make it fit better in the simulation.
+imported_obj.scale = (
+0.05
+,
+0.05
+,
+0.05
+)
+# Optionally, hide the original so only instanced copies are visible.
+imported_obj.hide_viewport =
+True
+imported_obj.hide_render =
+True
+# ---------- Create a Cube Emitter for 3D Volume ----------
+# This cube will emit particles from its volume.
+bpy.ops.mesh.primitive_cube_add(size=
+40
+, location=(
+0
+,
+0
+,
+20
+))
+emitter = bpy.context.active_object
+emitter.name =
+"Emitter"
+# ---------- Add Particle System for Boid Simulation ----------
+ps_mod = emitter.modifiers.new(
+"BoidSystem"
+,
+type
+=
+'PARTICLE_SYSTEM'
+)
+psys = emitter.particle_systems[-
+1
+]
+psettings = bpy.data.particles.new(name=
+"BoidParticles"
+)
+psys.settings = psettings
+# Configure emitter settings.
+psettings.
+type
+=
+'EMITTER'
+psettings.frame_start =
+1
+psettings.frame_end =
+1
+# Emit all particles at once.
+psettings.lifetime =
+250
+psettings.count =
+200
+# Adjust the number for more or fewer instances.
+psettings.emit_from =
+'VOLUME'
+# Emit from the entire volume of the cube.
+# Use object instancing: your imported object will be instanced for each particle.
+psettings.render_type =
+'OBJECT'
+psettings.instance_object = imported_obj
+# Add rotation to particles.
+psettings.use_rotations =
+True
+psettings.rotation_mode =
+'GLOB_X'
+# Set the rotation mode to global X axis.
+psettings.angular_velocity_mode =
+'VELOCITY'
+# Rotate particles based on their velocity.
+psettings.angular_velocity_factor =
+2.0
+# Adjust the rotation speed.
+# ---------- Set Up Boid Physics ----------
+psettings.physics_type =
+'BOIDS'
+# Access boid settings (using boid_settings instead of boids)
+boid = psettings.boid_settings
+
+boid.use_flight =
+True
+# Allow free 3D movement.
+# Only set these if they exist in your version of Blender.
+if
+hasattr
+(boid,
+"max_speed"
+):
+    boid.max_speed =
+3.0
+# Increase speed for a larger space.
+if
+hasattr
+(boid,
+"max_acceleration"
+):
+    boid.max_acceleration =
+0.7
+# Increase acceleration for dynamic motion.
+# Add boid behavior rules.
+rule_follow = boid.rules.add()
+rule_follow.
+type
+=
+'FOLLOW'
+rule_follow.value =
+0.5
+rule_avoid = boid.rules.add()
+rule_avoid.
+type
+=
+'AVOID'
+rule_avoid.value =
+1.0
+rule_flock = boid.rules.add()
+rule_flock.
+type
+=
+'FLOCK'
+rule_flock.value =
+0.8
+# ---------- Add a 3D Goal for the Swarm ----------
+# Create an empty that serves as a moving target for the boids.
+bpy.ops.
+object
+.empty_add(
+type
+=
+'PLAIN_AXES'
+, location=(-
+10
+, -
+10
+,
+10
+))
+goal = bpy.context.active_object
+goal.name =
+"BoidGoal"
+boid.goal_object = goal
+boid.use_goal =
+True
+boid.goal_weight =
+0.3
+# Animate the goal in 3D space to encourage more varied motion.
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+1
+)
+goal.location = (
+10
+,
+10
+,
+20
+)
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+150
+)
+goal.location = (-
+10
+,
+0
+,
+15
+)
+goal.keyframe_insert(data_path=
+"location"
+, frame=
+250
+)
+# ---------- Add a Turbulence Force Field for Extra Chaos ----------
+bpy.ops.
+object
+.effector_add(
+type
+=
+'TURBULENCE'
+, location=(
+0
+,
+0
+,
+30
+))
+turbulence = bpy.context.active_object
+turbulence.field.strength =
+10.0
+turbulence.field.size =
+5.0
+# ---------- Set the Scene Timeline ----------
+bpy.context.scene.frame_start =
+1
+bpy.context.scene.frame_end =
+250
+# Finished!
+Explanation
+Object Import & Scaling:
+The script imports your tetraorthodrome.obj from the specified folder, scales it down, and hides the original so that only its instanced copies (via particles) are visible.
+Cube Emitter & Particle System:
+A large cube emitter is created to emit particles from its volume. Each particle uses your custom object as its instance. Rotation is enabled and configured to spin the instances based on their velocity.
+Boid Physics:
+Boid physics are enabled on the particle system. The boid settings are accessed via
+psettings.boid_settings
+, and speed/acceleration values are only set if the attributes exist in your Blender version. The standard boid rules (FOLLOW, AVOID, FLOCK) are added.
+Goal & Turbulence:
+A moving empty object is animated as a goal to guide the boid swarm, and a turbulence force field is added for extra chaotic motion.
+Run this script in Blender’s Scripting workspace and press
+Play
+on the timeline. This version should avoid the attribute error and link your imported object with the boid particle locations, spinning and moving in 3D as expected. Adjust parameters as needed for your desired effect.
+Dijiste:
+No try something else. i am in 2.93.6 version. Lets tryin a different approach i don't need the box or emmiter any more I just want to try to import like 1000s of tetraorthodromes and places them randomly around the screen and make them bounce around using a random walk and maybe an atrractor parameter so they tend to clump up. you can try spinning as well but we don't need to use emmiters or true boids
+ChatGPT dijo:
+Reasoned about random movement and attraction for 14 seconds
+Below is a script that completely abandons particle systems. Instead, it imports your tetraorthodrome.obj, then creates (for example) 1000 linked copies randomly placed within a volume. A frame-change handler then updates each copy each frame, applying a random walk with an attractor (toward the origin) and a little bounce if they leave the bounds. It also adds a bit of rotation (spinning) to each copy. You can tweak parameters (number of copies, bounds, factors, damping, etc.) to suit your needs.
+Paste this script into Blender’s Text Editor and run it. Then press Play (or scrub the timeline) to watch the objects “bounce” around.
+python
+Copiar código
+import
+bpy
+import
+random
+import
+math
+from
+mathutils
+import
+Vector
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Import Your Custom Object ----------
+# Specify the full path to your .obj file.
+obj_path =
+r"C:\Users\Mechachleopteryx\OneDrive\Documents\GitHub\Centerfuge\tetraorthodrome.obj"
+bpy.ops.import_scene.obj(filepath=obj_path)
+# Assume the imported object is among the selected objects.
+base_obj = bpy.context.selected_objects[
+0
+]
+base_obj.name =
+"TetraorthodromeBase"
+# Scale it down for the simulation.
+base_obj.scale = (
+0.05
+,
+0.05
+,
+0.05
+)
+# Hide the base so only the copies are visible.
+base_obj.hide_viewport =
+True
+base_obj.hide_render =
+True
+# ---------- Create a Collection for the Copies ----------
+collection = bpy.data.collections.new(
+"TetraCopies"
+)
+bpy.context.scene.collection.children.link(collection)
+# ---------- Duplicate Copies Randomly ----------
+count =
+1000
+bounds =
+20
+# objects will be placed in the range (-20, 20) on each axis.
+for
+i
+in
+range
+(count):
+# Create a linked duplicate (sharing mesh data)
+new_obj = base_obj.copy()
+    new_obj.data = base_obj.data
+    new_obj.name =
+f"TetraCopy_
+{i}
+"
+# Set a random starting position
+new_obj.location = Vector((random.uniform(-bounds, bounds),
+                                 random.uniform(-bounds, bounds),
+                                 random.uniform(-bounds, bounds)))
+# Give each object a random starting rotation
+new_obj.rotation_euler = (random.random() *
+2
+* math.pi,
+                              random.random() *
+2
+* math.pi,
+                              random.random() *
+2
+* math.pi)
+# Initialize a custom property to hold its velocity (as a list of three floats)
+new_obj[
+"vel"
+] = [random.uniform(-
+0.1
+,
+0.1
+)
+for
+_
+in
+range
+(
+3
+)]
+# Link the new object to our collection
+collection.objects.link(new_obj)
+# ---------- Define Global Motion Parameters ----------
+random_factor =
+0.05
+# how much random motion is added each frame
+attractor = Vector((
+0
+,
+0
+,
+0
+))
+# objects will tend toward the origin
+attractor_factor =
+0.001
+# strength of the attractor force
+damping =
+0.99
+# slow down the velocity over time
+dt =
+1
+# time step (per frame)
+# ---------- Define a Frame Change Handler to Update the Objects ----------
+def
+update_objects
+(
+scene
+):
+for
+obj
+in
+collection.objects:
+# Get current velocity from the custom property and convert to a Vector.
+vel = Vector(obj[
+"vel"
+])
+        pos = obj.location.copy()
+# Compute a random delta for a random walk.
+random_delta = Vector((random.uniform(-random_factor, random_factor),
+                                 random.uniform(-random_factor, random_factor),
+                                 random.uniform(-random_factor, random_factor)))
+# Compute the attractor force: pull toward the attractor point.
+attractor_force = (attractor - pos) * attractor_factor
+# Update the velocity: add random walk and attractor, then apply damping.
+vel = (vel + random_delta + attractor_force) * damping
+# Bounce off the boundaries: if an axis exceeds the bounds, reverse that component.
+for
+i
+in
+range
+(
+3
+):
+if
+pos[i] < -bounds
+or
+pos[i] > bounds:
+                vel[i] = -vel[i]
+# Update the object's location based on the velocity.
+obj.location = pos + vel * dt
+# Apply a bit of rotation (for spinning); here, we rotate a fixed amount around the Z axis.
+obj.rotation_euler.rotate_axis(
+"Z"
+,
+0.1
+)
+# Save the updated velocity back into the custom property.
+obj[
+"vel"
+] = [vel.x, vel.y, vel.z]
+# Remove any previous handler with the same name to avoid duplicates.
+for
+handler
+in
+bpy.app.handlers.frame_change_post:
+if
+handler.__name__ ==
+"update_objects"
+:
+        bpy.app.handlers.frame_change_post.remove(handler)
+# Register our handler so it runs each frame.
+bpy.app.handlers.frame_change_post.append(update_objects)
+# ---------- Set the Scene Timeline ----------
+scene = bpy.context.scene
+scene.frame_start =
+1
+scene.frame_end =
+250
+print
+(
+"Setup complete. Press Play to see the random walk simulation!"
+)
+How It Works
+Import & Base Object:
+The script imports your tetraorthodrome.obj and scales it down. The original base object is hidden.
+Creating Copies:
+It then creates 1000 linked duplicates (sharing the same mesh data for efficiency) and places them randomly within a cubic volume (from –20 to 20 on each axis). A custom property
+"vel"
+is added to each copy to store its velocity.
+Motion Parameters & Update Handler:
+Global parameters (random walk factor, attractor strength, damping, and boundaries) are defined. A frame-change handler (
+update_objects
+) iterates over every copy each frame:
+It adds a random delta to the object's velocity.
+It applies an attractor force that pulls each object toward the origin.
+It bounces objects off the boundaries by inverting their velocity when they exceed the defined bounds.
+It updates each object’s location and adds a little rotation around the Z axis for spinning.
+Finally, it saves the updated velocity back to the object's custom property.
+Timeline:
+The scene timeline is set so you can play the animation for 250 frames.
+Run the script, press
+Play
+, and you should see thousands of tetraorthodrome copies bouncing around with a random walk that tends to clump them toward the center while they spin. Enjoy experimenting with the parameters to create the behavior you like!
+Dijiste:
+Ok it only made one try something slightly different
+ChatGPT dijo:
+Reasoned about object random walk simulation for 14 seconds
+Below is an alternative approach that avoids using an emitter altogether. This script imports your tetraorthodrome.obj, hides the imported "base" object, and then creates 1000 copies (linked duplicates) that are randomly positioned in a 3D volume. A frame-change handler updates each copy each frame with a simple random walk plus an attractor force (pulling them toward the origin), and adds a bit of spin. You can tweak the parameters as desired.
+python
+Copiar código
+import
+bpy
+import
+random
+import
+math
+from
+mathutils
+import
+Vector
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Import Your Custom Object ----------
+# Specify the full path to your .obj file.
+obj_path =
+r"C:\Users\Mechachleopteryx\OneDrive\Documents\GitHub\Centerfuge\tetraorthodrome.obj"
+bpy.ops.import_scene.obj(filepath=obj_path)
+# Assume the imported object is the first selected object.
+base_obj = bpy.context.selected_objects[
+0
+]
+base_obj.name =
+"TetraorthodromeBase"
+# Scale it down for the simulation.
+base_obj.scale = (
+0.05
+,
+0.05
+,
+0.05
+)
+# Hide the base so only the copies are visible.
+base_obj.hide_viewport =
+True
+base_obj.hide_render =
+True
+# ---------- Create Copies and Place Them Randomly ----------
+count =
+1000
+bounds =
+20
+# The range for random positions on each axis.
+copies = []
+# We'll store our copies here for easy updating later.
+# Use the current scene's main collection.
+scene_collection = bpy.context.scene.collection
+for
+i
+in
+range
+(count):
+# Create a linked duplicate so that all copies share the same mesh data.
+new_obj = base_obj.copy()
+    new_obj.data = base_obj.data
+    new_obj.name =
+f"TetraCopy_
+{i}
+"
+    new_obj.location = Vector((random.uniform(-bounds, bounds),
+                                 random.uniform(-bounds, bounds),
+                                 random.uniform(-bounds, bounds)))
+    new_obj.rotation_euler = (random.random()*
+2
+*math.pi,
+                              random.random()*
+2
+*math.pi,
+                              random.random()*
+2
+*math.pi)
+# Initialize a custom property to store velocity (as a list of 3 floats).
+new_obj[
+"vel"
+] = [random.uniform(-
+0.1
+,
+0.1
+)
+for
+_
+in
+range
+(
+3
+)]
+    scene_collection.objects.link(new_obj)
+    copies.append(new_obj)
+# ---------- Define Global Motion Parameters ----------
+random_factor =
+0.05
+# Magnitude of random motion added each frame.
+attractor = Vector((
+0
+,
+0
+,
+0
+))
+# The attractor point (here, the origin).
+attractor_factor =
+0.001
+# Strength of the attractor force.
+damping =
+0.99
+# Damping factor to gradually slow down motion.
+dt =
+1
+# Time step (per frame).
+# ---------- Define a Frame Change Handler ----------
+def
+update_objects
+(
+scene
+):
+for
+obj
+in
+copies:
+# Get the current velocity (stored as a custom property).
+vel = Vector(obj[
+"vel"
+])
+        pos = obj.location.copy()
+# Random walk component.
+random_delta = Vector((random.uniform(-random_factor, random_factor),
+                                 random.uniform(-random_factor, random_factor),
+                                 random.uniform(-random_factor, random_factor)))
+# Compute the attractor force pulling toward the origin.
+attractor_force = (attractor - pos) * attractor_factor
+# Update velocity: add random walk and attractor force then apply damping.
+vel = (vel + random_delta + attractor_force) * damping
+# Bounce off boundaries: if an axis is beyond the bounds, reverse that velocity component.
+for
+i
+in
+range
+(
+3
+):
+if
+pos[i] < -bounds
+or
+pos[i] > bounds:
+                vel[i] = -vel[i]
+# Update position.
+obj.location = pos + vel * dt
+# Add a bit of spin: rotate slightly around the Z axis.
+obj.rotation_euler.rotate_axis(
+"Z"
+,
+0.1
+)
+# Store the updated velocity back into the custom property.
+obj[
+"vel"
+] = [vel.x, vel.y, vel.z]
+# Remove any previously registered handler named 'update_objects' to avoid duplicates.
+for
+handler
+in
+bpy.app.handlers.frame_change_post:
+if
+handler.__name__ ==
+"update_objects"
+:
+        bpy.app.handlers.frame_change_post.remove(handler)
+# Register our handler so it runs on every frame change.
+bpy.app.handlers.frame_change_post.append(update_objects)
+# ---------- Set the Scene Timeline ----------
+scene = bpy.context.scene
+scene.frame_start =
+1
+scene.frame_end =
+250
+print
+(
+"Setup complete. Press Play to see the random walk simulation!"
+)
+How It Works
+Import and Hide Base Object:
+Your custom tetraorthodrome.obj is imported and scaled down. The base object is hidden so that only its copies appear.
+Creating 1000 Copies:
+The script makes 1000 linked duplicates of the base object and positions them randomly within a cube defined by the bounds. Each copy is also given a random rotation and a custom property
+"vel"
+to store its velocity.
+Motion Update Handler:
+A frame-change handler named
+update_objects
+runs every frame. For each copy, it:
+Adds a small random delta (for the random walk).
+Applies an attractor force that gently pulls the object toward the origin.
+Bounces objects off the defined boundaries.
+Updates the position based on the new velocity.
+Adds a little rotation about the Z axis.
+Saves the updated velocity back into the custom property.
+Timeline Settings:
+The scene is set up to run from frame 1 to 250. Press Play to see the objects move and clump together.
+This approach uses standard Python scripting (no particle system or boid physics) so you have full control over the behavior of the thousands of objects. Enjoy tweaking the parameters to achieve your desired chaotic, bouncing, and clumping motion!
+Dijiste:
+Why is the animation still too fast. and no camera is being created: import bpy
+import math
+
+# ---------- Clear the Scene ----------
+bpy.ops.object.select_all(action='SELECT')
+bpy.ops.object.delete(use_global=False)
+
+# ---------- Create a Plane as the Base Landscape ----------
+bpy.ops.mesh.primitive_plane_add(size=50, location=(0, 0, 0))
+plane = bpy.context.active_object
+plane.name = "FractalPlane"
+
+# Subdivide for detail
+bpy.ops.object.mode_set(mode='EDIT')
+bpy.ops.mesh.subdivide(number_cuts=63)  # 64x64 grid
+bpy.ops.object.mode_set(mode='OBJECT')
+
+# ---------- Add Material with Noise-Based Color Animation ----------
+mat = bpy.data.materials.new(name="FractalMaterial")
+mat.use_nodes = True
+nodes = mat.node_tree.nodes
+links = mat.node_tree.links
+
+nodes.clear()
+output = nodes.new("ShaderNodeOutputMaterial")
+diffuse = nodes.new("ShaderNodeBsdfDiffuse")
+color_ramp = nodes.new("ShaderNodeValToRGB")
+noise = nodes.new("ShaderNodeTexNoise")
+mapping = nodes.new("ShaderNodeMapping")
+coords = nodes.new("ShaderNodeTexCoord")
+
+links.new(coords.outputs["Object"], mapping.inputs["Vector"])
+links.new(mapping.outputs["Vector"], noise.inputs["Vector"])
+links.new(noise.outputs["Fac"], color_ramp.inputs["Fac"])
+links.new(color_ramp.outputs["Color"], diffuse.inputs["Color"])
+links.new(diffuse.outputs["BSDF"], output.inputs["Surface"])
+
+noise.inputs["Scale"].default_value = 5.0
+noise.inputs["Detail"].default_value = 16.0
+noise.inputs["Roughness"].default_value = 0.6
+
+color_ramp.color_ramp.interpolation = 'B_SPLINE'
+color_ramp.color_ramp.elements[0].position = 0.0
+color_ramp.color_ramp.elements[0].color = (0.1, 0.0, 0.5, 1.0)  # Dark purple
+color_ramp.color_ramp.elements[1].position = 1.0
+color_ramp.color_ramp.elements[1].color = (0.8, 0.2, 0.0, 1.0)  # Orange-red
+
+# Animate color shift (slower, over 500 frames)
+color_ramp.color_ramp.elements[0].color = [0.1, 0.0, 0.5, 1.0]
+color_ramp.color_ramp.elements[0].keyframe_insert(data_path="color", frame=1)
+color_ramp.color_ramp.elements[0].color = [0.0, 0.5, 0.2, 1.0]
+color_ramp.color_ramp.elements[0].keyframe_insert(data_path="color", frame=250)
+color_ramp.color_ramp.elements[0].color = [0.1, 0.0, 0.5, 1.0]
+color_ramp.color_ramp.elements[0].keyframe_insert(data_path="color", frame=500)
+
+color_ramp.color_ramp.elements[1].color = [0.8, 0.2, 0.0, 1.0]
+color_ramp.color_ramp.elements[1].keyframe_insert(data_path="color", frame=1)
+color_ramp.color_ramp.elements[1].color = [0.9, 0.7, 0.0, 1.0]
+color_ramp.color_ramp.elements[1].keyframe_insert(data_path="color", frame=250)
+color_ramp.color_ramp.elements[1].color = [0.8, 0.2, 0.0, 1.0]
+color_ramp.color_ramp.elements[1].keyframe_insert(data_path="color", frame=500)
+
+plane.data.materials.append(mat)
+
+# ---------- Add Displacement for Height Animation ----------
+bpy.ops.object.modifier_add(type='DISPLACE')
+displace = plane.modifiers[-1]
+displace.name = "FractalHeight"
+
+disp_texture = bpy.data.textures.new("NoiseDisp", type='NOISE')
+displace.texture = disp_texture
+disp_texture.noise_scale = 0.5
+disp_texture.intensity = 2.0
+
+# Animate displacement (slower, over 500 frames)
+displace.strength = 0.5
+displace.keyframe_insert(data_path="strength", frame=1)
+displace.strength = 1.5
+displace.keyframe_insert(data_path="strength", frame=250)
+displace.strength = 0.5
+displace.keyframe_insert(data_path="strength", frame=500)
+
+# ---------- Add Camera with Flyover Path ----------
+bpy.ops.object.camera_add(location=(25, -25, 20))
+camera = bpy.context.active_object
+camera.name = "FlyoverCamera"
+
+# Ensure camera is visible and prominent
+camera.data.lens = 35
+camera.data.clip_end = 1000
+camera.rotation_euler = (math.radians(60), 0, math.radians(45))
+camera.scale = (2, 2, 2)  # Make camera icon larger in viewport
+
+# Animate camera flyover (slower, over 500 frames)
+scene = bpy.context.scene
+scene.frame_start = 1
+scene.frame_end = 500
+scene.frame_set(1)
+
+camera.location = (25, -25, 20)
+camera.keyframe_insert(data_path="location", frame=1)
+camera.location = (-25, 25, 15)
+camera.keyframe_insert(data_path="location", frame=500)
+
+# ---------- Add Lighting ----------
+bpy.ops.object.light_add(type='SUN', location=(0, 0, 50))
+light = bpy.context.active_object
+light.data.energy = 10
+
+# ---------- Set Render Settings ----------
+scene.render.resolution_x = 1920
+scene.render.resolution_y = 1080
+scene.render.engine = 'BLENDER_EEVEE'
+scene.camera = camera  # Set the camera as the active camera
+
+# Force viewport update and align to camera
+bpy.ops.object.select_all(action='DESELECT')
+camera.select_set(True)
+bpy.context.view_layer.objects.active = camera
+bpy.ops.view3d.view_camera()  # Align view to camera
+bpy.ops.wm.redraw_timer(type='DRAW_WIN', iterations=1)
+
+print("Setup complete. Press Numpad 0 to view through camera, then Alt+A to play animation!")
+ChatGPT dijo:
+**Reasoned about camera and animation setup** for 23 seconds
+Below is an updated version of your script that addresses two points:
+Animation Speed:
+The original keyframes span frames 1–500, which at a default 24 fps results in a ~21‐second animation. If the movement still feels too fast, you can either (a) extend the timeline further (e.g. to 1000 frames), (b) adjust the keyframe values so that the change between frames is more gradual, or (c) change the scene’s frame rate (e.g. to 12 fps) in the render settings. In the sample below, I kept the keyframes over 500 frames but you can change that as needed.
+Camera Creation:
+Sometimes, using operator calls like
+bpy.ops.object.camera_add
+depends on the context (e.g. a 3D View area). To ensure a camera is created regardless of context, the updated code creates a new camera data-block and object manually and links it to the scene’s collection.
+Try the script below:
+python
+Copiar código
+import
+bpy
+import
+math
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Create a Plane as the Base Landscape ----------
+bpy.ops.mesh.primitive_plane_add(size=
+50
+, location=(
+0
+,
+0
+,
+0
+))
+plane = bpy.context.active_object
+plane.name =
+"FractalPlane"
+# Subdivide for detail
+bpy.ops.
+object
+.mode_set(mode=
+'EDIT'
+)
+bpy.ops.mesh.subdivide(number_cuts=
+63
+)
+# 64x64 grid
+bpy.ops.
+object
+.mode_set(mode=
+'OBJECT'
+)
+# ---------- Add Material with Noise-Based Color Animation ----------
+mat = bpy.data.materials.new(name=
+"FractalMaterial"
+)
+mat.use_nodes =
+True
+nodes = mat.node_tree.nodes
+links = mat.node_tree.links
+
+nodes.clear()
+output = nodes.new(
+"ShaderNodeOutputMaterial"
+)
+diffuse = nodes.new(
+"ShaderNodeBsdfDiffuse"
+)
+color_ramp = nodes.new(
+"ShaderNodeValToRGB"
+)
+noise = nodes.new(
+"ShaderNodeTexNoise"
+)
+mapping = nodes.new(
+"ShaderNodeMapping"
+)
+coords = nodes.new(
+"ShaderNodeTexCoord"
+)
+
+links.new(coords.outputs[
+"Object"
+], mapping.inputs[
+"Vector"
+])
+links.new(mapping.outputs[
+"Vector"
+], noise.inputs[
+"Vector"
+])
+links.new(noise.outputs[
+"Fac"
+], color_ramp.inputs[
+"Fac"
+])
+links.new(color_ramp.outputs[
+"Color"
+], diffuse.inputs[
+"Color"
+])
+links.new(diffuse.outputs[
+"BSDF"
+], output.inputs[
+"Surface"
+])
+
+noise.inputs[
+"Scale"
+].default_value =
+5.0
+noise.inputs[
+"Detail"
+].default_value =
+16.0
+noise.inputs[
+"Roughness"
+].default_value =
+0.6
+color_ramp.color_ramp.interpolation =
+'B_SPLINE'
+color_ramp.color_ramp.elements[
+0
+].position =
+0.0
+color_ramp.color_ramp.elements[
+0
+].color = (
+0.1
+,
+0.0
+,
+0.5
+,
+1.0
+)
+# Dark purple
+color_ramp.color_ramp.elements[
+1
+].position =
+1.0
+color_ramp.color_ramp.elements[
+1
+].color = (
+0.8
+,
+0.2
+,
+0.0
+,
+1.0
+)
+# Orange-red
+# Animate color shift (over 500 frames)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.1
+,
+0.0
+,
+0.5
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+1
+)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.0
+,
+0.5
+,
+0.2
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+250
+)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.1
+,
+0.0
+,
+0.5
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+500
+)
+
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.8
+,
+0.2
+,
+0.0
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+1
+)
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.9
+,
+0.7
+,
+0.0
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+250
+)
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.8
+,
+0.2
+,
+0.0
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+500
+)
+
+plane.data.materials.append(mat)
+# ---------- Add Displacement for Height Animation ----------
+bpy.ops.
+object
+.modifier_add(
+type
+=
+'DISPLACE'
+)
+displace = plane.modifiers[-
+1
+]
+displace.name =
+"FractalHeight"
+disp_texture = bpy.data.textures.new(
+"NoiseDisp"
+,
+type
+=
+'NOISE'
+)
+displace.texture = disp_texture
+disp_texture.noise_scale =
+0.5
+disp_texture.intensity =
+2.0
+# Animate displacement (over 500 frames)
+displace.strength =
+0.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+1
+)
+displace.strength =
+1.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+250
+)
+displace.strength =
+0.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+500
+)
+# ---------- Add Camera with Flyover Path ----------
+# Create a new camera data-block and object manually.
+cam_data = bpy.data.cameras.new(
+"FlyoverCamera"
+)
+camera = bpy.data.objects.new(
+"FlyoverCamera"
+, cam_data)
+bpy.context.collection.objects.link(camera)
+
+camera.location = (
+25
+, -
+25
+,
+20
+)
+camera.rotation_euler = (math.radians(
+60
+),
+0
+, math.radians(
+45
+))
+camera.scale = (
+2
+,
+2
+,
+2
+)
+# Enlarge the camera icon in the viewport
+# Set camera properties
+cam_data.lens =
+35
+cam_data.clip_end =
+1000
+# Animate camera flyover (over 500 frames)
+scene = bpy.context.scene
+scene.frame_start =
+1
+scene.frame_end =
+500
+camera.location = (
+25
+, -
+25
+,
+20
+)
+camera.keyframe_insert(data_path=
+"location"
+, frame=
+1
+)
+camera.location = (-
+25
+,
+25
+,
+15
+)
+camera.keyframe_insert(data_path=
+"location"
+, frame=
+500
+)
+# ---------- Add Lighting ----------
+bpy.ops.
+object
+.light_add(
+type
+=
+'SUN'
+, location=(
+0
+,
+0
+,
+50
+))
+light = bpy.context.active_object
+light.data.energy =
+10
+# ---------- Set Render Settings ----------
+scene.render.resolution_x =
+1920
+scene.render.resolution_y =
+1080
+scene.render.engine =
+'BLENDER_EEVEE'
+scene.camera = camera
+# Set our new camera as the active camera
+# Optional: Force viewport update (ensure you're in a 3D View context)
+for
+area
+in
+bpy.context.screen.areas:
+if
+area.
+type
+==
+'VIEW_3D'
+:
+for
+region
+in
+area.regions:
+if
+region.
+type
+==
+'WINDOW'
+:
+                override = {
+'area'
+: area,
+'region'
+: region}
+                bpy.ops.view3d.view_camera(override)
+break
+# Optionally, to slow down the animation, you can either extend the frame_end (e.g., to 1000)
+# or change the frame rate (scene.render.fps) in the scene render settings.
+print
+(
+"Setup complete. Press Numpad 0 to view through the camera, then Alt+A to play the animation!"
+)
+Explanation
+Animation Speed:
+The camera (and other animated properties) are keyframed over 500 frames. If the motion still feels too fast, you could:
+Increase the frame range (e.g. set
+scene.frame_end = 1000
+) to lengthen the animation.
+Lower the scene’s FPS via
+scene.render.fps = 12
+(or another value) to slow the playback.
+Camera Creation:
+Instead of relying on
+bpy.ops.object.camera_add
+(which depends on context), the script now creates a camera using
+bpy.data.cameras.new
+and links it manually. This ensures the camera is created and visible in your scene.
+Feel free to adjust the frame range or FPS as needed to get the desired animation speed.
+Dijiste:
+Info: Deleted 1 object(s)
+Traceback (most recent call last):
+  File "\Text", line 72, in <module>
+AttributeError: 'NoiseTexture' object has no attribute 'noise_scale'
+Error: Python script failed, check the message in the system console
+ChatGPT dijo:
+Reasoned for 7 seconds
+Below is your script with corrections in the displacement section for Blender 2.93.6. In this version, instead of using properties that no longer exist (like
+noise_scale
+and
+intensity
+), we set the texture’s scale via the
+scale
+attribute and omit the intensity setting. You can adjust the keyframes and timeline as needed to slow down the animation.
+python
+Copiar código
+import
+bpy
+import
+math
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Create a Plane as the Base Landscape ----------
+bpy.ops.mesh.primitive_plane_add(size=
+50
+, location=(
+0
+,
+0
+,
+0
+))
+plane = bpy.context.active_object
+plane.name =
+"FractalPlane"
+# Subdivide for detail
+bpy.ops.
+object
+.mode_set(mode=
+'EDIT'
+)
+bpy.ops.mesh.subdivide(number_cuts=
+63
+)
+# 64x64 grid
+bpy.ops.
+object
+.mode_set(mode=
+'OBJECT'
+)
+# ---------- Add Material with Noise-Based Color Animation ----------
+mat = bpy.data.materials.new(name=
+"FractalMaterial"
+)
+mat.use_nodes =
+True
+nodes = mat.node_tree.nodes
+links = mat.node_tree.links
+
+nodes.clear()
+output = nodes.new(
+"ShaderNodeOutputMaterial"
+)
+diffuse = nodes.new(
+"ShaderNodeBsdfDiffuse"
+)
+color_ramp = nodes.new(
+"ShaderNodeValToRGB"
+)
+noise = nodes.new(
+"ShaderNodeTexNoise"
+)
+mapping = nodes.new(
+"ShaderNodeMapping"
+)
+coords = nodes.new(
+"ShaderNodeTexCoord"
+)
+
+links.new(coords.outputs[
+"Object"
+], mapping.inputs[
+"Vector"
+])
+links.new(mapping.outputs[
+"Vector"
+], noise.inputs[
+"Vector"
+])
+links.new(noise.outputs[
+"Fac"
+], color_ramp.inputs[
+"Fac"
+])
+links.new(color_ramp.outputs[
+"Color"
+], diffuse.inputs[
+"Color"
+])
+links.new(diffuse.outputs[
+"BSDF"
+], output.inputs[
+"Surface"
+])
+
+noise.inputs[
+"Scale"
+].default_value =
+5.0
+noise.inputs[
+"Detail"
+].default_value =
+16.0
+noise.inputs[
+"Roughness"
+].default_value =
+0.6
+color_ramp.color_ramp.interpolation =
+'B_SPLINE'
+color_ramp.color_ramp.elements[
+0
+].position =
+0.0
+color_ramp.color_ramp.elements[
+0
+].color = (
+0.1
+,
+0.0
+,
+0.5
+,
+1.0
+)
+# Dark purple
+color_ramp.color_ramp.elements[
+1
+].position =
+1.0
+color_ramp.color_ramp.elements[
+1
+].color = (
+0.8
+,
+0.2
+,
+0.0
+,
+1.0
+)
+# Orange-red
+# Animate color shift (over 500 frames)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.1
+,
+0.0
+,
+0.5
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+1
+)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.0
+,
+0.5
+,
+0.2
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+250
+)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.1
+,
+0.0
+,
+0.5
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+500
+)
+
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.8
+,
+0.2
+,
+0.0
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+1
+)
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.9
+,
+0.7
+,
+0.0
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+250
+)
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.8
+,
+0.2
+,
+0.0
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+500
+)
+
+plane.data.materials.append(mat)
+# ---------- Add Displacement for Height Animation ----------
+bpy.ops.
+object
+.modifier_add(
+type
+=
+'DISPLACE'
+)
+displace = plane.modifiers[-
+1
+]
+displace.name =
+"FractalHeight"
+disp_texture = bpy.data.textures.new(
+"NoiseDisp"
+,
+type
+=
+'NOISE'
+)
+displace.texture = disp_texture
+disp_texture.scale =
+0.5
+# Removed intensity property as it's not available in Blender 2.93.
+# Animate displacement (over 500 frames)
+displace.strength =
+0.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+1
+)
+displace.strength =
+1.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+250
+)
+displace.strength =
+0.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+500
+)
+# ---------- Add Camera with Flyover Path ----------
+# Create a new camera data-block and object manually.
+cam_data = bpy.data.cameras.new(
+"FlyoverCamera"
+)
+camera = bpy.data.objects.new(
+"FlyoverCamera"
+, cam_data)
+bpy.context.collection.objects.link(camera)
+
+camera.location = (
+25
+, -
+25
+,
+20
+)
+camera.rotation_euler = (math.radians(
+60
+),
+0
+, math.radians(
+45
+))
+camera.scale = (
+2
+,
+2
+,
+2
+)
+# Enlarge the camera icon in the viewport
+# Set camera properties
+cam_data.lens =
+35
+cam_data.clip_end =
+1000
+# Animate camera flyover (over 500 frames)
+scene = bpy.context.scene
+scene.frame_start =
+1
+scene.frame_end =
+500
+camera.location = (
+25
+, -
+25
+,
+20
+)
+camera.keyframe_insert(data_path=
+"location"
+, frame=
+1
+)
+camera.location = (-
+25
+,
+25
+,
+15
+)
+camera.keyframe_insert(data_path=
+"location"
+, frame=
+500
+)
+# ---------- Add Lighting ----------
+bpy.ops.
+object
+.light_add(
+type
+=
+'SUN'
+, location=(
+0
+,
+0
+,
+50
+))
+light = bpy.context.active_object
+light.data.energy =
+10
+# ---------- Set Render Settings ----------
+scene.render.resolution_x =
+1920
+scene.render.resolution_y =
+1080
+scene.render.engine =
+'BLENDER_EEVEE'
+scene.camera = camera
+# Set our new camera as the active camera
+# Optional: Force viewport update (ensure you're in a 3D View context)
+for
+area
+in
+bpy.context.screen.areas:
+if
+area.
+type
+==
+'VIEW_3D'
+:
+for
+region
+in
+area.regions:
+if
+region.
+type
+==
+'WINDOW'
+:
+                override = {
+'area'
+: area,
+'region'
+: region}
+                bpy.ops.view3d.view_camera(override)
+break
+print
+(
+"Setup complete. Press Numpad 0 to view through the camera, then Alt+A to play the animation!"
+)
+Explanation
+Displacement Correction:
+The script now creates a noise texture and sets its scale using
+disp_texture.scale = 0.5
+(instead of using
+noise_scale
+). The intensity line has been removed because it isn’t supported in Blender 2.93.6.
+Camera Creation:
+The camera is created manually via a new camera data block and linked to the scene’s collection, ensuring it’s available regardless of context.
+Animation Speed:
+If the animation still feels too fast, consider either extending the frame range (for example, setting
+scene.frame_end
+to 1000) or reducing the frame rate in your render settings (e.g.
+scene.render.fps = 12
+).
+Run this updated script in Blender’s Text Editor. You should now see your animated fractal plane with a noise-based color and displacement animation, along with a flyover camera.
+Dijiste:
+Info: Deleted 1 object(s)
+Traceback (most recent call last):
+  File "\Text", line 72, in <module>
+AttributeError: 'NoiseTexture' object has no attribute 'scale'
+Error: Python script failed, check the message in the system console
+ChatGPT dijo:
+Reasoned for 14 seconds
+Below is an updated version of your script. In this version, we wrap the texture property assignments in try/except blocks so that if those legacy properties aren’t available in Blender 2.93.6, the script won’t error out. (In that case the displacement will use the texture’s default settings.)
+python
+Copiar código
+import
+bpy
+import
+math
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Create a Plane as the Base Landscape ----------
+bpy.ops.mesh.primitive_plane_add(size=
+50
+, location=(
+0
+,
+0
+,
+0
+))
+plane = bpy.context.active_object
+plane.name =
+"FractalPlane"
+# Subdivide for detail
+bpy.ops.
+object
+.mode_set(mode=
+'EDIT'
+)
+bpy.ops.mesh.subdivide(number_cuts=
+63
+)
+# 64x64 grid
+bpy.ops.
+object
+.mode_set(mode=
+'OBJECT'
+)
+# ---------- Add Material with Noise-Based Color Animation ----------
+mat = bpy.data.materials.new(name=
+"FractalMaterial"
+)
+mat.use_nodes =
+True
+nodes = mat.node_tree.nodes
+links = mat.node_tree.links
+
+nodes.clear()
+output = nodes.new(
+"ShaderNodeOutputMaterial"
+)
+diffuse = nodes.new(
+"ShaderNodeBsdfDiffuse"
+)
+color_ramp = nodes.new(
+"ShaderNodeValToRGB"
+)
+noise = nodes.new(
+"ShaderNodeTexNoise"
+)
+mapping = nodes.new(
+"ShaderNodeMapping"
+)
+coords = nodes.new(
+"ShaderNodeTexCoord"
+)
+
+links.new(coords.outputs[
+"Object"
+], mapping.inputs[
+"Vector"
+])
+links.new(mapping.outputs[
+"Vector"
+], noise.inputs[
+"Vector"
+])
+links.new(noise.outputs[
+"Fac"
+], color_ramp.inputs[
+"Fac"
+])
+links.new(color_ramp.outputs[
+"Color"
+], diffuse.inputs[
+"Color"
+])
+links.new(diffuse.outputs[
+"BSDF"
+], output.inputs[
+"Surface"
+])
+
+noise.inputs[
+"Scale"
+].default_value =
+5.0
+noise.inputs[
+"Detail"
+].default_value =
+16.0
+noise.inputs[
+"Roughness"
+].default_value =
+0.6
+color_ramp.color_ramp.interpolation =
+'B_SPLINE'
+color_ramp.color_ramp.elements[
+0
+].position =
+0.0
+color_ramp.color_ramp.elements[
+0
+].color = (
+0.1
+,
+0.0
+,
+0.5
+,
+1.0
+)
+# Dark purple
+color_ramp.color_ramp.elements[
+1
+].position =
+1.0
+color_ramp.color_ramp.elements[
+1
+].color = (
+0.8
+,
+0.2
+,
+0.0
+,
+1.0
+)
+# Orange-red
+# Animate color shift (over 500 frames)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.1
+,
+0.0
+,
+0.5
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+1
+)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.0
+,
+0.5
+,
+0.2
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+250
+)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.1
+,
+0.0
+,
+0.5
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+500
+)
+
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.8
+,
+0.2
+,
+0.0
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+1
+)
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.9
+,
+0.7
+,
+0.0
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+250
+)
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.8
+,
+0.2
+,
+0.0
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+500
+)
+
+plane.data.materials.append(mat)
+# ---------- Add Displacement for Height Animation ----------
+bpy.ops.
+object
+.modifier_add(
+type
+=
+'DISPLACE'
+)
+displace = plane.modifiers[-
+1
+]
+displace.name =
+"FractalHeight"
+disp_texture = bpy.data.textures.new(
+"NoiseDisp"
+,
+type
+=
+'NOISE'
+)
+displace.texture = disp_texture
+# Try setting legacy texture properties (if available).
+try
+:
+    disp_texture.noise_scale =
+0.5
+except
+AttributeError:
+print
+(
+"disp_texture.noise_scale property not available in this Blender version."
+)
+try
+:
+    disp_texture.intensity =
+2.0
+except
+AttributeError:
+print
+(
+"disp_texture.intensity property not available in this Blender version."
+)
+# Animate displacement (over 500 frames)
+displace.strength =
+0.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+1
+)
+displace.strength =
+1.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+250
+)
+displace.strength =
+0.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+500
+)
+# ---------- Add Camera with Flyover Path ----------
+# Create a new camera data-block and object manually.
+cam_data = bpy.data.cameras.new(
+"FlyoverCamera"
+)
+camera = bpy.data.objects.new(
+"FlyoverCamera"
+, cam_data)
+bpy.context.collection.objects.link(camera)
+
+camera.location = (
+25
+, -
+25
+,
+20
+)
+camera.rotation_euler = (math.radians(
+60
+),
+0
+, math.radians(
+45
+))
+camera.scale = (
+2
+,
+2
+,
+2
+)
+# Enlarge the camera icon in the viewport
+# Set camera properties
+cam_data.lens =
+35
+cam_data.clip_end =
+1000
+# Animate camera flyover (over 500 frames)
+scene = bpy.context.scene
+scene.frame_start =
+1
+scene.frame_end =
+500
+camera.location = (
+25
+, -
+25
+,
+20
+)
+camera.keyframe_insert(data_path=
+"location"
+, frame=
+1
+)
+camera.location = (-
+25
+,
+25
+,
+15
+)
+camera.keyframe_insert(data_path=
+"location"
+, frame=
+500
+)
+# ---------- Add Lighting ----------
+bpy.ops.
+object
+.light_add(
+type
+=
+'SUN'
+, location=(
+0
+,
+0
+,
+50
+))
+light = bpy.context.active_object
+light.data.energy =
+10
+# ---------- Set Render Settings ----------
+scene.render.resolution_x =
+1920
+scene.render.resolution_y =
+1080
+scene.render.engine =
+'BLENDER_EEVEE'
+scene.camera = camera
+# Set our new camera as the active camera
+# Optional: Force viewport update (ensure you're in a 3D View context)
+for
+area
+in
+bpy.context.screen.areas:
+if
+area.
+type
+==
+'VIEW_3D'
+:
+for
+region
+in
+area.regions:
+if
+region.
+type
+==
+'WINDOW'
+:
+                override = {
+'area'
+: area,
+'region'
+: region}
+                bpy.ops.view3d.view_camera(override)
+break
+print
+(
+"Setup complete. Press Numpad 0 to view through the camera, then Alt+A to play the animation!"
+)
+Explanation
+Displacement Texture:
+We now attempt to set the legacy properties (
+noise_scale
+and
+intensity
+) using try/except blocks. If they’re not available in Blender 2.93.6, a message is printed, and the script continues using default texture settings.
+Camera Creation and Animation:
+A new camera is created manually and animated over 500 frames. If the animation still feels too fast, consider increasing the frame range or reducing the scene’s FPS (via render settings).
+Run this updated script in Blender’s Text Editor. You should now see your fractal plane with noise-based color and displacement animations along with a flyover camera.
+Dijiste:
+It's working now, maybe I need higher contrast and more dark though as it is kind of too light: import bpy
+import math
+
+# ---------- Clear the Scene ----------
+bpy.ops.object.select_all(action='SELECT')
+bpy.ops.object.delete(use_global=False)
+
+# ---------- Create a Plane as the Base Landscape ----------
+bpy.ops.mesh.primitive_plane_add(size=50, location=(0, 0, 0))
+plane = bpy.context.active_object
+plane.name = "FractalPlane"
+
+# Subdivide for detail
+bpy.ops.object.mode_set(mode='EDIT')
+bpy.ops.mesh.subdivide(number_cuts=63)  # 64x64 grid
+bpy.ops.object.mode_set(mode='OBJECT')
+
+# ---------- Add Material with Noise-Based Color Animation ----------
+mat = bpy.data.materials.new(name="FractalMaterial")
+mat.use_nodes = True
+nodes = mat.node_tree.nodes
+links = mat.node_tree.links
+
+nodes.clear()
+output = nodes.new("ShaderNodeOutputMaterial")
+diffuse = nodes.new("ShaderNodeBsdfDiffuse")
+color_ramp = nodes.new("ShaderNodeValToRGB")
+noise = nodes.new("ShaderNodeTexNoise")
+mapping = nodes.new("ShaderNodeMapping")
+coords = nodes.new("ShaderNodeTexCoord")
+
+links.new(coords.outputs["Object"], mapping.inputs["Vector"])
+links.new(mapping.outputs["Vector"], noise.inputs["Vector"])
+links.new(noise.outputs["Fac"], color_ramp.inputs["Fac"])
+links.new(color_ramp.outputs["Color"], diffuse.inputs["Color"])
+links.new(diffuse.outputs["BSDF"], output.inputs["Surface"])
+
+noise.inputs["Scale"].default_value = 5.0
+noise.inputs["Detail"].default_value = 16.0
+noise.inputs["Roughness"].default_value = 0.6
+
+color_ramp.color_ramp.interpolation = 'B_SPLINE'
+color_ramp.color_ramp.elements[0].position = 0.0
+color_ramp.color_ramp.elements[0].color = (0.1, 0.0, 0.5, 1.0)  # Dark purple
+color_ramp.color_ramp.elements[1].position = 1.0
+color_ramp.color_ramp.elements[1].color = (0.8, 0.2, 0.0, 1.0)  # Orange-red
+
+# Animate color shift (over 500 frames)
+color_ramp.color_ramp.elements[0].color = [0.1, 0.0, 0.5, 1.0]
+color_ramp.color_ramp.elements[0].keyframe_insert(data_path="color", frame=1)
+color_ramp.color_ramp.elements[0].color = [0.0, 0.5, 0.2, 1.0]
+color_ramp.color_ramp.elements[0].keyframe_insert(data_path="color", frame=250)
+color_ramp.color_ramp.elements[0].color = [0.1, 0.0, 0.5, 1.0]
+color_ramp.color_ramp.elements[0].keyframe_insert(data_path="color", frame=500)
+
+color_ramp.color_ramp.elements[1].color = [0.8, 0.2, 0.0, 1.0]
+color_ramp.color_ramp.elements[1].keyframe_insert(data_path="color", frame=1)
+color_ramp.color_ramp.elements[1].color = [0.9, 0.7, 0.0, 1.0]
+color_ramp.color_ramp.elements[1].keyframe_insert(data_path="color", frame=250)
+color_ramp.color_ramp.elements[1].color = [0.8, 0.2, 0.0, 1.0]
+color_ramp.color_ramp.elements[1].keyframe_insert(data_path="color", frame=500)
+
+plane.data.materials.append(mat)
+
+# ---------- Add Displacement for Height Animation ----------
+bpy.ops.object.modifier_add(type='DISPLACE')
+displace = plane.modifiers[-1]
+displace.name = "FractalHeight"
+
+# Create a new texture for displacement
+disp_texture = bpy.data.textures.new("NoiseDisp", type='NOISE')
+displace.texture = disp_texture
+
+# Create a noise texture node in the material
+noise_tex = nodes.new("ShaderNodeTexNoise")
+noise_tex.inputs["Scale"].default_value = 0.5
+noise_tex.inputs["Detail"].default_value = 16.0
+noise_tex.inputs["Roughness"].default_value = 0.6
+
+# Animate displacement (over 500 frames)
+displace.strength = 0.5
+displace.keyframe_insert(data_path="strength", frame=1)
+displace.strength = 1.5
+displace.keyframe_insert(data_path="strength", frame=250)
+displace.strength = 0.5
+displace.keyframe_insert(data_path="strength", frame=500)
+
+# ---------- Add Camera with Flyover Path ----------
+# Create a new camera data-block and object manually.
+cam_data = bpy.data.cameras.new("FlyoverCamera")
+camera = bpy.data.objects.new("FlyoverCamera", cam_data)
+bpy.context.collection.objects.link(camera)
+
+camera.location = (25, -25, 20)
+camera.rotation_euler = (math.radians(60), 0, math.radians(45))
+camera.scale = (2, 2, 2)  # Enlarge the camera icon in the viewport
+
+# Set camera properties
+cam_data.lens = 35
+cam_data.clip_end = 1000
+
+# Animate camera flyover (over 500 frames)
+scene = bpy.context.scene
+scene.frame_start = 1
+scene.frame_end = 500
+
+camera.location = (25, -25, 20)
+camera.keyframe_insert(data_path="location", frame=1)
+camera.location = (-25, 25, 15)
+camera.keyframe_insert(data_path="location", frame=500)
+
+# ---------- Add Lighting ----------
+bpy.ops.object.light_add(type='SUN', location=(0, 0, 50))
+light = bpy.context.active_object
+light.data.energy = 10
+
+# ---------- Set Render Settings ----------
+scene.render.resolution_x = 1920
+scene.render.resolution_y = 1080
+scene.render.engine = 'BLENDER_EEVEE'
+scene.camera = camera  # Set our new camera as the active camera
+
+# Force viewport update and align to camera
+bpy.ops.object.select_all(action='DESELECT')
+camera.select_set(True)
+bpy.context.view_layer.objects.active = camera
+bpy.ops.view3d.view_camera()  # Align view to camera
+bpy.ops.wm.redraw_timer(type='DRAW_WIN', iterations=1)
+
+print("Setup complete. Press Numpad 0 to view through the camera, then Alt+A to play the animation!")
+ChatGPT dijo:
+Reasoned for 6 seconds
+Below is an updated version of your script that adds a Bright/Contrast node to the material node tree. This lets you darken the overall look and increase the contrast after the ColorRamp. Feel free to tweak the Bright and Contrast values to your liking.
+python
+Copiar código
+import
+bpy
+import
+math
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Create a Plane as the Base Landscape ----------
+bpy.ops.mesh.primitive_plane_add(size=
+50
+, location=(
+0
+,
+0
+,
+0
+))
+plane = bpy.context.active_object
+plane.name =
+"FractalPlane"
+# Subdivide for detail
+bpy.ops.
+object
+.mode_set(mode=
+'EDIT'
+)
+bpy.ops.mesh.subdivide(number_cuts=
+63
+)
+# 64x64 grid
+bpy.ops.
+object
+.mode_set(mode=
+'OBJECT'
+)
+# ---------- Add Material with Noise-Based Color Animation ----------
+mat = bpy.data.materials.new(name=
+"FractalMaterial"
+)
+mat.use_nodes =
+True
+nodes = mat.node_tree.nodes
+links = mat.node_tree.links
+
+nodes.clear()
+output = nodes.new(
+"ShaderNodeOutputMaterial"
+)
+diffuse = nodes.new(
+"ShaderNodeBsdfDiffuse"
+)
+color_ramp = nodes.new(
+"ShaderNodeValToRGB"
+)
+noise = nodes.new(
+"ShaderNodeTexNoise"
+)
+mapping = nodes.new(
+"ShaderNodeMapping"
+)
+coords = nodes.new(
+"ShaderNodeTexCoord"
+)
+bright_contrast = nodes.new(
+"ShaderNodeBrightContrast"
+)
+# Set up node links:
+links.new(coords.outputs[
+"Object"
+], mapping.inputs[
+"Vector"
+])
+links.new(mapping.outputs[
+"Vector"
+], noise.inputs[
+"Vector"
+])
+links.new(noise.outputs[
+"Fac"
+], color_ramp.inputs[
+"Fac"
+])
+# Insert Bright/Contrast node between the ColorRamp and Diffuse:
+links.new(color_ramp.outputs[
+"Color"
+], bright_contrast.inputs[
+"Color"
+])
+links.new(bright_contrast.outputs[
+"Color"
+], diffuse.inputs[
+"Color"
+])
+links.new(diffuse.outputs[
+"BSDF"
+], output.inputs[
+"Surface"
+])
+# Set Noise parameters
+noise.inputs[
+"Scale"
+].default_value =
+5.0
+noise.inputs[
+"Detail"
+].default_value =
+16.0
+noise.inputs[
+"Roughness"
+].default_value =
+0.6
+# Set up ColorRamp (using dark purple and deep orange-red)
+color_ramp.color_ramp.interpolation =
+'B_SPLINE'
+color_ramp.color_ramp.elements[
+0
+].position =
+0.0
+color_ramp.color_ramp.elements[
+0
+].color = (
+0.1
+,
+0.0
+,
+0.5
+,
+1.0
+)
+# Dark purple
+color_ramp.color_ramp.elements[
+1
+].position =
+1.0
+color_ramp.color_ramp.elements[
+1
+].color = (
+0.8
+,
+0.2
+,
+0.0
+,
+1.0
+)
+# Orange-red
+# Animate color shift (over 500 frames)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.1
+,
+0.0
+,
+0.5
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+1
+)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.0
+,
+0.5
+,
+0.2
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+250
+)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.1
+,
+0.0
+,
+0.5
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+500
+)
+
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.8
+,
+0.2
+,
+0.0
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+1
+)
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.9
+,
+0.7
+,
+0.0
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+250
+)
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.8
+,
+0.2
+,
+0.0
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+500
+)
+# Set Bright/Contrast to darken and boost contrast
+bright_contrast.inputs[
+"Bright"
+].default_value = -
+0.3
+# lower brightness makes it darker
+bright_contrast.inputs[
+"Contrast"
+].default_value =
+1.2
+# higher contrast
+plane.data.materials.append(mat)
+# ---------- Add Displacement for Height Animation ----------
+bpy.ops.
+object
+.modifier_add(
+type
+=
+'DISPLACE'
+)
+displace = plane.modifiers[-
+1
+]
+displace.name =
+"FractalHeight"
+# Create a new texture for displacement
+disp_texture = bpy.data.textures.new(
+"NoiseDisp"
+,
+type
+=
+'NOISE'
+)
+displace.texture = disp_texture
+# Create a noise texture node in the material (optional additional node)
+noise_tex = nodes.new(
+"ShaderNodeTexNoise"
+)
+noise_tex.inputs[
+"Scale"
+].default_value =
+0.5
+noise_tex.inputs[
+"Detail"
+].default_value =
+16.0
+noise_tex.inputs[
+"Roughness"
+].default_value =
+0.6
+# Animate displacement (over 500 frames)
+displace.strength =
+0.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+1
+)
+displace.strength =
+1.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+250
+)
+displace.strength =
+0.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+500
+)
+# ---------- Add Camera with Flyover Path ----------
+# Create a new camera data-block and object manually.
+cam_data = bpy.data.cameras.new(
+"FlyoverCamera"
+)
+camera = bpy.data.objects.new(
+"FlyoverCamera"
+, cam_data)
+bpy.context.collection.objects.link(camera)
+
+camera.location = (
+25
+, -
+25
+,
+20
+)
+camera.rotation_euler = (math.radians(
+60
+),
+0
+, math.radians(
+45
+))
+camera.scale = (
+2
+,
+2
+,
+2
+)
+# Enlarge the camera icon in the viewport
+# Set camera properties
+cam_data.lens =
+35
+cam_data.clip_end =
+1000
+# Animate camera flyover (over 500 frames)
+scene = bpy.context.scene
+scene.frame_start =
+1
+scene.frame_end =
+500
+camera.location = (
+25
+, -
+25
+,
+20
+)
+camera.keyframe_insert(data_path=
+"location"
+, frame=
+1
+)
+camera.location = (-
+25
+,
+25
+,
+15
+)
+camera.keyframe_insert(data_path=
+"location"
+, frame=
+500
+)
+# ---------- Add Lighting ----------
+bpy.ops.
+object
+.light_add(
+type
+=
+'SUN'
+, location=(
+0
+,
+0
+,
+50
+))
+light = bpy.context.active_object
+light.data.energy =
+10
+# ---------- Set Render Settings ----------
+scene.render.resolution_x =
+1920
+scene.render.resolution_y =
+1080
+scene.render.engine =
+'BLENDER_EEVEE'
+scene.camera = camera
+# Set our new camera as the active camera
+# Force viewport update and align to camera
+bpy.ops.
+object
+.select_all(action=
+'DESELECT'
+)
+camera.select_set(
+True
+)
+bpy.context.view_layer.objects.active = camera
+bpy.ops.view3d.view_camera()
+# Align view to camera
+bpy.ops.wm.redraw_timer(
+type
+=
+'DRAW_WIN'
+, iterations=
+1
+)
+print
+(
+"Setup complete. Press Numpad 0 to view through the camera, then Alt+A to play the animation!"
+)
+Explanation
+Bright/Contrast Node:
+A Bright/Contrast node is added between the ColorRamp and the Diffuse shader. In this example, the brightness is set to –0.3 (to darken the overall output) and the contrast is increased to 1.2. You can adjust these values as needed to achieve your desired look.
+Other Settings:
+The rest of your scene remains unchanged, with the fractal plane, displacement, animated camera flyover, and lighting.
+Run this updated script in Blender’s Text Editor. You should now see your fractal plane with a darker, higher-contrast look. Adjust the Bright/Contrast values if you need further refinements.
+Dijiste:
+ok it's too red can we get it more blue cyan or green ?
+ChatGPT dijo:
+Reasoned for 11 seconds
+Below is your script modified so that the ColorRamp uses cooler colors (blue/cyan/green) instead of red. In this example, the left ramp element is animated from a dark blue at frame 1 to a cyan at frame 250 and back to dark blue at frame 500, while the right element shifts between two complementary cyan/green tones.
+python
+Copiar código
+import
+bpy
+import
+math
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Create a Plane as the Base Landscape ----------
+bpy.ops.mesh.primitive_plane_add(size=
+50
+, location=(
+0
+,
+0
+,
+0
+))
+plane = bpy.context.active_object
+plane.name =
+"FractalPlane"
+# Subdivide for detail
+bpy.ops.
+object
+.mode_set(mode=
+'EDIT'
+)
+bpy.ops.mesh.subdivide(number_cuts=
+63
+)
+# 64x64 grid
+bpy.ops.
+object
+.mode_set(mode=
+'OBJECT'
+)
+# ---------- Add Material with Noise-Based Color Animation ----------
+mat = bpy.data.materials.new(name=
+"FractalMaterial"
+)
+mat.use_nodes =
+True
+nodes = mat.node_tree.nodes
+links = mat.node_tree.links
+
+nodes.clear()
+output = nodes.new(
+"ShaderNodeOutputMaterial"
+)
+diffuse = nodes.new(
+"ShaderNodeBsdfDiffuse"
+)
+color_ramp = nodes.new(
+"ShaderNodeValToRGB"
+)
+noise = nodes.new(
+"ShaderNodeTexNoise"
+)
+mapping = nodes.new(
+"ShaderNodeMapping"
+)
+coords = nodes.new(
+"ShaderNodeTexCoord"
+)
+bright_contrast = nodes.new(
+"ShaderNodeBrightContrast"
+)
+# Set up node links:
+links.new(coords.outputs[
+"Object"
+], mapping.inputs[
+"Vector"
+])
+links.new(mapping.outputs[
+"Vector"
+], noise.inputs[
+"Vector"
+])
+links.new(noise.outputs[
+"Fac"
+], color_ramp.inputs[
+"Fac"
+])
+links.new(color_ramp.outputs[
+"Color"
+], bright_contrast.inputs[
+"Color"
+])
+links.new(bright_contrast.outputs[
+"Color"
+], diffuse.inputs[
+"Color"
+])
+links.new(diffuse.outputs[
+"BSDF"
+], output.inputs[
+"Surface"
+])
+# Set Noise parameters
+noise.inputs[
+"Scale"
+].default_value =
+5.0
+noise.inputs[
+"Detail"
+].default_value =
+16.0
+noise.inputs[
+"Roughness"
+].default_value =
+0.6
+# Set up ColorRamp with cooler colors
+color_ramp.color_ramp.interpolation =
+'B_SPLINE'
+# Left element: dark blue -> cyan
+color_ramp.color_ramp.elements[
+0
+].position =
+0.0
+color_ramp.color_ramp.elements[
+0
+].color = (
+0.0
+,
+0.0
+,
+0.5
+,
+1.0
+)
+# dark blue
+# Right element: cyan-green
+color_ramp.color_ramp.elements[
+1
+].position =
+1.0
+color_ramp.color_ramp.elements[
+1
+].color = (
+0.0
+,
+0.8
+,
+0.6
+,
+1.0
+)
+# bright cyan-green
+# Animate color shift for element 0 (over 500 frames)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.0
+,
+0.0
+,
+0.5
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+1
+)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.0
+,
+0.5
+,
+0.5
+,
+1.0
+]
+# shifts to cyan
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+250
+)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.0
+,
+0.0
+,
+0.5
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+500
+)
+# Animate color shift for element 1 (over 500 frames)
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.0
+,
+0.8
+,
+0.6
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+1
+)
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.0
+,
+0.7
+,
+0.8
+,
+1.0
+]
+# shifts slightly to a bluish-green
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+250
+)
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.0
+,
+0.8
+,
+0.6
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+500
+)
+# Set Bright/Contrast to darken and boost contrast if needed
+bright_contrast.inputs[
+"Bright"
+].default_value = -
+0.3
+# lower brightness to darken
+bright_contrast.inputs[
+"Contrast"
+].default_value =
+1.2
+# increase contrast
+plane.data.materials.append(mat)
+# ---------- Add Displacement for Height Animation ----------
+bpy.ops.
+object
+.modifier_add(
+type
+=
+'DISPLACE'
+)
+displace = plane.modifiers[-
+1
+]
+displace.name =
+"FractalHeight"
+# Create a new texture for displacement
+disp_texture = bpy.data.textures.new(
+"NoiseDisp"
+,
+type
+=
+'NOISE'
+)
+displace.texture = disp_texture
+# (Optional) If you want to try tweaking legacy settings, wrap them in try/except.
+try
+:
+    disp_texture.noise_scale =
+0.5
+except
+AttributeError:
+print
+(
+"disp_texture.noise_scale not available."
+)
+try
+:
+    disp_texture.intensity =
+2.0
+except
+AttributeError:
+print
+(
+"disp_texture.intensity not available."
+)
+# Animate displacement (over 500 frames)
+displace.strength =
+0.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+1
+)
+displace.strength =
+1.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+250
+)
+displace.strength =
+0.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+500
+)
+# ---------- Add Camera with Flyover Path ----------
+# Create a new camera data-block and object manually.
+cam_data = bpy.data.cameras.new(
+"FlyoverCamera"
+)
+camera = bpy.data.objects.new(
+"FlyoverCamera"
+, cam_data)
+bpy.context.collection.objects.link(camera)
+
+camera.location = (
+25
+, -
+25
+,
+20
+)
+camera.rotation_euler = (math.radians(
+60
+),
+0
+, math.radians(
+45
+))
+camera.scale = (
+2
+,
+2
+,
+2
+)
+# Enlarge the camera icon in the viewport
+# Set camera properties
+cam_data.lens =
+35
+cam_data.clip_end =
+1000
+# Animate camera flyover (over 500 frames)
+scene = bpy.context.scene
+scene.frame_start =
+1
+scene.frame_end =
+500
+camera.location = (
+25
+, -
+25
+,
+20
+)
+camera.keyframe_insert(data_path=
+"location"
+, frame=
+1
+)
+camera.location = (-
+25
+,
+25
+,
+15
+)
+camera.keyframe_insert(data_path=
+"location"
+, frame=
+500
+)
+# ---------- Add Lighting ----------
+bpy.ops.
+object
+.light_add(
+type
+=
+'SUN'
+, location=(
+0
+,
+0
+,
+50
+))
+light = bpy.context.active_object
+light.data.energy =
+10
+# ---------- Set Render Settings ----------
+scene.render.resolution_x =
+1920
+scene.render.resolution_y =
+1080
+scene.render.engine =
+'BLENDER_EEVEE'
+scene.camera = camera
+# Set our new camera as the active camera
+# Force viewport update and align to camera
+bpy.ops.
+object
+.select_all(action=
+'DESELECT'
+)
+camera.select_set(
+True
+)
+bpy.context.view_layer.objects.active = camera
+bpy.ops.view3d.view_camera()
+# Align view to camera
+bpy.ops.wm.redraw_timer(
+type
+=
+'DRAW_WIN'
+, iterations=
+1
+)
+print
+(
+"Setup complete. Press Numpad 0 to view through the camera, then Alt+A to play the animation!"
+)
+Explanation
+ColorRamp Adjustments:
+The ColorRamp now uses cooler colors.
+The left element starts as dark blue (0.0, 0.0, 0.5, 1.0) and animates to a cyan (0.0, 0.5, 0.5, 1.0) at frame 250 before reverting.
+The right element starts as a bright cyan-green (0.0, 0.8, 0.6, 1.0) and shifts to a slightly different bluish-green (0.0, 0.7, 0.8, 1.0) at frame 250.
+Bright/Contrast Node:
+The Bright/Contrast node further darkens the overall look and boosts contrast.
+Run this updated script in Blender’s Text Editor. Adjust the color values or Bright/Contrast settings as needed until you achieve your desired cool-toned, higher-contrast look.
+Dijiste:
+No that wrecked it try another way,
+ChatGPT dijo:
+Reasoned for 24 seconds
+Below is an alternative approach that redefines the color ramp entirely with cooler, darker hues without using additional nodes. In this version, the ColorRamp is set up with two stops that are directly tuned to blue–green tones and then animated over 500 frames. You can tweak the exact color values as needed.
+python
+Copiar código
+import
+bpy
+import
+math
+# ---------- Clear the Scene ----------
+bpy.ops.
+object
+.select_all(action=
+'SELECT'
+)
+bpy.ops.
+object
+.delete(use_global=
+False
+)
+# ---------- Create a Plane as the Base Landscape ----------
+bpy.ops.mesh.primitive_plane_add(size=
+50
+, location=(
+0
+,
+0
+,
+0
+))
+plane = bpy.context.active_object
+plane.name =
+"FractalPlane"
+# Subdivide for detail (creates a 64x64 grid)
+bpy.ops.
+object
+.mode_set(mode=
+'EDIT'
+)
+bpy.ops.mesh.subdivide(number_cuts=
+63
+)
+bpy.ops.
+object
+.mode_set(mode=
+'OBJECT'
+)
+# ---------- Add Material with Noise-Based Color Animation ----------
+mat = bpy.data.materials.new(name=
+"FractalMaterial"
+)
+mat.use_nodes =
+True
+nodes = mat.node_tree.nodes
+links = mat.node_tree.links
+
+nodes.clear()
+output = nodes.new(
+"ShaderNodeOutputMaterial"
+)
+diffuse = nodes.new(
+"ShaderNodeBsdfDiffuse"
+)
+color_ramp = nodes.new(
+"ShaderNodeValToRGB"
+)
+noise = nodes.new(
+"ShaderNodeTexNoise"
+)
+mapping = nodes.new(
+"ShaderNodeMapping"
+)
+coords = nodes.new(
+"ShaderNodeTexCoord"
+)
+# Link nodes
+links.new(coords.outputs[
+"Object"
+], mapping.inputs[
+"Vector"
+])
+links.new(mapping.outputs[
+"Vector"
+], noise.inputs[
+"Vector"
+])
+links.new(noise.outputs[
+"Fac"
+], color_ramp.inputs[
+"Fac"
+])
+links.new(color_ramp.outputs[
+"Color"
+], diffuse.inputs[
+"Color"
+])
+links.new(diffuse.outputs[
+"BSDF"
+], output.inputs[
+"Surface"
+])
+# Set Noise parameters
+noise.inputs[
+"Scale"
+].default_value =
+5.0
+noise.inputs[
+"Detail"
+].default_value =
+16.0
+noise.inputs[
+"Roughness"
+].default_value =
+0.6
+# Set up ColorRamp with cooler, darker tones
+color_ramp.color_ramp.interpolation =
+'B_SPLINE'
+# Left element: dark teal (initial)
+color_ramp.color_ramp.elements[
+0
+].position =
+0.0
+color_ramp.color_ramp.elements[
+0
+].color = (
+0.0
+,
+0.2
+,
+0.3
+,
+1.0
+)
+# dark teal
+# Right element: cyan (initial)
+color_ramp.color_ramp.elements[
+1
+].position =
+1.0
+color_ramp.color_ramp.elements[
+1
+].color = (
+0.1
+,
+0.8
+,
+0.8
+,
+1.0
+)
+# cyan
+# Animate left element (element 0)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.0
+,
+0.2
+,
+0.3
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+1
+)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.0
+,
+0.3
+,
+0.4
+,
+1.0
+]
+# slightly lighter teal
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+250
+)
+color_ramp.color_ramp.elements[
+0
+].color = [
+0.0
+,
+0.2
+,
+0.3
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+0
+].keyframe_insert(data_path=
+"color"
+, frame=
+500
+)
+# Animate right element (element 1)
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.1
+,
+0.8
+,
+0.8
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+1
+)
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.0
+,
+0.75
+,
+0.85
+,
+1.0
+]
+# shift slightly toward blue-green
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+250
+)
+color_ramp.color_ramp.elements[
+1
+].color = [
+0.1
+,
+0.8
+,
+0.8
+,
+1.0
+]
+color_ramp.color_ramp.elements[
+1
+].keyframe_insert(data_path=
+"color"
+, frame=
+500
+)
+
+plane.data.materials.append(mat)
+# ---------- Add Displacement for Height Animation ----------
+bpy.ops.
+object
+.modifier_add(
+type
+=
+'DISPLACE'
+)
+displace = plane.modifiers[-
+1
+]
+displace.name =
+"FractalHeight"
+# Create a new texture for displacement
+disp_texture = bpy.data.textures.new(
+"NoiseDisp"
+,
+type
+=
+'NOISE'
+)
+displace.texture = disp_texture
+# Attempt to set legacy properties (if available)
+try
+:
+    disp_texture.noise_scale =
+0.5
+except
+AttributeError:
+print
+(
+"disp_texture.noise_scale not available."
+)
+try
+:
+    disp_texture.intensity =
+2.0
+except
+AttributeError:
+print
+(
+"disp_texture.intensity not available."
+)
+# Animate displacement strength (over 500 frames)
+displace.strength =
+0.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+1
+)
+displace.strength =
+1.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+250
+)
+displace.strength =
+0.5
+displace.keyframe_insert(data_path=
+"strength"
+, frame=
+500
+)
+# ---------- Add Camera with Flyover Path ----------
+# Create a new camera data-block and object manually.
+cam_data = bpy.data.cameras.new(
+"FlyoverCamera"
+)
+camera = bpy.data.objects.new(
+"FlyoverCamera"
+, cam_data)
+bpy.context.collection.objects.link(camera)
+
+camera.location = (
+25
+, -
+25
+,
+20
+)
+camera.rotation_euler = (math.radians(
+60
+),
+0
+, math.radians(
+45
+))
+camera.scale = (
+2
+,
+2
+,
+2
+)
+# Enlarge the camera icon in the viewport
+# Set camera properties
+cam_data.lens =
+35
+cam_data.clip_end =
+1000
+# Animate camera flyover (over 500 frames)
+scene = bpy.context.scene
+scene.frame_start =
+1
+scene.frame_end =
+500
+camera.location = (
+25
+, -
+25
+,
+20
+)
+camera.keyframe_insert(data_path=
+"location"
+, frame=
+1
+)
+camera.location = (-
+25
+,
+25
+,
+15
+)
+camera.keyframe_insert(data_path=
+"location"
+, frame=
+500
+)
+# ---------- Add Lighting ----------
+bpy.ops.
+object
+.light_add(
+type
+=
+'SUN'
+, location=(
+0
+,
+0
+,
+50
+))
+light = bpy.context.active_object
+light.data.energy =
+10
+# ---------- Set Render Settings ----------
+scene.render.resolution_x =
+1920
+scene.render.resolution_y =
+1080
+scene.render.engine =
+'BLENDER_EEVEE'
+scene.camera = camera
+# Set our new camera as the active camera
+# Force viewport update and align view to camera
+bpy.ops.
+object
+.select_all(action=
+'DESELECT'
+)
+camera.select_set(
+True
+)
+bpy.context.view_layer.objects.active = camera
+bpy.ops.view3d.view_camera()
+# Align view to camera
+bpy.ops.wm.redraw_timer(
+type
+=
+'DRAW_WIN'
+, iterations=
+1
+)
+print
+(
+"Setup complete. Press Numpad 0 to view through the camera, then Alt+A to play the animation!"
+)
+Explanation
+Material Setup:
+• The material uses a Noise Texture → Mapping → Texture Coordinate chain to drive a ColorRamp.
+• The ColorRamp now has two stops set to cooler, darker hues:
+Element 0:
+Starts as a dark teal (0.0, 0.2, 0.3, 1.0) and animates to a slightly lighter teal before reverting.
+Element 1:
+Starts as a cyan (0.1, 0.8, 0.8, 1.0) and shifts slightly toward a blue-green (0.0, 0.75, 0.85, 1.0).
+Displacement:
+• A Displace modifier with a noise texture is added and animated over 500 frames.
+• Legacy texture properties are attempted (with a fallback if not available).
+Camera & Lighting:
+• A new camera is created and animated along a flyover path.
+• A sun lamp is added for illumination.
+Render Settings & Viewport Update:
+• The render resolution is set to 1920×1080, and the Eevee engine is used.
+• The scene camera is set, and the viewport is forced to update and align to the camera.
+Run this script in Blender’s Text Editor. It should produce a fractal plane with a cooler, blue–cyan–green palette and a darker overall look. Adjust the color values or keyframe timings further to fine-tune the appearance as desired.
+Buscar
+Investigar a fondo
+ChatGPT puede cometer errores. Comprueba la información importante.
+?
+
