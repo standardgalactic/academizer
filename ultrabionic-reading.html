@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Font Portal - Experiments</title>
+  <style>
+    /* Retro Windows 3.1 / BBS style */
+    body {
+      background-color: #c0c0c0; /* classic Windows gray */
+      font-family: "MS Sans Serif", Tahoma, sans-serif;
+      margin: 0;
+      padding: 20px;
+      color: black;
+    }
+    .window {
+      border: 2px solid #000080;
+      background-color: #ffffff;
+      box-shadow: 2px 2px 0px #000000;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 1200px;
+    }
+    .title-bar {
+      background-color: #000080;
+      color: white;
+      padding: 5px 10px;
+      font-size: 1.5em;
+    }
+    .content {
+      padding: 10px;
+    }
+    .section {
+      border: 1px solid #000080;
+      margin: 10px 0;
+      padding: 10px;
+    }
+    .section h2 {
+      margin-top: 0;
+    }
+    .slider-container {
+      margin: 10px 0;
+    }
+    .experiment-output {
+      border: 1px solid #000080;
+      background-color: #e0e0e0;
+      padding: 10px;
+      min-height: 100px;
+    }
+    .letter {
+      display: inline-block;
+      transition: all 0.3s ease;
+    }
+    button {
+      font-family: "MS Sans Serif", Tahoma, sans-serif;
+      background-color: #000080;
+      color: white;
+      border: 1px solid #000000;
+      padding: 5px 10px;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    button:hover {
+      background-color: #0000a0;
+    }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <div class="title-bar">Font Portal - Experiments</div>
+    <div class="content">
+
+      <!-- Section 1: Interpolated Font Size (Stress & Loudness) -->
+      <div class="section" id="stressSection">
+        <h2>Interpolated Font Size (Stress &amp; Loudness)</h2>
+        <p>
+          In this experiment we simulate loudness and stress by interpolating font sizes between letters. An algorithm computes an “ideal” font size using a sine wave function and then adjusts every other letter—if the next letter’s ideal size is larger, we enlarge by 20%; if smaller, we shrink by 20%. This method could be used to emphasize syllables or stress parts of words, much like ultra‑bionic reading.
+        </p>
+        <div class="slider-container">
+          <label for="stressAmplitudeSlider">Amplitude: <span id="stressAmplitudeValue"></span></label>
+          <input type="range" id="stressAmplitudeSlider" min="0" max="40" value="20">
+        </div>
+        <div class="experiment-output" id="stressOutput"></div>
+      </div>
+
+      <!-- Section 2: Pitch Variation Experiment -->
+      <div class="section" id="pitchSection">
+        <h2>Pitch Variation Experiment</h2>
+        <p>
+          This experiment represents pitch by shifting each letter’s vertical position. A sine function is used to calculate a vertical offset for each character, simulating rising and falling intonation. Adjust the slider to increase or decrease the pitch amplitude.
+        </p>
+        <div class="slider-container">
+          <label for="pitchAmplitudeSlider">Pitch Amplitude: <span id="pitchAmplitudeValue"></span></label>
+          <input type="range" id="pitchAmplitudeSlider" min="0" max="20" value="10">
+        </div>
+        <div class="experiment-output" id="pitchOutput"></div>
+      </div>
+
+      <!--
+Section 3: Font Infection Experiment 
+      <div class="section" id="infectionSection">
+        <h2>Font Infection Experiment</h2>
+        <p>
+          Here we simulate a gradual font transition—an “infection”—from one typeface to another. The text starts entirely in one font (e.g. SGA) and, as you move through the text, the probability of each letter switching to a second font (e.g. Cursive Galactic) increases linearly. This creates a cascading transition effect.
+        </p>
+<tag>NOTE: The font infection experiment is currently not working as intended.
+At present, the text always appears in Cursive Galactic even with low infection rates.
+Further adjustments or debugging may be required. </tag>
+
+        <div class="slider-container">
+          <label for="infectionRateSlider">Infection Rate: <span id="infectionRateValue"></span></label>
+          <input type="range" id="infectionRateSlider" min="0" max="1" step="0.01" value="0">
+        </div>
+        <div class="experiment-output" id="infectionOutput"></div>
+      </div>
+-->
+
+      <!-- Section 4: Animated Experiments -->
+      <div class="section" id="animatedSection">
+        <h2>Animated Experiments</h2>
+        <p>
+          The following experiments automatically animate their parameters as if a slider were being moved on a loop. You can observe how the stress, pitch, and infection effects vary continuously over time.
+        </p>
+        <button id="toggleAnimation">Start Animation</button>
+        <div class="experiment-output" id="animatedStressOutput" style="margin-top:10px;"></div>
+        <div class="experiment-output" id="animatedPitchOutput" style="margin-top:10px;"></div>
+        <div class="experiment-output" id="animatedInfectionOutput" style="margin-top:10px;"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Longer text sample: two paragraphs.
+    const longText = [
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur sit amet libero nec nisi consectetur tincidunt. Nulla facilisi. Duis ut tincidunt elit. Vivamus ac interdum nisi, at aliquet nunc. Sed lacinia, magna non aliquam aliquet, quam ex congue sem, et gravida massa velit eget lorem.",
+      "Suspendisse potenti. Praesent nec tincidunt lorem. Cras vestibulum, orci vitae lobortis tincidunt, odio justo aliquam quam, non laoreet lacus ipsum sed purus. Donec euismod, erat ut pharetra pretium, urna massa tempus elit, non cursus purus turpis at arcu."
+    ];
+
+    // Helper: Create a span for each character, preserving spaces.
+    function createLetterSpan(char) {
+      const span = document.createElement('span');
+      span.className = "letter";
+      if(char === " ") {
+        span.innerHTML = "&nbsp;";
+      } else {
+        span.textContent = char;
+      }
+      return span;
+    }
+
+    // Experiment 1: Stress Experiment (Interpolated Font Size)
+    // For each letter we calculate an ideal size (using a sine function)
+    // and adjust every odd letter based on whether the following letter’s ideal size is larger.
+    function renderStressExperiment(amplitude, phaseOffset = 0, containerId = "stressOutput") {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+      const baseSize = 20;
+      const frequency = 0.5;
+      longText.forEach(paragraph => {
+        const p = document.createElement('p');
+        let idealSizes = [];
+        // Pre-calculate ideal sizes per character.
+        for (let i = 0; i < paragraph.length; i++) {
+          let char = paragraph[i];
+          if (char === " ") {
+            idealSizes.push(baseSize);
+          } else {
+            let ideal = baseSize + amplitude * Math.sin(i * frequency + phaseOffset);
+            idealSizes.push(ideal);
+          }
+        }
+        // Render each letter with interpolation adjustment.
+        for (let i = 0; i < paragraph.length; i++) {
+          let span = createLetterSpan(paragraph[i]);
+          let size = idealSizes[i];
+          if (i % 2 === 1 && i < paragraph.length - 1 && paragraph[i] !== " ") {
+            if (idealSizes[i + 1] > idealSizes[i]) {
+              size = idealSizes[i] * 1.2;
+            } else {
+              size = idealSizes[i] * 0.8;
+            }
+          }
+          span.style.fontSize = size.toFixed(0) + "px";
+          p.appendChild(span);
+        }
+        container.appendChild(p);
+      });
+    }
+
+    // Experiment 2: Pitch Variation
+    // Each letter’s vertical offset is calculated using a sine function.
+    function renderPitchExperiment(pitchAmplitude, phaseOffset = 0, containerId = "pitchOutput") {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+      const baseSize = 20;
+      const frequency = 0.5;
+      longText.forEach(paragraph => {
+        const p = document.createElement('p');
+        for (let i = 0; i < paragraph.length; i++) {
+          let span = createLetterSpan(paragraph[i]);
+          let offset = pitchAmplitude * Math.sin(i * frequency + phaseOffset);
+          span.style.position = "relative";
+          span.style.top = offset.toFixed(0) + "px";
+          span.style.fontSize = baseSize + "px";
+          p.appendChild(span);
+        }
+        container.appendChild(p);
+      });
+    }
+/* // Experiment 3: Font Infection with Logistic Curve
+function renderInfectionExperiment(infectionRate, containerId = "infectionOutput") {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  const initialFont = "Sga-Regular";
+  const finalFont = "CursiveGalactic-Regular"; // Ensure this font is available
+  longText.forEach(paragraph => {
+    const p = document.createElement('p');
+    for (let i = 0; i < paragraph.length; i++) {
+      let span = createLetterSpan(paragraph[i]);
+      // Calculate the position ratio (0 to 1)
+      let t = i / paragraph.length;
+      // Use a logistic function to compute infection probability.
+      // k controls the steepness; when infectionRate is 0, no letter is infected.
+      let k = 10 * infectionRate;
+      let probability = (infectionRate === 0) ? 0 : 1 / (1 + Math.exp(-k * (t - 0.5)));
+      if (Math.random() < probability && paragraph[i] !== " ") {
+        span.style.fontFamily = finalFont;
+      } else {
+        span.style.fontFamily = initialFont;
+      }
+      span.style.fontSize = "20px";
+      p.appendChild(span);
+    }
+    container.appendChild(p);
+  });
+}
+*/
+
+
+
+    // Utility: Update slider display.
+    function updateDisplay(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    // --- Manual Controls for Each Experiment ---
+    // Stress Experiment Slider
+    const stressAmplitudeSlider = document.getElementById('stressAmplitudeSlider');
+    stressAmplitudeSlider.addEventListener('input', function() {
+      let amplitude = parseFloat(this.value);
+      updateDisplay("stressAmplitudeValue", amplitude);
+      renderStressExperiment(amplitude);
+    });
+    updateDisplay("stressAmplitudeValue", stressAmplitudeSlider.value);
+    renderStressExperiment(parseFloat(stressAmplitudeSlider.value));
+
+    // Pitch Experiment Slider
+    const pitchAmplitudeSlider = document.getElementById('pitchAmplitudeSlider');
+    pitchAmplitudeSlider.addEventListener('input', function() {
+      let amplitude = parseFloat(this.value);
+      updateDisplay("pitchAmplitudeValue", amplitude);
+      renderPitchExperiment(amplitude);
+    });
+    updateDisplay("pitchAmplitudeValue", pitchAmplitudeSlider.value);
+    renderPitchExperiment(parseFloat(pitchAmplitudeSlider.value));
+
+   /*  // Infection Experiment Slider
+    const infectionRateSlider = document.getElementById('infectionRateSlider');
+    infectionRateSlider.addEventListener('input', function() {
+      let rate = parseFloat(this.value);
+      updateDisplay("infectionRateValue", rate);
+      renderInfectionExperiment(rate);
+    });
+    updateDisplay("infectionRateValue", infectionRateSlider.value);
+    renderInfectionExperiment(parseFloat(infectionRateSlider.value));
+*/
+
+    // --- Animated Experiments ---
+    let animating = false;
+    let animationTime = 0;
+    const toggleAnimationBtn = document.getElementById('toggleAnimation');
+    toggleAnimationBtn.addEventListener('click', function() {
+      animating = !animating;
+      if (animating) {
+        toggleAnimationBtn.textContent = "Stop Animation";
+        animate();
+      } else {
+        toggleAnimationBtn.textContent = "Start Animation";
+      }
+    });
+
+    function animate() {
+      if (!animating) return;
+      animationTime += 0.05; // Change phase over time
+
+      // Animated Stress Experiment: reuse the manual amplitude slider value.
+      let stressAmplitude = parseFloat(stressAmplitudeSlider.value);
+      renderStressExperiment(stressAmplitude, animationTime, "animatedStressOutput");
+
+      // Animated Pitch Experiment: reuse pitch slider value.
+      let pitchAmplitude = parseFloat(pitchAmplitudeSlider.value);
+      renderPitchExperiment(pitchAmplitude, animationTime, "animatedPitchOutput");
+
+   /*   // Animated Infection Experiment: oscillate infection rate between 0 and 1.
+      let infectionRate = (Math.sin(animationTime) + 1) / 2;
+      updateDisplay("infectionRateValue", infectionRate.toFixed(2));
+      renderInfectionExperiment(infectionRate, "animatedInfectionOutput"); */
+
+      requestAnimationFrame(animate);
+    }
+  </script>
+</body>
+</html>
+

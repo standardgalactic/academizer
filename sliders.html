@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Font Experiment Pages</title>
+  <style>
+    /* Retro theme & starfield backdrop */
+    @font-face {
+      src: url('fonts/Sga-Regular.woff2') format('woff2'),
+           url('fonts/Sga-Regular.woff') format('woff'),
+           url('fonts/Sga-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-family: 'Sga Regular';
+    }
+    @font-face {
+      font-family: "Cheiro-Regular";
+      src: url("fonts/Cheiro-Regular.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Clypto-Regular";
+      src: url("fonts/Clypto-Regular.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "CursiveGalactic-Regular";
+      src: url("fonts/CursiveGalactic-Regular.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Lingojam_cipher-Regular";
+      src: url("fonts/Lingojam_cipher-Regular.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Logico_philosophicus-Regular";
+      src: url("fonts/Logico_philosophicus-Regular.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "NovaMonoStandardGalactic";
+      src: url("fonts/NovaMonoStandardGalactic.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Systada-Regular";
+      src: url("fonts/Systada-Regular.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "shapeform";
+      src: url("fonts/shapeform.ttf") format("truetype");
+    }
+
+    body {
+      font-family: 'Sga Regular', Arial, sans-serif;
+      color: #00ff00;
+      background: black;
+      margin: 0;
+      overflow-x: hidden;
+    }
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+    .content {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      background-color: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border: 2px solid #00ff00;
+      box-shadow: 0 0 20px #00ff00;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 1200px;
+    }
+    h1 {
+      margin: 0;
+      padding: 0;
+      font-size: 2.5em;
+    }
+    h2 {
+      margin: 20px 0;
+      font-size: 1.8em;
+    }
+    .section {
+      margin-bottom: 40px;
+      border: 1px solid #00ff00;
+      padding: 10px;
+    }
+    .slider-container {
+      margin-bottom: 20px;
+    }
+    .letter {
+      display: inline-block;
+      transition: all 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="starfield"></canvas>
+  <div class="content">
+    <h1>Font Experiment Pages</h1>
+    
+    <!-- Varying Letter Sizes Experiment -->
+    <div class="section" id="sizeExperiment">
+      <h2>Varying Letter Sizes</h2>
+      <div class="slider-container">
+        <label for="sizeSeedSlider">Seed: <span id="sizeSeedValue"></span></label>
+        <input type="range" id="sizeSeedSlider" min="0" max="10000" value="0">
+      </div>
+      <p id="sizeText"></p>
+    </div>
+
+    <!-- Different Fonts Per Letter Experiment -->
+    <div class="section" id="fontExperiment">
+      <h2>Different Fonts Per Letter</h2>
+      <div class="slider-container">
+        <label for="fontSeedSlider">Seed: <span id="fontSeedValue"></span></label>
+        <input type="range" id="fontSeedSlider" min="0" max="10000" value="0">
+      </div>
+      <p id="fontText"></p>
+    </div>
+
+    <!-- Random Colors Per Letter Experiment -->
+    <div class="section" id="colorExperiment">
+      <h2>Random Colors Per Letter</h2>
+      <div class="slider-container">
+        <label for="colorSeedSlider">Seed: <span id="colorSeedValue"></span></label>
+        <input type="range" id="colorSeedSlider" min="0" max="10000" value="0">
+      </div>
+      <p id="colorText"></p>
+    </div>
+
+    <!-- Random Rotation Per Letter Experiment -->
+    <div class="section" id="rotationExperiment">
+      <h2>Random Rotation Per Letter</h2>
+      <div class="slider-container">
+        <label for="rotationSeedSlider">Seed: <span id="rotationSeedValue"></span></label>
+        <input type="range" id="rotationSeedSlider" min="0" max="10000" value="0">
+      </div>
+      <p id="rotationText"></p>
+    </div>
+
+    <!-- Random Letter Spacing Experiment -->
+    <div class="section" id="spacingExperiment">
+      <h2>Random Letter Spacing</h2>
+      <div class="slider-container">
+        <label for="spacingSeedSlider">Seed: <span id="spacingSeedValue"></span></label>
+        <input type="range" id="spacingSeedSlider" min="0" max="10000" value="0">
+      </div>
+      <p id="spacingText"></p>
+    </div>
+
+    <!-- All Fonts Gallery -->
+    <div class="section" id="gallery">
+      <h2>All Fonts Gallery</h2>
+      <div class="slider-container">
+        <label for="gallerySizeSlider">Font Size (px): <span id="gallerySizeValue"></span></label>
+        <input type="range" id="gallerySizeSlider" min="20" max="100" value="40">
+      </div>
+      <div id="galleryContent"></div>
+    </div>
+  </div>
+
+  <script>
+    // Starfield background (retro flying stars)
+    const starCanvas = document.getElementById('starfield');
+    const starContext = starCanvas.getContext('2d');
+    starCanvas.width = window.innerWidth;
+    starCanvas.height = window.innerHeight;
+
+    let stars = [];
+    const numStars = 1000;
+    const speed = 0.05;
+
+    for (let i = 0; i < numStars; i++) {
+      stars.push({
+        x: Math.random() * starCanvas.width,
+        y: Math.random() * starCanvas.height,
+        z: Math.random() * starCanvas.width
+      });
+    }
+
+    function updateStars() {
+      for (let star of stars) {
+        star.z -= speed;
+        if (star.z <= 0) {
+          star.x = Math.random() * starCanvas.width;
+          star.y = Math.random() * starCanvas.height;
+          star.z = starCanvas.width;
+        }
+      }
+    }
+
+    function drawStars() {
+      starContext.clearRect(0, 0, starCanvas.width, starCanvas.height);
+      for (let star of stars) {
+        const x = (star.x - starCanvas.width / 2) * (starCanvas.width / star.z);
+        const y = (star.y - starCanvas.height / 2) * (starCanvas.width / star.z);
+        const size = (starCanvas.width / star.z) * 0.5;
+        starContext.beginPath();
+        starContext.arc(x + starCanvas.width / 2, y + starCanvas.height / 2, size, 0, Math.PI * 2);
+        starContext.fillStyle = '#ffffff';
+        starContext.fill();
+        starContext.closePath();
+      }
+    }
+
+    function animateStars() {
+      updateStars();
+      drawStars();
+      requestAnimationFrame(animateStars);
+    }
+
+    animateStars();
+
+    // Seeded random generator (mulberry32)
+    function mulberry32(a) {
+      return function() {
+        var t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      }
+    }
+
+    const sentence = "The quick brown fox jumps over the lazy dog";
+    // Array of custom fonts (names matching our @font-face declarations)
+    const fonts = [
+      "Cheiro-Regular",
+      "Clypto-Regular",
+      "CursiveGalactic-Regular",
+      "Lingojam_cipher-Regular",
+      "Logico_philosophicus-Regular",
+      "NovaMonoStandardGalactic",
+      "Sga Regular",
+      "Systada-Regular",
+      "shapeform"
+    ];
+
+    // Helper: Create a span for each character,
+    // preserving spaces as non-breaking spaces.
+    function createLetterSpan(char, effectCallback) {
+      const span = document.createElement('span');
+      span.className = "letter";
+      if (char === " ") {
+        span.innerHTML = "&nbsp;";
+      } else {
+        span.textContent = char;
+        if (effectCallback) {
+          effectCallback(span);
+        }
+      }
+      return span;
+    }
+
+    // Render Varying Letter Sizes experiment.
+    function renderSizeExperiment(seed) {
+      const rand = mulberry32(seed);
+      const container = document.getElementById('sizeText');
+      container.innerHTML = "";
+      for (let char of sentence) {
+        const span = createLetterSpan(char, (s) => {
+          let size = 20 + rand() * 80; // 20px to 100px
+          s.style.fontSize = size.toFixed(0) + "px";
+        });
+        container.appendChild(span);
+      }
+    }
+
+    // Render Different Fonts Per Letter experiment.
+    function renderFontExperiment(seed) {
+      const rand = mulberry32(seed);
+      const container = document.getElementById('fontText');
+      container.innerHTML = "";
+      for (let char of sentence) {
+        const span = createLetterSpan(char, (s) => {
+          let fontIndex = Math.floor(rand() * fonts.length);
+          s.style.fontFamily = fonts[fontIndex];
+          let size = 20 + rand() * 20; // 20px to 40px
+          s.style.fontSize = size.toFixed(0) + "px";
+        });
+        container.appendChild(span);
+      }
+    }
+
+    // Render Random Colors Per Letter experiment.
+    function renderColorExperiment(seed) {
+      const rand = mulberry32(seed);
+      const container = document.getElementById('colorText');
+      container.innerHTML = "";
+      for (let char of sentence) {
+        const span = createLetterSpan(char, (s) => {
+          let r = Math.floor(rand() * 256);
+          let g = Math.floor(rand() * 256);
+          let b = Math.floor(rand() * 256);
+          s.style.color = `rgb(${r}, ${g}, ${b})`;
+          s.style.fontSize = "40px";
+        });
+        container.appendChild(span);
+      }
+    }
+
+    // Render Random Rotation Per Letter experiment.
+    function renderRotationExperiment(seed) {
+      const rand = mulberry32(seed);
+      const container = document.getElementById('rotationText');
+      container.innerHTML = "";
+      for (let char of sentence) {
+        const span = createLetterSpan(char, (s) => {
+          let rotation = -45 + rand() * 90; // -45deg to +45deg
+          s.style.transform = `rotate(${rotation.toFixed(0)}deg)`;
+          s.style.fontSize = "40px";
+        });
+        container.appendChild(span);
+      }
+    }
+
+    // Render Random Letter Spacing experiment.
+    function renderSpacingExperiment(seed) {
+      const rand = mulberry32(seed);
+      const container = document.getElementById('spacingText');
+      container.innerHTML = "";
+      for (let char of sentence) {
+        const span = createLetterSpan(char, (s) => {
+          let spacing = rand() * 10; // 0 to 10px
+          s.style.marginRight = spacing.toFixed(0) + "px";
+          s.style.fontSize = "40px";
+        });
+        container.appendChild(span);
+      }
+    }
+
+    // Render All Fonts Gallery.
+    function renderGallery(size) {
+      const container = document.getElementById('galleryContent');
+      container.innerHTML = "";
+      fonts.forEach(font => {
+        const div = document.createElement('div');
+        div.style.fontFamily = font;
+        div.style.fontSize = size + "px";
+        div.style.marginBottom = "10px";
+        div.textContent = font + ": " + sentence;
+        container.appendChild(div);
+      });
+    }
+
+    // Setup slider event listeners for each experiment.
+    // Size Experiment
+    const sizeSlider = document.getElementById('sizeSeedSlider');
+    const sizeSeedDisplay = document.getElementById('sizeSeedValue');
+    sizeSlider.addEventListener('input', function() {
+      const seed = parseInt(this.value);
+      sizeSeedDisplay.textContent = seed;
+      renderSizeExperiment(seed);
+    });
+    sizeSeedDisplay.textContent = sizeSlider.value;
+    renderSizeExperiment(parseInt(sizeSlider.value));
+
+    // Font Experiment
+    const fontSlider = document.getElementById('fontSeedSlider');
+    const fontSeedDisplay = document.getElementById('fontSeedValue');
+    fontSlider.addEventListener('input', function() {
+      const seed = parseInt(this.value);
+      fontSeedDisplay.textContent = seed;
+      renderFontExperiment(seed);
+    });
+    fontSeedDisplay.textContent = fontSlider.value;
+    renderFontExperiment(parseInt(fontSlider.value));
+
+    // Color Experiment
+    const colorSlider = document.getElementById('colorSeedSlider');
+    const colorSeedDisplay = document.getElementById('colorSeedValue');
+    colorSlider.addEventListener('input', function() {
+      const seed = parseInt(this.value);
+      colorSeedDisplay.textContent = seed;
+      renderColorExperiment(seed);
+    });
+    colorSeedDisplay.textContent = colorSlider.value;
+    renderColorExperiment(parseInt(colorSlider.value));
+
+    // Rotation Experiment
+    const rotationSlider = document.getElementById('rotationSeedSlider');
+    const rotationSeedDisplay = document.getElementById('rotationSeedValue');
+    rotationSlider.addEventListener('input', function() {
+      const seed = parseInt(this.value);
+      rotationSeedDisplay.textContent = seed;
+      renderRotationExperiment(seed);
+    });
+    rotationSeedDisplay.textContent = rotationSlider.value;
+    renderRotationExperiment(parseInt(rotationSlider.value));
+
+    // Spacing Experiment
+    const spacingSlider = document.getElementById('spacingSeedSlider');
+    const spacingSeedDisplay = document.getElementById('spacingSeedValue');
+    spacingSlider.addEventListener('input', function() {
+      const seed = parseInt(this.value);
+      spacingSeedDisplay.textContent = seed;
+      renderSpacingExperiment(seed);
+    });
+    spacingSeedDisplay.textContent = spacingSlider.value;
+    renderSpacingExperiment(parseInt(spacingSlider.value));
+
+    // Gallery slider
+    const gallerySlider = document.getElementById('gallerySizeSlider');
+    const gallerySizeDisplay = document.getElementById('gallerySizeValue');
+    gallerySlider.addEventListener('input', function() {
+      const size = parseInt(this.value);
+      gallerySizeDisplay.textContent = size;
+      renderGallery(size);
+    });
+    gallerySizeDisplay.textContent = gallerySlider.value;
+    renderGallery(parseInt(gallerySlider.value));
+  </script>
+</body>
+</html>
+
