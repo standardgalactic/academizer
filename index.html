@@ -1,231 +1,228 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Reading Pacer</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quadrivium - Interactive Parsing Tree Visualizer</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
 
-  <!-- SEO Meta Tags -->
-  <meta name="description" content="Reading Pacer is an interactive terminal-based application that guides your reading pace with customizable font styles and dynamic content loading.">
-  <meta name="keywords" content="Reading Pacer, interactive reading, customizable fonts, dynamic content, terminal-based application">
-  <meta name="author" content="Standard Galactic">
+        #container {
+            width: 80vw;
+            height: 80vh;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: auto; /* Enable scrollbars */
+        }
 
-  <!-- Open Graph Meta Tags -->
-  <meta property="og:title" content="Reading Pacer">
-  <meta property="og:description" content="Reading Pacer is an interactive terminal-based application that guides your reading pace with customizable font styles and dynamic content loading.">
-  <meta property="og:image" content="boilerplate.png">
-  <meta property="og:url" content="http://standardgalactic.github.io/pacer/"> 
-  <meta property="og:type" content="website">
+        #title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
 
-  <!-- Twitter Card Meta Tags -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Reading Pacer">
-  <meta name="twitter:description" content="Reading Pacer is an interactive terminal-based application that guides your reading pace with customizable font styles and dynamic content loading.">
-  <meta name="twitter:image" content="boilerplate.png">
-  <meta name="twitter:site" content="@galactromeda"> 
+        #input-section {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
 
-  <style>
-    @font-face {
-      src: url('fonts/Sga-Regular.woff2') format('woff2'),
-           url('fonts/Sga-Regular.woff') format('woff'),
-           url('fonts/Sga-Regular.ttf') format('truetype');
-      font-weight: normal;
-      font-style: normal;
-      font-family: 'Sga Regular';
-    }
+        #sentence-input {
+            padding: 10px;
+            flex-grow: 1;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
 
-    @font-face {
-      src: url('fonts/CursiveGalactic-Regular.woff2') format('woff2'),
-           url('fonts/CursiveGalactic-Regular.woff') format('woff'),
-           url('fonts/CursiveGalactic-Regular.ttf') format('truetype');
-      font-weight: normal;
-      font-style: normal;
-      font-family: 'CursiveGalactic Regular';
-    }
+        #visualize-btn {
+            padding: 10px 20px;
+            background: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
 
-    @font-face {
-      font-family: "Nova Mono";
-      src: url("fonts/NovaMonoStandardGalactic.ttf") format("truetype");
-      font-weight: normal;
-      font-style: normal;
-    }
+        #visualize-btn:hover {
+            background: #555;
+        }
 
-    /* Three font classes (cycling) */
-    .sga-font {
-      font-family: 'Sga Regular', 'Courier New', Courier, monospace;
-      font-size: 30px;
-    }
-    .cursive-galactic-font {
-      font-family: 'CursiveGalactic Regular', 'Courier New', Courier, monospace;
-      font-size: 24px;
-    }
-    .courier-font {
-      font-family: 'Nova Mono', Courier, monospace;
-      font-size: 14px;
-    }
+        #output {
+            width: 100%;
+            height: calc(100% - 60px);
+            overflow: auto; /* Enable scrollbars */
+        }
 
-    /* Fixed footer pinned at bottom of screen */
-    .footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: black;
-      color: #44ff44;
-      text-align: center;
-      padding: 10px;
-      box-sizing: border-box;
-      font-size: 18px;
-      font-family: 'Sga Regular', 'Courier New', Courier, monospace;
-    }
-    .footer a {
-      color: #44ff44;
-      text-decoration: none;
-    }
-    .footer a:hover {
-      text-decoration: underline;
-      cursor: url('cursor/Link Select v4.1.ani'), pointer;
-    }
-  </style>
+        .link {
+            fill: none;
+            stroke: #555;
+            stroke-width: 1.5px;
+        }
+
+        .node circle {
+            fill: #fff;
+            stroke: #333;
+            stroke-width: 1.5px;
+        }
+
+        .node text {
+            font-size: 12px;
+        }
+    </style>
 </head>
 <body>
-  <div id="terminal" class="sga-font"></div>
 
-  <script>
-    let typingSpeed = 50;
-    let index = 0;
-    let content = '';
-    let direction = 1;
-    let typingInterval;
+<header>
+    <h1>Quadrivium</h1>
+</header>
 
-    const fonts = [
-      { className: 'sga-font', footerFont: "'Sga Regular', 'Courier New', Courier, monospace" },
-      { className: 'cursive-galactic-font', footerFont: "'CursiveGalactic Regular', 'Courier New', Courier, monospace" },
-      { className: 'courier-font', footerFont: "'Nova Mono', Courier, monospace" }
-    ];
-    let currentFontIndex = 0;
+<div id="container">
+    <div id="title">Interactive Parsing Tree Visualizer</div>
+    <div id="input-section">
+        <input type="text" id="sentence-input" placeholder="Enter a sentence (e.g., The cat chased the mouse)">
+        <button id="visualize-btn" onclick="generateTree()">Visualize</button>
+    </div>
+    <div id="output"></div>
+</div>
+<div id="footer">
+    This page is open source and can be edited <a href="https://github.com/standardgalactic/quadrivium/blob/main/index.html">here</a>.
+</div>
 
-    function fetchFile(filePath) {
-      return fetch(filePath)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok: ' + response.statusText);
-          }
-          return response.text();
-        });
-    }
-
-    function type() {
-      const terminal = document.getElementById('terminal');
-      if (index < content.length && index >= 0) {
-        if (direction === 1) {
-          terminal.innerHTML += content.charAt(index);
-        } else if (direction === -1 && terminal.innerHTML.length > 0) {
-          terminal.innerHTML = terminal.innerHTML.slice(0, -1);
+<script src="https://d3js.org/d3.v6.min.js"></script>
+<script>
+    async function generateTree() {
+        const input = document.getElementById("sentence-input").value.trim();
+        if (!input) {
+            alert("Please enter a sentence.");
+            return;
         }
-        index += direction;
-        terminal.scrollTop = terminal.scrollHeight; // Ensure the terminal scrolls to follow the text
-      }
+
+        const data = parseSentenceToAST(input);
+        renderTree(data);
     }
 
-    function startTyping() {
-      clearInterval(typingInterval);
-      typingInterval = setInterval(type, typingSpeed);
-    }
+    function parseSentenceToAST(sentence) {
+        try {
+            const words = sentence.split(/\s+/);
+            const ast = {
+                name: "Statement",
+                children: []
+            };
 
-    function restartTyping() {
-      index = 0;
-      direction = 1;
-      document.getElementById('terminal').innerHTML = '';
-      startTyping();
-    }
+            let currentNode = ast;
+            let hasSubject = false;
+            let hasVerb = false;
 
-    /* Load sardonic overviews first, then doom debates */
-    Promise.all([
-      fetchFile('How AI Will Impact Politics & Society in 2024-sardonic.txt'),
-      fetchFile('Pedro Domingos Breaks Down The Symbolist Approach to AI-sardonic.txt'),
-      fetchFile('Pedro Domingos on Bayesians and Analogical Learning in AI-sardonic.txt'),
-      fetchFile('doom-debates/overview.txt'),
-      fetchFile('doom-debates/detailed-summary.txt')
-    ])
-      .then(filesContent => {
-        content = filesContent.join('\n\n'); // Combine files
-        content = content.replace(/\*\*(.*?)\*\*/g, '$1'); // Remove **bold** syntax
-        startTyping();
-      })
-      .catch(error => {
-        console.error('Error loading files:', error);
-        document.getElementById('terminal').innerHTML = 'Error loading files: ' + error.message;
-      });
+            words.forEach((word, index) => {
+                const lowerWord = word.toLowerCase();
 
-    /* Cycle to next font in array */
-    function cycleFont() {
-      const terminal = document.getElementById('terminal');
-      const footer = document.querySelector('.footer');
+                if (["the", "a", "an"].includes(lowerWord) && !hasSubject) {
+                    currentNode.children.push({
+                        name: "Determiner",
+                        children: [{ name: word }]
+                    });
+                }
+                else if (!hasSubject && !["is", "was", "were"].includes(lowerWord)) {
+                    currentNode.children.push({
+                        name: "Subject",
+                        children: [{ name: "NounPhrase", children: [{ name: word }] }]
+                    });
+                    hasSubject = true;
+                }
+                else if (hasSubject && !hasVerb) {
+                    currentNode.children.push({
+                        name: "Predicate",
+                        children: [{ name: "Verb", children: [{ name: word }] }]
+                    });
+                    hasVerb = true;
+                }
+                else if (hasVerb) {
+                    const lastPredicate = currentNode.children.find(c => c.name === "Predicate");
+                    if (!lastPredicate.children.some(c => c.name === "Object")) {
+                        lastPredicate.children.push({
+                            name: "Object",
+                            children: [{ name: "NounPhrase", children: [{ name: word }] }]
+                        });
+                    } else {
+                        lastPredicate.children.find(c => c.name === "Object")
+                            .children[0].children.push({ name: word });
+                    }
+                }
+            });
 
-      fonts.forEach(f => terminal.classList.remove(f.className));
-      currentFontIndex = (currentFontIndex + 1) % fonts.length;
-      const newFont = fonts[currentFontIndex];
-
-      terminal.classList.add(newFont.className);
-      footer.style.fontFamily = newFont.footerFont;
-    }
-
-    /* Event listeners */
-    document.addEventListener('click', () => {
-      // No arrow buttons, so a click cycles the font
-      cycleFont();
-    });
-
-    document.addEventListener('touchstart', () => {
-      cycleFont();
-    });
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'F5') {
-        // Prevent normal refresh
-        event.preventDefault();
-        restartTyping();
-      } else if (event.key === 'F11') {
-        // Let F11 go fullscreen without toggling font
-        return;
-      } else if (event.ctrlKey || event.altKey || event.metaKey) {
-        // Ignore ctrl/alt/windows combos (e.g. Ctrl++, screenshots, etc.)
-        return;
-      } else if (!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key)) {
-        // Only cycle font if user pressed a letter (A-Z or a-z) or space
-        if (/^[a-zA-Z ]$/.test(event.key)) {
-          cycleFont();
+            return ast.children.length > 0 ? ast : {
+                name: "Error",
+                children: [{ name: "Empty sentence" }]
+            };
+        } catch (e) {
+            return {
+                name: "Error",
+                children: [{ name: "Parsing failed" }]
+            };
         }
-      } else {
-        // Arrows still control typing direction/speed
-        handleArrowKeyPress(event);
-        event.preventDefault();
-      }
-    });
-
-    /* Keyboard arrow logic for direction/speed */
-    function handleArrowKeyPress(event) {
-      if (event.key === 'ArrowUp') {
-        typingSpeed = Math.max(5, typingSpeed - 10);  // speed up
-      } else if (event.key === 'ArrowDown') {
-        typingSpeed = Math.min(1000, typingSpeed + 10); // slow down
-      } else if (event.key === 'ArrowLeft') {
-        direction = -1;
-      } else if (event.key === 'ArrowRight') {
-        direction = 1;
-      }
-      startTyping();
     }
-  </script>
 
-  <!-- Footer -->
-  <div class="footer">
-    This site is open source.
-    <a href="https://github.com/standardgalactic/pacer/edit/main/index.html">
-      Improve this page
-    </a>.
-  </div>
+    function renderTree(data) {
+        const output = document.getElementById("output");
+        output.innerHTML = "";
+
+        const width = output.clientWidth;
+        const height = output.clientHeight;
+
+        const svg = d3.select("#output")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g")
+            .attr("transform", "translate(120,50)");
+
+        const tree = d3.tree().size([height - 100, width - 240]); // Adjusted width to ensure rightmost words are visible
+        const root = d3.hierarchy(data);
+
+        tree(root);
+
+        // Use straight lines instead of curves
+        const link = svg.selectAll(".link")
+            .data(root.descendants().slice(1))
+            .enter().append("line")
+            .attr("class", "link")
+            .attr("x1", d => d.y)
+            .attr("y1", d => d.x)
+            .attr("x2", d => d.parent.y)
+            .attr("y2", d => d.parent.x);
+
+        const node = svg.selectAll(".node")
+            .data(root.descendants())
+            .enter().append("g")
+            .attr("class", d => "node" + (d.children ? " node--internal" : " node--leaf"))
+            .attr("transform", d => `translate(${d.y},${d.x})`);
+
+        node.append("circle")
+            .attr("r", 10)
+            .attr("fill", d => d.data.name === "Error" ? "#ff4444" : "#fff");
+
+        node.append("text")
+            .attr("dy", 3)
+            .attr("x", d => d.children ? -15 : 15)
+            .style("text-anchor", d => d.children ? "end" : "start")
+            .text(d => d.data.name);
+    }
+</script>
+
 </body>
 </html>
