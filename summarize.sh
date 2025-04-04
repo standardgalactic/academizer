@@ -1,62 +1,115 @@
-#!/usr/bin/env bash
-set -Eeuo pipefail
+#!/bin/bash
 
-CHUNK_LINES=50
-MODEL_COMMAND=("ollama" "run" "vanilj/phi-4")
-SUMMARY_OVERVIEW_FILE="Ecological-Superstructures-overview.txt"
+# Script to process text files (excluding overview.txt) and generate summaries
+# Usage: Place in directory with .txt files and run
 
-main_dir="$(pwd)"
-touch "$main_dir/$SUMMARY_OVERVIEW_FILE"
+# Define constants
+readonly PROGRESS_FILE="progress.log"
+readonly SUMMARY_FILE="detailed-summary.txt"
+readonly MAIN_DIR="$(pwd)"
+readonly SKIP_FILE="overview.txt"
 
-log() {
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+# Function to check if a file is already processed
+is_processed() {
+    local file="$1"
+    grep -Fxq "$file" "$MAIN_DIR/$PROGRESS_FILE" 2>/dev/null
 }
 
-cleanup_tempdir() {
-  if [[ -n "${temp_dir:-}" ]] && [[ -d "$temp_dir" ]]; then
-    rm -rf "$temp_dir"
-    log "Cleaned up temporary directory: $temp_dir"
-  fi
+# Initialize log files
+initialize_logs() {
+    touch "$MAIN_DIR/$PROGRESS_FILE" "$MAIN_DIR/$SUMMARY_FILE" 2>/dev/null || {
+        echo "Error: Cannot create log files in $MAIN_DIR" >&2
+        exit 1
+    }
+    
+    {
+        echo "Script started at $(date)"
+        echo "Summaries will be saved to $SUMMARY_FILE"
+        echo "----------------------------------------"
+    } >> "$MAIN_DIR/$PROGRESS_FILE"
 }
-trap cleanup_tempdir EXIT
 
-[[ $# -eq 1 ]] || { echo "Usage: $0 <file-to-process>"; exit 1; }
+# Function to process text files in a directory
+process_files() {
+    local dir="$1"
+    echo "Processing directory: $dir" | tee -a "$MAIN_DIR/$PROGRESS_FILE"
+    
+    if [ ! -r "$dir" ]; then
+        echo "Warning: Directory $dir is not readable" >&2
+        return 1
+    fi
 
-file_to_process="$1"
+    for file in "$dir"/*.txt; do
+        [ -e "$file" ] || continue
+        
+        if [ -f "$file" ] && [ -r "$file" ]; then
+            local file_name=$(basename "$file")
+            
+            # Skip overview.txt
+            if [ "$file_name" = "$SKIP_FILE" ]; then
+                echo "Skipping $file_name" >> "$MAIN_DIR/$PROGRESS_FILE"
+                continue
+            fi
+            
+            if ! is_processed "$file_name"; then
+                echo "Processing $file_name" | tee -a "$MAIN_DIR/$PROGRESS_FILE"
+                
+                local sanitized_name=$(echo "$file_name" | tr -d '[:space:]')
+                local temp_dir
+                temp_dir=$(mktemp -d -t "tmp_${sanitized_name}_XXXXXX") || {
+                    echo "Error: Failed to create temporary directory" >&2
+                    continue
+                }
+                
+                echo "Created temp directory: $temp_dir" >> "$MAIN_DIR/$PROGRESS_FILE"
+                
+                if ! split -l 100 "$file" "$temp_dir/chunk_" 2>/dev/null; then
+                    echo "Error: Failed to split $file_name" >&2
+                    rm -rf "$temp_dir"
+                    continue
+                fi
+                
+                echo "File split into chunks" >> "$MAIN_DIR/$PROGRESS_FILE"
+                
+                for chunk in "$temp_dir"/chunk_*; do
+                    [ -f "$chunk" ] || continue
+                    local chunk_name=$(basename "$chunk")
+                    echo "Summarizing chunk: $chunk_name" >> "$MAIN_DIR/$PROGRESS_FILE"
+                    
+                    if ! ollama run vanilj/phi-4 "Summarize:" < "$chunk" >> "$MAIN_DIR/$SUMMARY_FILE" 2>/dev/null; then
+                        echo "Warning: Failed to summarize $chunk_name" >&2
+                    fi
+                    echo "" >> "$MAIN_DIR/$SUMMARY_FILE"
+                done
+                
+                rm -rf "$temp_dir" && echo "Removed temp directory: $temp_dir" >> "$MAIN_DIR/$PROGRESS_FILE"
+                echo "$file_name" >> "$MAIN_DIR/$PROGRESS_FILE"
+            fi
+        fi
+    done
+}
 
-[[ -f "$file_to_process" ]] || { echo "File not found: $file_to_process"; exit 1; }
+# Function to process subdirectories recursively
+process_subdirectories() {
+    local parent_dir="$1"
+    
+    for dir in "$parent_dir"/*/ ; do
+        [ -d "$dir" ] || continue
+        process_files "$dir"
+        process_subdirectories "$dir"
+    done
+}
 
-file_name="$(basename "$file_to_process")"
-san_name="$(echo "$file_name" | tr -d '[:space:]')"
-temp_dir="$(mktemp -d "$main_dir/tmp_${san_name}_XXXXXX")"
+# Main execution with error handling
+main() {
+    trap 'echo "Script interrupted at $(date)" >> "$MAIN_DIR/$PROGRESS_FILE"; exit 1' INT TERM
+    
+    initialize_logs
+    process_files "$MAIN_DIR"
+    process_subdirectories "$MAIN_DIR"
+    
+    echo "Script completed at $(date)" >> "$MAIN_DIR/$PROGRESS_FILE"
+}
 
-log "Created temporary directory: $temp_dir"
-
-cp "$file_to_process" "$temp_dir/preprocessed.txt"
-
-split -l "$CHUNK_LINES" -- "$temp_dir/preprocessed.txt" "$temp_dir/chunk_"
-log "Split $file_to_process into chunks of $CHUNK_LINES lines each."
-
-{
-  echo "============================================="
-  echo "Summary for file: $file_name"
-  echo "============================================="
-} >> "$SUMMARY_OVERVIEW_FILE"
-
-for chunk_file in "$temp_dir"/chunk_*; do
-  [[ -f "$chunk_file" ]] || continue
-  chunk_name="$(basename "$chunk_file")"
-  log "Summarizing chunk: $chunk_name"
-
-  {
-    echo "Summarize the following text from \"$file_name\"."
-    echo "Focus on main ideas, ignoring extraneous details."
-    echo "---------------"
-    cat "$chunk_file"
-  } | "${MODEL_COMMAND[@]}" >> "$SUMMARY_OVERVIEW_FILE"
-
-  echo "" >> "$SUMMARY_OVERVIEW_FILE"
-done
-
-log "Summarization completed for: $file_to_process"
-
+# Run main function
+main
