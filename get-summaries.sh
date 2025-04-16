@@ -20,6 +20,21 @@ touch "$main_dir/$summary_file"
     echo "Summaries will be saved to $summary_file"
 } >> "$main_dir/$progress_file"
 
+# Function to calculate chunk size to get approximately 25 or 26 chunks
+calculate_chunk_size() {
+    local total_lines=$(wc -l < "$1")
+    local chunk_size=$((total_lines / 25))
+
+    # Ensure chunk size is at least 50 and at most 200
+    if [ "$chunk_size" -lt 50 ]; then
+        chunk_size=50
+    elif [ "$chunk_size" -gt 200 ]; then
+        chunk_size=200
+    fi
+
+    echo "$chunk_size"
+}
+
 # Function to process text files in a directory
 process_files() {
     local dir=$1
@@ -42,9 +57,12 @@ process_files() {
                 temp_dir=$(mktemp -d "$dir/tmp_${sanitized_name}_XXXXXX")
                 echo "Temporary directory created: $temp_dir" >> "$main_dir/$progress_file"
 
-                # Split the file into chunks of 100 lines each
-                split -l 100 "$file" "$temp_dir/chunk_"
-                echo "File split into chunks: $(find "$temp_dir" -type f)" >> "$main_dir/$progress_file"
+                # Calculate chunk size
+                chunk_size=$(calculate_chunk_size "$file")
+
+                # Split the file into chunks
+                split -l "$chunk_size" "$file" "$temp_dir/chunk_"
+                echo "File split into chunks of $chunk_size lines each: $(find "$temp_dir" -type f)" >> "$main_dir/$progress_file"
 
                 # Summarize each chunk and append to the summary file
                 for chunk_file in "$temp_dir"/chunk_*; do
