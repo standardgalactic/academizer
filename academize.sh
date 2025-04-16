@@ -15,8 +15,9 @@ base_directory="$PWD"
 
 # List of directories to process
 directories=(
-"abraxas" "agora" "arcanum" "alphabet" "antivenom" "backward-compatibility" "brain" "bubble-city" "capstone" "Centerfuge" "circle-of-fifths" "cogniscium" "eclectric-oil" "example" "experiments" "ensign" "Haplopraxis/IFM" "hepastitium"  "human" "hyperspace" "keen-unicoder" "library" "logical-connectives" "mindgame" "mirror" "negentropy" "phonograph" "pacer" "prototypes" "psychohistory" "quadrivium"
-"quantum-soup" "umbilicus" "secret-message"  "sitemap" "spherepop" "standardgalactic.github.io" "substrate" "supercube" "systada" "technobabble" "terminal-simulator" "theory" "transcript" "unscannable-interfaces" "vectorspace" "xanadu" "xylomancy" "zetetics" "zygomindfulness")
+"abraxas" "agora" "arcanum" "alphabet" "antivenom" "backward-compatibility" "brain" "bubble-city" "capstone" "Centerfuge" "circle-of-fifths" "cogniscium" "eclectric-oil" "example" "experiments" "ensign" "Haplopraxis/IFM" "hepastitium"  "human" "hyperspace" "keen-unicoder" "keyboard" "library" "logical-connectives" "lorax" "mindgame" "mirror" "negentropy" "phonograph" "pacer" "prototypes" "psychohistory" "quadrivium"
+"quantum-soup" "umbilicus" "secret-message"  "sitemap" "spherepop" "standardgalactic.github.io" "substrate" "supercube" "systada" "technobabble" "teleosemantics" "terminal-simulator" "theory" "transcript" "unscannable-interfaces" "vectorspace" "xanadu" "zetetics" "zygomindfulness" "xylomancy"
+)
 
 # Loop through each specified directory
 for dir in "${directories[@]}"; do
