@@ -1,44 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hepastitium</title>
-    <style>
-        img {
-            max-width: 75vw; /* 75% of viewport width */
-            height: auto; /* Maintain aspect ratio */
-            display: block; /* Remove extra spacing below inline images */
-            margin: 0 auto; /* Center the images */
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Keyboard Layout Classifier</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; max-width: 800px; margin: auto; line-height: 1.6; }
+    code { background: #f4f4f4; padding: 0.2em 0.4em; border-radius: 4px; }
+    pre { background: #f4f4f4; padding: 1em; overflow-x: auto; }
+    h1, h2 { color: #444; }
+  </style>
 </head>
 <body>
-    <h1>Hepastitium</h1>
-    <p>Prerogative Posing</p>
+  <h1>Keyboard Layout Classifier</h1>
+  <p>
+    This project uses a neural network to classify whether a given word is better optimized for typing on a <strong>QWERTY</strong> or <strong>Dvorak</strong> keyboard layout.
+  </p>
 
-    <!-- <img src="bandwidth-compression.jpg" alt="Bandwidth Compression"> -->
+  <h2>What It Does</h2>
+  <p>
+    You input a word like <code>hello</code>, and the model predicts whether it's more "natural" to type on a QWERTY or Dvorak keyboard, based on:
+  </p>
+  <ul>
+    <li><strong>Home row usage</strong></li>
+    <li><strong>Common bigram patterns</strong></li>
+    <li><strong>Letter frequency</strong></li>
+    <li><strong>Finger movement cost</strong></li>
+  </ul>
+  <p>
+    The model outputs a score between 0 and 1 — values near 1 mean the word is likely Dvorak, values near 0 suggest QWERTY, and scores around 0.5 indicate uncertainty.
+  </p>
+  <p>Example:</p>
+  <pre><code>$ python classify_word.py typewriter</code></pre>
+  <p><code>'typewriter' → QWERTY (0.00)</code></p>
 
-    <img src="pergola/01.jpg" alt="01">
-    <img src="pergola/02.jpg" alt="02">
-    <img src="pergola/03.jpg" alt="03">
-    <img src="pergola/04.jpg" alt="04">
-    <img src="pergola/05.jpg" alt="05">
-    <img src="pergola/06.jpg" alt="06">
-    <img src="pergola/07.jpg" alt="07">
-    <img src="pergola/08.jpg" alt="08">
-    <img src="pergola/09.jpg" alt="09">
-    <img src="pergola/10.jpg" alt="10">
-    <img src="pergola/11.jpg" alt="11">
-    <img src="pergola/12.jpg" alt="12">
-    <img src="pergola/13.jpg" alt="13">
-    <img src="pergola/14.jpg" alt="14">
-    <img src="pergola/15.jpg" alt="15">
-    <img src="pergola/16.jpg" alt="16">
+  <h2>Model</h2>
+  <ul>
+    <li><strong>Framework:</strong> TensorFlow + Keras</li>
+    <li><strong>Trained on:</strong> Word feature dataset generated from the Top 10,000 English Words</li>
+    <li><strong>Accuracy:</strong> ~81% on the test set</li>
+    <li><strong>Architecture:</strong> 2 hidden layers (32 → 16 units), sigmoid output</li>
+    <li><strong>CPU-only:</strong> This model was trained and runs using CPU (no CUDA/GPU)</li>
+  </ul>
 
-    Pergola
-    <hr>
+  <h2>Features Used for Training</h2>
+  <p>For each word, we calculate:</p>
+  <table>
+    <thead>
+      <tr><th>Feature</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>home_row_score</td><td>Bonus points for letters on the home row</td></tr>
+      <tr><td>bigram_bonus</td><td>Bonus for specific letter pairs (e.g., ck, th)</td></tr>
+      <tr><td>frequency_score</td><td>Weighted sum of character frequency in English</td></tr>
+      <tr><td>movement_cost</td><td>Total key travel distance across the keyboard</td></tr>
+    </tbody>
+  </table>
+  <p>These were calculated separately for QWERTY and Dvorak layouts to generate training labels.</p>
 
-    <p>This page is open source, <a href="https://github.com/standardgalactic/hepastitium/edit/main/index.html">edit it here</a>.</p>
+  <h2>🛠 How to Use</h2>
+  <p>Clone the repo</p>
+  <p>Ensure you have Python 3 and install dependencies:</p>
+  <pre><code>pip install tensorflow scikit-learn joblib</code></pre>
+  <p>Run the classifier on any word:</p>
+  <pre><code>python classify_word.py hello</code></pre>
+  <p>To classify multiple words:</p>
+  <pre><code>for word in hello world typewriter function zoo; do \
+    python3 classify_word.py "$word" 2>/dev/null; \
+    done</code></pre>
+  <p>Output:</p>
+  <pre><code>'hello' → Dvorak (0.60)
+'world' → QWERTY (0.47)
+'typewriter' → QWERTY (0.00)
+'function' → QWERTY (0.00)
+'zoo' → QWERTY (0.30)</code></pre>
+
+  <footer>
+    <p><small>Project by Flyxion | <a href="https://github.com/standardgalactic/keyboard">GitHub Repository</a> | <a href="https://github.com/standardgalactic/keyboard?tab=GPL-3.0-1-ov-file">GPL 3.0 License</a></small></p>
+  </footer>
 </body>
 </html>
