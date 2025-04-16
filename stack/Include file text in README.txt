@@ -364,7 +364,7 @@ Execute the script with
 .
 Remember, this script will automatically commit and potentially push changes to your repositories. Be sure to test it in a safe environment first to ensure it behaves as expected, especially if your repositories contain important or sensitive data.
 You
-ok a few of the repositories have main branch names like master, main, and core. Haplopraxis has the name ��������������������� (primary in Standard galactic alphabet unicode), Maybe it should try all of these or check the status to get the primary branch name
+ok a few of the repositories have main branch names like master, main, and core. Haplopraxis has the name  (primary in Standard galactic alphabet unicode), Maybe it should try all of these or check the status to get the primary branch name
 ChatGPT
 ChatGPT
 To handle different primary branch names across various repositories and accommodate special cases like the Haplopraxis repository with its unique branch name, you can modify the script to dynamically determine the primary branch name for each repository. Here's an updated version of the script:
