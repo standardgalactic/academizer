@@ -1,154 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Circle of Fifths Transposer</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-family: Arial, sans-serif;
-        }
-        canvas {
-            background-color: #fff;
-            border: 1px solid #ccc;
-        }
-        #controls {
-            margin-top: 10px;
-        }
-        button {
-            padding: 10px;
-            margin: 5px;
-        }
-        #progressionDisplay {
-            margin-top: 15px;
-            font-size: 18px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anonymous Feedback</title>
+  <style>
+    @font-face {
+      src: url('fonts/Sga-Regular.woff2') format('woff2'),
+           url('fonts/Sga-Regular.woff') format('woff'),
+           url('fonts/Sga-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-family: 'Sga Regular';
+    }
+
+    @font-face {
+      src: url('fonts/Cursive-Galactic.woff2') format('woff2'),
+           url('fonts/Cursive-Galactic.woff') format('woff'),
+           url('fonts/Cursive-Galactic.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-family: 'Cursive Galactic';
+    }
+
+    body {
+      font-family: 'Sga Regular', Arial, sans-serif;
+      margin: 0;
+      overflow: hidden; /* Prevent both vertical and horizontal scrolling */
+      background: #004400; /* Dark green background */
+      color: #00FF00; /* Green text color */
+    }
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+    .content {
+      position: relative;
+      z-index: 1;
+      max-width: 500px;
+      margin: 50px auto;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.8); /* Semi-transparent black background */
+      border: 2px solid #00FF00;
+      box-shadow: 0 0 20px #00FF00;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #00FF00; /* Green text color */
+    }
+    input, textarea, button, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #00FF00; /* Green border color */
+      border-radius: 5px;
+      background: #001100; /* Dark green background */
+      color: #00FF00; /* Green text color */
+      font-size: 14px;
+    }
+    button {
+      background: #003300; /* Dark green button background */
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005500; /* Lighter green on hover */
+    }
+  </style>
 </head>
 <body>
+  <canvas id="wormhole"></canvas>
 
-	<h1>Circle of Fifths</h1>
-	<img src="circle-of-fifths.jpg" style="max-width: 100%; height: auto;" /><br>
-	<h1>Knot of Fifths</h1>
-	<img src="knot-of-fifths.jpg" style="max-width: 100%; height: auto;" /><br>
-	<h1>Piano of Fifths</h1>
-	<img src="piano-of-fifths.jpg" style="max-width: 100%; height: auto;" /><br>
-<h2>Circle of Fifths Transposer</h2>
-<canvas id="circleCanvas" width="400" height="400"></canvas>
-<div id="controls">
-    <button onclick="rotateCircle(-1)">Rotate Left</button>
-    <button onclick="rotateCircle(1)">Rotate Right</button>
-</div>
-<div id="progressionDisplay"></div>
+  <div class="content">
+    <h1>Contact me</h1>
+    <form method="post" action="https://forms.un-static.com/forms/1d9e034f4ea1871c4a95720eec2a7c46fad6963b">
+      <div class="form-group">
+        <label for="name">Name (optional)</label>
+        <input id="name" name="name" placeholder="Please enter your name (optional)" type="text">
+      </div>
+      <div class="form-group">
+        <label for="email">E-mail address</label>
+        <input id="email" name="email" placeholder="Your e-mail address" type="text">
+      </div>
+      <div class="form-group">
+        <input type="checkbox" id="anonymous" name="anonymous" onclick="toggleEmail()">
+        <label for="anonymous">Submit anonymously</label>
+      </div>
+      <div class="form-group">
+        <label for="message">Message</label>
+        <textarea id="message" name="message" cols="40" rows="10" required="required" placeholder="Enter your message"></textarea>
+      </div>
+      <div class="form-group">
+        <button name="submit" type="submit">Send</button>
+      </div>
+    </form>
+    <div class="form-group">
+      <label for="font-select">Choose Font:</label>
+      <select id="font-select" onchange="changeFont()">
+        <option value="SGA">SGA (default)</option>
+        <option value="Cursive">Cursive Galactic</option>
+        <option value="Courier">Courier</option>
+      </select>
+    </div>
+  </div>
 
-<script>
-    const canvas = document.getElementById("circleCanvas");
-    const ctx = canvas.getContext("2d");
-    const outerRadius = 150;
-    const innerRadius = 100;
+  <script>
+    const canvas = document.getElementById('wormhole');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    // Chord names for Circle of Fifths
-    const chordsMajor = ["C", "G", "D", "A", "E", "B", "F#", "Db", "Ab", "Eb", "Bb", "F"];
-    const chordsMinor = ["Am", "Em", "Bm", "F#m", "C#m", "G#m", "D#m", "Bbm", "Fm", "Cm", "Gm", "Dm"];
-    const progressionDisplay = document.getElementById("progressionDisplay");
-    const progressions = {
-        "I-IV-V": [0, 5, 7],
-        "ii-V-I": [2, 7, 0],
-    };
+    const stars = [];
+    const numStars = 1000;
+    const speed = 0.05;
 
-    let rotationIndex = 0;
+    for (let i = 0; i < numStars; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        z: Math.random() * canvas.width
+      });
+    }
 
-    function drawCircleOfFifths() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Draw static I, IV, V labels
-        drawFixedLabels();
-
-        // Draw major chords around the outer circle
-        for (let i = 0; i < chordsMajor.length; i++) {
-            const angle = (i + rotationIndex) * (2 * Math.PI / chordsMajor.length) - Math.PI / 2;
-            const x = canvas.width / 2 + Math.cos(angle) * outerRadius;
-            const y = canvas.height / 2 + Math.sin(angle) * outerRadius;
-            ctx.font = "16px Arial";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillStyle = "black";
-            ctx.fillText(chordsMajor[i], x, y);
+    function updateStars() {
+      for (let star of stars) {
+        star.z -= speed;
+        if (star.z <= 0) {
+          star.x = Math.random() * canvas.width;
+          star.y = Math.random() * canvas.height;
+          star.z = canvas.width;
         }
-
-        // Draw minor chords around the inner circle
-        for (let i = 0; i < chordsMinor.length; i++) {
-            const angle = (i + rotationIndex) * (2 * Math.PI / chordsMinor.length) - Math.PI / 2;
-            const x = canvas.width / 2 + Math.cos(angle) * innerRadius;
-            const y = canvas.height / 2 + Math.sin(angle) * innerRadius;
-            ctx.font = "14px Arial";
-            ctx.fillStyle = "gray"; // Keep relative minors in gray
-            ctx.fillText(chordsMinor[i], x, y);
-        }
-
-        // Update the progression display with transposed chords
-        displayTransposedProgressions();
+      }
     }
 
-    function drawFixedLabels() {
-        const labelRadius = outerRadius + 30;
-        const labels = ["IV", "I", "V"];
-        const labelAngles = [Math.PI * (5/6), 0, Math.PI * (1/6)];  // Correct angles for IV (11), I (12), V (1)
-
-        labels.forEach((label, index) => {
-            const angle = labelAngles[index] - Math.PI / 2;  // Adjust to position above
-            const x = canvas.width / 2 + Math.cos(angle) * labelRadius;
-            const y = canvas.height / 2 + Math.sin(angle) * labelRadius;
-            ctx.font = "18px Arial";
-            ctx.fillStyle = "red";
-            ctx.fillText(label, x, y);
-        });
-
-        // Draw minor labels in blue at the same positions as major
-        drawMinorLabels();
+    function drawStars() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let star of stars) {
+        const x = (star.x - canvas.width / 2) * (canvas.width / star.z);
+        const y = (star.y - canvas.height / 2) * (canvas.width / star.z);
+        const size = (canvas.width / star.z) * 0.5;
+        ctx.beginPath();
+        ctx.arc(x + canvas.width / 2, y + canvas.height / 2, size, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.closePath();
+      }
     }
 
-    function drawMinorLabels() {
-        const labelRadius = outerRadius + 15;  // Minor labels closer to the center
-        const minorLabels = ["ii", "vi", "iii"];
-        const minorLabelAngles = [Math.PI * (5/6), 0, Math.PI * (1/6)];  // Match positions with IV (11), I (12), V (1)
-
-        minorLabels.forEach((label, index) => {
-            const angle = minorLabelAngles[index] - Math.PI / 2;  // Adjust to position above
-            const x = canvas.width / 2 + Math.cos(angle) * labelRadius;
-            const y = canvas.height / 2 + Math.sin(angle) * labelRadius;
-            ctx.font = "14px Arial";
-            ctx.fillStyle = "blue"; // Minor labels in blue
-            ctx.fillText(label, x, y);
-        });
+    function animateStars() {
+      updateStars();
+      drawStars();
+      requestAnimationFrame(animateStars);
     }
 
-    function displayTransposedProgressions() {
-        const rootChordIndex = (0 + rotationIndex) % chordsMajor.length;
-        const transposedProgressions = [];
+    animateStars();
 
-        for (const [name, indices] of Object.entries(progressions)) {
-            const transposedChords = indices.map(index => {
-                const chordIndex = (index + rotationIndex) % chordsMajor.length;
-                return chordsMajor[chordIndex];
-            });
-            transposedProgressions.push(`${name}: ${transposedChords.join(" - ")}`);
-        }
-
-        progressionDisplay.innerHTML = transposedProgressions.join("<br>");
+    function toggleEmail() {
+      const emailField = document.getElementById('email');
+      const isChecked = document.getElementById('anonymous').checked;
+      emailField.disabled = isChecked;
+      emailField.required = !isChecked;
     }
 
-    function rotateCircle(direction) {
-        rotationIndex = (rotationIndex + direction + chordsMajor.length) % chordsMajor.length;
-        drawCircleOfFifths();
+    function changeFont() {
+      const fontSelect = document.getElementById('font-select').value;
+      const body = document.body;
+
+      if (fontSelect === 'SGA') {
+        body.style.fontFamily = "'Sga Regular', Arial, sans-serif";
+      } else if (fontSelect === 'Courier') {
+        body.style.fontFamily = "'Courier New', Courier, monospace";
+      } else if (fontSelect === 'Cursive') {
+        body.style.fontFamily = "'Cursive Galactic', cursive";
+      }
     }
 
-    // Initial draw
-    drawCircleOfFifths();
-</script>
-<h3>𝘕𝘰𝘵 𝘸𝘰𝘳𝘬𝘪𝘯𝘨 𝘺𝘦𝘵</h3>
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+  </script>
 </body>
 </html>
