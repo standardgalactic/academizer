@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Earth Cube Translator</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .scene {
+      width: 200px;
+      height: 200px;
+      perspective: 600px;
+    }
+    .cube {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.1s ease-out;
+    }
+    .face {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      background: url('forbidden-knowledge.png') no-repeat center/cover;
+      border: 1px solid #00ff00;
+    }
+    .front  { transform: translateZ(100px); }
+    .back   { transform: rotateY(180deg) translateZ(100px); }
+    .right  { transform: rotateY(90deg) translateZ(100px); }
+    .left   { transform: rotateY(-90deg) translateZ(100px); }
+    .top    { transform: rotateX(90deg) translateZ(100px); }
+    .bottom { transform: rotateX(-90deg) translateZ(100px); }
+
+    .toggle-button {
+      margin-top: 100px; /* Increased to lower the button */
+      padding: 10px 20px;
+      font-size: 16px;
+      color: white;
+      background-color: #00ff00;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .toggle-button:hover {
+      background-color: #00cc00;
+    }
+  </style>
+</head>
+<body>
+  <div class="scene">
+    <div class="cube" id="cube">
+      <div class="face front"></div>
+      <div class="face back"></div>
+      <div class="face right"></div>
+      <div class="face left"></div>
+      <div class="face top"></div>
+      <div class="face bottom"></div>
+    </div>
+  </div>
+  <button class="toggle-button" id="toggleLang">Switch to Latin</button>
+
+  <script>
+    const cube = document.getElementById('cube');
+    const toggleButton = document.getElementById('toggleLang');
+    const faces = document.querySelectorAll('.face');
+    let isSpinning = false;
+    let rotationX = 0;
+    let rotationY = 0;
+    let velocityX = 0;
+    let velocityY = 0;
+    let lastX, lastY;
+    let isDragging = false;
+    let isLatin = false;
+
+    // Apply rotation to cube
+    function updateRotation() {
+      cube.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
+    }
+
+    // Animation loop
+    function animate() {
+      if (isSpinning && !isDragging) {
+        rotationX += velocityX;
+        rotationY += velocityY;
+        velocityX *= 0.95;
+        velocityY *= 0.95;
+      }
+      updateRotation();
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // Mouse Events
+    cube.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        const deltaX = e.clientX - lastX;
+        const deltaY = e.clientY - lastY;
+        velocityY = deltaX * 0.1;
+        velocityX = -deltaY * 0.1;
+        rotationY += velocityY;
+        rotationX += velocityX;
+        lastX = e.clientX;
+        lastY = e.clientY;
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    // Toggle spin on click
+    cube.addEventListener('click', (e) => {
+      if (!isDragging) {
+        isSpinning = !isSpinning;
+        if (!isSpinning) {
+          velocityX = 0;
+          velocityY = 0;
+        } else {
+          velocityX = 0.5;
+          velocityY = 0.5;
+        }
+      }
+    });
+
+    // Touch Events
+    cube.addEventListener('touchstart', (e) => {
+      isDragging = true;
+      const touch = e.touches[0];
+      lastX = touch.clientX;
+      lastY = touch.clientY;
+      e.preventDefault();
+    });
+
+    document.addEventListener('touchmove', (e) => {
+      if (isDragging) {
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - lastX;
+        const deltaY = touch.clientY - lastY;
+        velocityY = deltaX * 0.1;
+        velocityX = -deltaY * 0.1;
+        rotationY += velocityY;
+        rotationX += velocityX;
+        lastX = touch.clientX;
+        lastY = touch.clientY;
+      }
+    });
+
+    document.addEventListener('touchend', () => {
+      isDragging = false;
+    });
+
+    // Toggle Language
+    toggleButton.addEventListener('click', () => {
+      isLatin = !isLatin;
+      const image = isLatin ? 'instructions.png' : 'forbidden-knowledge.png';
+      faces.forEach(face => {
+        face.style.background = `url('${image}') no-repeat center/cover`;
+      });
+      toggleButton.textContent = isLatin ? 'Switch to SGA' : 'Switch to Latin';
+    });
+  </script>
+</body>
+</html>
