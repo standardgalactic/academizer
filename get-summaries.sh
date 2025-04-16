@@ -2,7 +2,7 @@
 
 # Define progress and summary files
 progress_file="progress.log"
-summary_file="detailed-summary.txt"
+summary_file="agora-overview.txt"
 main_dir=$(pwd)
 
 # Function to check if a file is already processed
@@ -33,6 +33,7 @@ process_files() {
         # Process the file if it's a regular file
         if [ -f "$file" ]; then
             local file_name=$(basename "$file")  # Get the file name only
+            local file_name_no_ext="${file_name%.*}"  # Remove the extension
             
             # Process only if not processed before
             if ! is_processed "$file_name"; then
@@ -44,15 +45,18 @@ process_files() {
                 temp_dir=$(mktemp -d "$dir/tmp_${sanitized_name}_XXXXXX")
                 echo "Temporary directory created: $temp_dir" >> "$main_dir/$progress_file"
 
-                # Split the file into chunks of 200 lines each
-                split -l 200 "$file" "$temp_dir/chunk_"
+                # Split the file into chunks of 100 lines each
+                split -l 100 "$file" "$temp_dir/chunk_"
                 echo "File split into chunks: $(find "$temp_dir" -type f)" >> "$main_dir/$progress_file"
 
                 # Summarize each chunk and append to the summary file
                 for chunk_file in "$temp_dir"/chunk_*; do
                     [ -f "$chunk_file" ] || continue
                     echo "Summarizing chunk: $(basename "$chunk_file")"
-                    ollama run vanilj/phi-4 "Summarize:" < "$chunk_file" | tee -a "$main_dir/$summary_file"
+                    
+                    # Prepend the file name before each section in the summary
+                    echo "File: $file_name_no_ext" >> "$main_dir/$summary_file"
+                    ollama run vanilj/phi-4 "Summarize in detail and explain:" < "$chunk_file" | tee -a "$main_dir/$summary_file"
                     echo "" >> "$main_dir/$summary_file"
                 done
 
