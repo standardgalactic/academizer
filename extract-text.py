@@ -48,24 +48,19 @@ def extract_text_from_mhtml(file_path):
     return "\n\n".join(text_parts)
 
 def main():
-    import sys
-
-    if len(sys.argv) != 2:
-        print("Usage: python extract-text.py <filename.mhtml>")
-        sys.exit(1)
-
-    file_path = sys.argv[1]
-
-    if not os.path.isfile(file_path):
-        print(f"File not found: {file_path}")
-        sys.exit(1)
-
-    print(f'Processing {file_path}...')
-    extracted_text = extract_text_from_mhtml(file_path)
-    output_file = os.path.splitext(file_path)[0] + ".txt"
-    with open(output_file, "w", encoding="utf-8") as out:
-        out.write(extracted_text)
-    print(f"Extracted text written to {output_file}")
+    # Find all .mhtml files in the current directory
+    mhtml_files = glob.glob("*.mhtml")
+    if not mhtml_files:
+        print("No MHTML files found in the current directory.")
+        return
+    
+    for file_path in mhtml_files:
+        print(f'Processing {file_path} ...')
+        extracted_text = extract_text_from_mhtml(file_path)
+        output_file = os.path.splitext(file_path)[0] + ".txt"
+        with open(output_file, "w", encoding="utf-8") as out:
+            out.write(extracted_text)
+        print(f"Extracted text written to {output_file}")
 
 if __name__ == "__main__":
     main()
