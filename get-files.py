@@ -3,10 +3,10 @@ import paramiko
 import stat
 
 # SFTP Connection Details
-host = "my-ip-address"
+host = "192.168.2.40"
 port = 22
 username = "bonobo"
-password = "my-password"
+password = "asdf"
 remote_path = "/mnt/z/stuff/"  # Updated to include the absolute SFTP path
 local_path = os.getcwd()
 

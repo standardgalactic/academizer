@@ -1,0 +1,184 @@
+Tar Error Resolution Tips
+Saltar al contenido
+Abrir barra lateral
+ChatGPT
+4o
+ChatGPT
+4o
+Compartir
+PLUS
+Dijiste:
+./omniology/Alastair Reynolds - Revelation Space 7 - The Prefect.txt
+./omniology/Matching Sand And Cement Mixes.txt
+./omniology/028_algo-qsort-analysis3_typed.txt
+./omniology/12 The Concise Arabic-English Lexicon of Verbs in Context.txt
+./omniology/Concurrency Theory H Bowman R Gomez Springer.txt
+./omniology/Mastering SaltStack_ Take charge of SaltStack to automate and configure your enterprise-grade environments 2nd Edition.txt
+./omniology/Qualify for a Global Career.txt
+./omniology/The Perception Machine_ Our Photographic Future between the Eye and AI by Joanna Zylinska.txt
+tar: /home/runner/work/_temp/artifact.tar: Wrote only 2048 of 10240 bytes
+tar: Error is not recoverable: exiting now
+Error: Process completed with exit code 2.
+ChatGPT dijo:
+The error message you're seeing indicates that the
+tar
+command failed while trying to create or write to the archive (
+artifact.tar
+). Specifically:
+vbnet
+Copiar c��digo
+tar:
+/home/runner/work/_temp/artifact.tar: Wrote only
+2048
+of
+10240
+bytes
+tar:
+Error
+is
+not
+recoverable: exiting now
+Error:
+Process completed
+with
+exit
+code
+2
+.
+This usually means one of the following:
+Disk Space Issue
+: The target filesystem (likely
+/home/runner/work/_temp/
+) ran out of space or quota while writing the tarball.
+File System Permissions
+: The process might not have permission to write the full file to that location.
+File Corruption or Disk Error
+: There might be an underlying issue with the temp storage.
+Too Many or Large Files
+: The combined size of files may exceed a limit or quota imposed by the CI environment (possibly GitHub Actions?).
+Fix Suggestions
+Check Disk Quotas
+: Ensure the environment has enough disk space.
+Reduce Archive Size
+: Try splitting the tarball into smaller chunks or excluding large files.
+Use
+--ignore-failed-read
+(if you're reading problematic files):
+tar -cvf archive.tar --ignore-failed-read ./omniology/
+Use Compression
+: Save space with gzip:
+tar -czf archive.tar.gz ./omniology/
+Write to a Different Location
+: Use a directory with more available space if possible.
+Let me know what you're running this on (e.g., GitHub Actions, local machine), and I can tailor the solution more specifically.
+Dijiste:
+I'm deploying  a github page but I have like 15,000 files
+ChatGPT dijo:
+Ah, got it. GitHub Pages isn���t built for huge file counts like that ��� especially if you're deploying via Actions. Hitting the 15,000 file mark is likely overwhelming the runner or triggering a size/quota limit.
+Here���s what's likely going wrong:
+GitHub Actions artifact or temp storage limits
+(default is around 500���700 MB for artifacts or limited write space in
+/tmp
+).
+GitHub Pages' soft limit
+on file count and total size ��� they don't officially publish limits, but users report problems around 10,000+ files or over ~1 GB of total content.
+Ways to fix or work around it:
+1.
+Trim Unnecessary Files
+If possible, remove files not needed for the public site (e.g.,
+.txt
+,
+.md
+, backups, debug assets, etc.).
+2.
+Ignore Files in Deployment
+Use
+.gitignore
+or deploy scripts to exclude large folders (like
+omniology/
+) from the published
+gh-pages
+branch.
+3.
+Switch to GitHub Pages via
+docs/
+folder
+Instead of deploying with Actions, serve a static subset directly from a folder like
+/docs
+:
+Go to your repo settings ��� Pages ��� Source ��� Choose
+main
+branch and
+/docs
+folder.
+Then you can move only the
+necessary frontend or public files
+into
+docs/
+.
+4.
+Use a Static Hosting Alternative
+If your content is large or complex:
+Cloudflare Pages
+Netlify
+Vercel
+These handle big static sites more gracefully and have better CDN and file limits.
+5.
+Paginate or Dynamically Load Data
+If the large file count is due to tons of text/data files, consider:
+Storing them in a database or Git LFS.
+Loading content dynamically via JS or API calls instead of bundling all files.
+If you show me your repo structure or deployment setup (like your
+yml
+workflow), I can help optimize or rewrite it for this use case.
+Dijiste:
+I'll work on figuring it out, I could find out which are the largest files and remove those first. And see if I have tmp files somewhere
+ChatGPT dijo:
+That sounds like a solid plan ��� start with the biggest offenders and any junk files.
+Here are a couple quick tips to help you sort and find those large or unnecessary files:
+1. List Largest Files in Your Project
+If you're on Linux/macOS or WSL, run this in your repo root:
+bash
+Copiar c��digo
+find . -
+type
+f -
+exec
+du
+-h {} + |
+sort
+-rh |
+head
+-n 30
+This will show the 30 biggest files.
+2. Find All
+.tmp
+,
+.log
+, or Backup Files
+bash
+Copiar c��digo
+find . -
+type
+f \( -name
+"*.tmp"
+-o -name
+"*.log"
+-o -name
+"*~"
+\)
+3. Visual Directory Size (optional but very helpful)
+Install
+ncdu
+and run it in your repo root:
+bash
+Copiar c��digo
+ncdu .
+It gives you an interactive view to drill down into which folders/files are taking up space.
+Once you've trimmed the heavy stuff, you can re-run the deployment and see how far under the limit you get.
+If you hit another wall, feel free to drop the error here ��� I can help you troubleshoot or optimize further.
+Buscar
+Investigar a fondo
+ChatGPT puede cometer errores. Comprueba la informaci��n importante.
+?
+

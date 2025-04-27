@@ -1,0 +1,570 @@
+Single File Processing
+Saltar al contenido
+Abrir barra lateral
+ChatGPT
+4.5
+ChatGPT
+4.5
+Compartir
+PLUS
+Dijiste:
+I don't need to keep track of progress any more and I want to be able to process only one file passed in as a parameter: #!/usr/bin/env bash
+set -Eeuo pipefail
+
+CHUNK_LINES=50
+
+MODEL_COMMAND=("ollama" "run" "vanilj/phi-4")
+PROGRESS_FILE="progress.log"
+SUMMARY_OVERVIEW_FILE="overview.txt"
+
+main_dir="$(pwd)"
+touch "$main_dir/$PROGRESS_FILE"
+touch "$main_dir/$SUMMARY_OVERVIEW_FILE"
+
+log() {
+  local message="[${USER:-$(whoami)}@$(hostname)] [$(date '+%Y-%m-%d %H:%M:%S')] $*"
+  echo "$message"
+  echo "$message" >> "$main_dir/$PROGRESS_FILE"
+}
+
+is_processed() {
+  local file_path="$1"
+  grep -Fxq "$file_path" "$main_dir/$PROGRESS_FILE"
+}
+
+mark_processed() {
+  local file_path="$1"
+  echo "$file_path" >> "$main_dir/$PROGRESS_FILE"
+}
+
+cleanup_tempdirs() {
+  if [[ -n "${TEMP_DIRS_CREATED:-}" ]]; then
+    for tmpd in $TEMP_DIRS_CREATED; do
+      [[ -d "$tmpd" ]] && rm -rf "$tmpd"
+      log "Cleaned up temporary directory: $tmpd"
+    done
+  fi
+}
+trap cleanup_tempdirs EXIT
+
+log "Script started."
+
+process_files_in_directory() {
+  local dir="$1"
+  log "Processing directory: $dir"
+
+  shopt -s nullglob
+  local all_files=("$dir"/*.txt)
+  shopt -u nullglob
+
+  [[ ${#all_files[@]} -eq 0 ]] && {
+    log "No .txt files found in $dir"
+    return
+  }
+
+  for file in "${all_files[@]}"; do
+    [[ -f "$file" && ! -L "$file" ]] || continue
+
+    local file_name="$(basename "$file")"
+
+    if is_processed "$file"; then
+      log "Skipping (already processed): $file"
+      continue
+    fi
+
+    log "Processing file: $file"
+
+    local sanitized_name
+    sanitized_name="$(echo "$file_name" | tr -d '[:space:]')"
+    local temp_dir
+    temp_dir="$(mktemp -d "$dir/tmp_${sanitized_name}_XXXXXX")"
+    TEMP_DIRS_CREATED="${TEMP_DIRS_CREATED:-} $temp_dir"
+    log "Created temporary directory: $temp_dir"
+
+    local preprocessed_file="$temp_dir/preprocessed.txt"
+    cp "$file" "$preprocessed_file"
+
+    split -l "$CHUNK_LINES" -- "$preprocessed_file" "$temp_dir/chunk_"
+    log "Split $file into chunks of $CHUNK_LINES lines each."
+
+    {
+      echo "============================================="
+      echo "Summary for file: $file_name"
+      echo "============================================="
+    } >> "$SUMMARY_OVERVIEW_FILE"
+
+    for chunk_file in "$temp_dir"/chunk_*; do
+      [[ -f "$chunk_file" ]] || continue
+      local chunk_name
+      chunk_name="$(basename "$chunk_file")"
+      log "Summarizing chunk: $chunk_name"
+
+      {
+        echo "Summarize the following text from \"$file_name\"."
+        echo "Focus on main ideas, ignoring extraneous details."
+        echo "---------------"
+        cat "$chunk_file"
+      } | "${MODEL_COMMAND[@]}" 2>>"$main_dir/$PROGRESS_FILE" \
+        >> "$SUMMARY_OVERVIEW_FILE"
+
+      echo "" >> "$SUMMARY_OVERVIEW_FILE"
+    done
+
+    mark_processed "$file"
+    log "Marked $file as processed."
+  done
+}
+
+process_files_in_directory "$main_dir"
+
+log "Script completed."
+ChatGPT dijo:
+Here's a simplified version of your script that processes
+only one file passed as a parameter
+and no longer tracks progress or logs processing history:
+Single File Summary
+99
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+#!/usr/bin/env bash
+set
+-Eeuo
+pipefail
+CHUNK_LINES
+=
+50
+MODEL_COMMAND
+=
+(
+"ollama"
+"run"
+"vanilj/phi-4"
+)
+SUMMARY_OVERVIEW_FILE
+=
+"overview.txt"
+main_dir
+=
+"
+$(pwd)
+"
+touch
+"
+$main_dir
+/
+$SUMMARY_OVERVIEW_FILE
+"
+log() {
+echo
+"[
+$(date
+'+%Y-%m-%d %H:%M:%S'
+)
+]
+$*
+"
+}
+cleanup_tempdir() {
+if
+[[
+-n
+"
+${temp_dir:-}
+"
+]] && [[
+-d
+"
+$temp_dir
+"
+]];
+then
+rm
+-rf
+"
+$temp_dir
+"
+log
+"Cleaned up temporary directory:
+$temp_dir
+"
+fi
+}
+trap cleanup_tempdir EXIT
+[[
+$#
+-eq
+1
+]] || {
+echo
+"Usage:
+$0
+<file-to-process>"
+;
+exit
+1
+; }
+file_to_process
+=
+"
+$1
+"
+[[
+-f
+"
+$file_to_process
+"
+]] || {
+echo
+"File not found:
+$file_to_process
+"
+;
+exit
+1
+; }
+file_name
+=
+"
+$(basename
+"
+$file_to_process
+"
+)
+"
+san_name
+=
+"
+$(echo
+"
+$file_name
+"
+| tr -d
+'[:space:]'
+)
+"
+temp_dir
+=
+"
+$(mktemp -d
+"
+$main_dir
+/tmp_
+${san_name}
+_XXXXXX"
+)
+"
+log
+"Created temporary directory:
+$temp_dir
+"
+cp
+"
+$file_to_process
+"
+"
+$temp_dir
+/preprocessed.txt"
+Changes made:
+Removed the progress-tracking and logging to
+progress.log
+.
+Simplified to process only one file, explicitly provided as a command-line argument.
+Maintained chunk-based summarization functionality.
+Retained creation and cleanup of temporary directories for safe file handling.
+Run with:
+bash
+Copiar c��digo
+./script.sh path/to/file.txt
+Dijiste:
+nateg@volsorium MINGW64 ~/OneDrive/Documentos/Github/turnstile (main)
+$ git commit -m "Summarize"
+On branch main
+Your branch and 'origin/main' have diverged,
+and have 1 and 1 different commits each, respectively.
+
+nothing to commit, working tree clean
+ChatGPT dijo:
+This message means your local branch and the remote branch (
+origin/main
+) have diverged. Each has a unique commit that the other does not.
+To resolve this, you should either
+merge
+or
+rebase
+:
+1. Using merge (creates a merge commit):
+bash
+Copiar c��digo
+git pull origin main
+2. Using rebase (linear history, cleaner if you prefer):
+bash
+Copiar c��digo
+git pull --rebase origin main
+After resolving potential conflicts (if any), push your changes back:
+bash
+Copiar c��digo
+git push origin main
+Why did this happen?
+Your local and remote branches have commits that aren't shared, possibly due to edits on GitHub directly or another local clone.
+Recommended solution:
+Use
+git pull --rebase origin main
+for a cleaner, linear commit history.
+Dijiste:
+Wy isn't it letting me add the commit? commit 1c5f437767fcf4d8439e7c40ab48837512931cbf (HEAD -> main)
+Author: Cogito Ergo Sum <standardgalactic@protonmail.com>
+Date:   Thu Apr 3 19:20:15 2025 -0300
+
+pick cbac58e Ideological Paracosms
+# This is a combination of 2 commits.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[detached HEAD 137cb1d] Ideological Paracosms
+ Date: Thu Apr 3 19:20:15 2025 -0300
+ 2 files changed, 6003 insertions(+)
+ create mode 100644 Ecological Superstructures
+ create mode 100644 summarize.sh
+Successfully rebased and updated refs/heads/main.
+
+nateg@volsorium MINGW64 ~/OneDrive/Documentos/Github/turnstile (main)
+$ vim Ecological-Superstructures-overview.txt
+
+nateg@volsorium MINGW64 ~/OneDrive/Documentos/Github/turnstile (main)
+$ git add .
+
+nateg@volsorium MINGW64 ~/OneDrive/Documentos/Github/turnstile (main)
+$ git commit -m "Summarize"
+On branch main
+Your branch and 'origin/main' have diverged,
+and have 1 and 1 different commits each, respectively.
+
+nothing to commit, working tree clean
+
+nateg@volsorium MINGW64 ~/OneDrive/Documentos/Github/turnstile (main)
+$
+ChatGPT dijo:
+Explanation of the Problem:
+The reason Git says
+"nothing to commit, working tree clean"
+is that there are no staged changes compared to the current
+HEAD
+. Your previous commit (the one you see labeled as
+detached HEAD 137cb1d
+) was already included through the rebase.
+Currently, your local branch (
+main
+) and remote (
+origin/main
+) have diverged (one unique commit each). Even though you edited
+Ecological-Superstructures-overview.txt
+, it seems the changes may have been saved incorrectly or weren't staged as intended.
+Steps to Resolve:
+Step 1: Verify File Changes
+Check what has changed since your last commit:
+bash
+Copiar c��digo
+git status
+If
+git status
+says nothing to commit, it means you have no changes made since the last commit.
+If your recent edits aren't showing up, you might not have saved the file or saved it incorrectly.
+If you see your changes, stage them explicitly:
+bash
+Copiar c��digo
+git add Ecological-Superstructures-overview.txt
+Step 2: Resolve Divergence by Pulling Remote Changes
+You previously rebased locally, but it appears there's still divergence. Try pulling again explicitly:
+bash
+Copiar c��digo
+git pull --rebase origin main
+If there are conflicts, resolve them manually.
+Step 3: After Resolving Conflicts (if any), Push
+bash
+Copiar c��digo
+git push origin main
+Explanation of Your Current State:
+You rebased your local changes onto the remote.
+Your new commit (
+137cb1d
+) was successfully created by rebasing.
+Git detached temporarily during the rebase, but automatically returned you to
+main
+.
+Your subsequent
+git add .
+and
+git commit
+found no new changes to commit.
+Recommended Next Steps:
+Run:
+bash
+Copiar c��digo
+git status
+Then verify:
+If there
+are untracked or unstaged files
+, stage explicitly and commit again:
+bash
+Copiar c��digo
+git add <file>
+git commit -m
+"Your message"
+If there's
+nothing left to commit
+, simply push:
+bash
+Copiar c��digo
+git push origin main
+If pushing still indicates divergence, explicitly pull first to reconcile:
+bash
+Copiar c��digo
+git pull --rebase origin main
+git push origin main
+Conclusion:
+You can't add a new commit now because Git sees no new changes since your rebase already integrated your earlier edits. If you genuinely made new edits, stage and commit again. If not, proceed with
+git pull --rebase origin main
+, followed by a push.
+Dijiste:
+I would like to make this gif like twice as big and add in italics under it "The Last Good Movie" # Take with a grain of salt
+
+![The Last Good Movie](The-Last-Good-Movie.gif)
+
+# Ecological Superstructures
+ChatGPT dijo:
+Here's how you can accomplish this using ImageMagick (assuming it's installed):
+Step 1:
+Resize the GIF to double its size
+bash
+Copiar c��digo
+convert The-Last-Good-Movie.gif -coalesce -resize 200% resized.gif
+Step 2:
+Add italic text below the GIF
+Create the final GIF with italicized text beneath:
+bash
+Copiar c��digo
+convert resized.gif \
+  -gravity south -background none -splice 0x50 \
+  -annotate +0+10
+'The Last Good Movie'
+\
+  -font DejaVu-Serif-Italic -pointsize 30 \
+  final.gif
+Explanation of commands:
+-resize 200%
+doubles the GIF size.
+-gravity south
+positions text at the bottom.
+-splice 0x50
+adds extra vertical space for the text.
+-font DejaVu-Serif-Italic
+specifies an italic font.
+Adjust
+-pointsize 30
+if you want bigger or smaller text.
+Final GIF:
+The output GIF will be named
+final.gif
+.
+Dijiste:
+can't I just use an html tag in github markdown the gif is large neough it is just displaying small
+ChatGPT dijo:
+Yes, you can absolutely use HTML within GitHub Markdown to easily adjust the GIF size and add italicized text beneath it.
+Here's how you can do it directly in your Markdown file:
+html
+Copiar c��digo
+<
+p
+align
+=
+"center"
+>
+<
+img
+src
+=
+"The-Last-Good-Movie.gif"
+width
+=
+"600px"
+alt
+=
+"The Last Good Movie"
+>
+<
+br
+>
+<
+em
+>The Last Good Movie
+</
+em
+>
+</
+p
+>
+Explanation:
+width="600px"
+adjusts the GIF size. Change the value to your desired size.
+<em>
+tags italicize the text.
+The
+align="center"
+attribute centers the GIF and text nicely.
+Result:
+The GIF displays larger, exactly at your desired size.
+The italicized text appears directly underneath.
+This method is clean, quick, and works perfectly within GitHub Markdown!
+Buscar
+Investigar a fondo
+ChatGPT puede cometer errores. Comprueba la informaci��n importante.
+?
+
