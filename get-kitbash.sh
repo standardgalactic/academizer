@@ -2,7 +2,7 @@
 
 # Define progress and summary files
 progress_file="progress.log"
-summary_file="memetic-cognition.txt"
+summary_file="kitbash.txt"
 main_dir=$(pwd)
 
 # Function to check if a file is already processed
@@ -30,13 +30,6 @@ process_files() {
             continue
         fi
 
-        # Skip processing the summary file
-        if [ "$(basename "$file")" == "$summary_file" ]; then
-            echo "Skipping summary file: $summary_file"
-            continue
-        fi
-
-
         # Process the file if it's a regular file
         if [ -f "$file" ]; then
             local file_name=$(basename "$file")  # Get the file name only
@@ -52,7 +45,7 @@ process_files() {
                 echo "Temporary directory created: $temp_dir" >> "$main_dir/$progress_file"
 
                 # Split the file into chunks of 200 lines each
-                split -l 100 "$file" "$temp_dir/chunk_"
+                split -l 50 "$file" "$temp_dir/chunk_"
                 echo "File split into chunks: $(find "$temp_dir" -type f)" >> "$main_dir/$progress_file"
 
                 # Summarize each chunk and append to the summary file
@@ -93,3 +86,4 @@ process_subdirectories "$main_dir"  # Process files in subdirectories
 
 # Mark script completion
 echo "Script completed at $(date)" >> "$main_dir/$progress_file"
+

@@ -1,0 +1,1443 @@
+Interpretable Neural Learning Framework - Grok
+Summarize and explain the following article:
+
+Research Article
+Open access
+Share on
+A general framework for interpretable neural learning based on local information-theoretic goal functions
+Abdullah Makkeh https://orcid.org/0000-0002-3581-8262 abdullah.alimakkeh@uni-goettingen.de, Marcel Graetz https://orcid.org/0000-0001-7561-3408 marcel.graetz@research.fchampalimaud.org, Andreas C. Schneider https://orcid.org/0009-0003-4105-1082 andreas.schneider@ds.mpg.de, +2 , and Michael Wibral https://orcid.org/0000-0001-8010-5862 michael.wibral@uni-goettingen.deAuthors Info & Affiliations
+Edited by Terrence Sejnowski, Salk Institute for Biological Studies, La Jolla, CA; received April 26, 2024; accepted December 19, 2024
+March 5, 2025
+122 (10) e2408125122
+https://doi.org/10.1073/pnas.2408125122
+4,492
+Metrics
+Total Views
+4,492
+Last 12 Months
+4,492
+
+Information & Authors
+Metrics & Citations
+View Options
+References
+Figures
+Share
+Significance
+Which learning goals must individual computational elements pursue to contribute to a network-level task solution? This local understanding is missing in both biological, but also artificial neural networks, despite their impressive performance. We address this question by characterizing the information processing motifs of individual neurons as local goal functions, derived from first principles of information theory. A simple parameterization then enables the definition of an abstract goal function that spans a broad space of different learning rules and tasks. The resulting "infomorphic" networks offer a constructive approach to understanding local learning and information processing in neural networks, creating a bridge between theoretical neuroscience and artificial intelligence.
+Abstract
+Despite the impressive performance of biological and artificial networks, an intuitive understanding of how their local learning dynamics contribute to network-level task solutions remains a challenge to this date. Efforts to bring learning to a more local scale indeed lead to valuable insights, however, a general constructive approach to describe local learning goals that is both interpretable and adaptable across diverse tasks is still missing. We have previously formulated a local information processing goal that is highly adaptable and interpretable for a model neuron with compartmental structure. Building on recent advances in Partial Information Decomposition (PID), we here derive a corresponding parametric local learning rule, which allows us to introduce "infomorphic" neural networks. We demonstrate the versatility of these networks to perform tasks from supervised, unsupervised, and memory learning. By leveraging the interpretable nature of the PID framework, infomorphic networks represent a valuable tool to advance our understanding of the intricate structure of local learning.
+Sign up for PNAS alerts.
+Get alerts for new articles, or get an alert when an article is cited.
+
+Both biological neural networks (BNNs) and artificial neural networks (ANNs) are capable of solving a variety of complex tasks, thanks to their interconnected structure comprising a large number of similar computational elements. The human neocortex employs a variety of neuron types organized into canonical, repeating microcircuits that show high functional flexibility (1-3), similar to how ANNs utilize relatively simple processing units arranged in repetitive structures (4). This structural repetition combined with functional flexibility enables both types of networks to scale drastically in size and complexity. Given the high intrinsic complexity of these networks, achieving an interpretable understanding of how local computational elements coordinate to address global tasks is challenging and remains an ongoing focus of intense research for both BNNs (5, 6) and ANNs (7, 8). Despite advances toward mechanistic interpretability of the inner local computational structures that emerge through learning (9, 10), the insights gained from post hoc approaches are specific to the data and network architecture, limiting their generality.
+To foster a more general understanding of the local structures in neural networks, a data-independent description of the local algorithm is favorable. Such a description can be achieved through identifying a local optimization goal or learning rule, which prioritizes the learning process over the resulting representation. Traditionally, local learning has largely been formulated from two general perspectives: On one hand, the experimental study of BNNs has revealed activity-dependent changes of synaptic strengths. This has led researchers to propose a remarkable variety of local learning rules (11-15), most of which focus on biologically plausible mechanisms and require only locally available information. Despite these efforts, building large and powerful networks using only these mechanistic local learning rules has proven challenging (16). On the other hand, local learning in ANNs typically emerges implicitly by setting network-wide goal functions to satisfy global task requirements and then optimizing the network parameters via nonlocal gradient optimization. Such an approach hinders insights at the local scale, as the description of neuron function remains purely arithmetic. Nonetheless, efforts have recently intensified in developing learning rules that are both local, i.e., relying only on information that is available at the site, and show potential for scaling to larger, more capable networks (16-18). This includes learning rules based on concepts from contrastive learning (19, 20), predictive coding (21-23), local information maximization (15, 24) and many others (25-30).
+Despite this large variety of fruitful efforts toward more local forms of learning, most existing approaches are limited to specific learning paradigms and implementations. What seems to be missing is a unifying framework to describe local learning goals—general enough to be applied across learning paradigms, datasets, and implementations, while still being interpretable. A promising starting point for developing such a framework from first principles is information theory (31-36). From an information-theoretic perspective, the local computational elements in a neural network can be interpreted as information channels that convert incoming signals into outgoing activity (37), with the conversion being specified by their synaptic weights. Previous research has demonstrated the feasibility and potential of a framework of local information-theoretic goal functions based on a decomposition of the output information of the individual computational elements (32, 35).
+However, since classical information theory is constructed from an information channel (simple input-to-output) perspective, it is fundamentally limited in its ability to describe all facets of information processing: Both the proposed biological learning in neurons and most proposed biologically plausible local learning in ANNs require at least two qualitatively different classes of inputs to the computational element, one carrying the information to be processed and the other one carrying contextual information on how to process it (e.g., feed-back, label, error, lateral, contrastive, or reward signals) (38-42). To be able to capture the general interactions that could arise between these two classes of inputs, Wibral et al. (31) proposed a generalization and unification of existing information-theoretic local goal functions by employing the more expressive and intuitive Partial Information Decomposition (PID). PID provides a comprehensive information-theoretic description of the complex interactions of multiple sources with respect to a target by dissecting the mutual information into unique, redundant, and synergistic contributions (43-46).*
+For the case of two input classes, PID distinguishes four contributions to the overall information processing: Each class may contribute uniquely to the output, meaning they contribute information the other source does not have, they can provide redundant information or they could contribute synergistically, i.e., in a way that no input class can do alone. Taken by itself, each input class can only provide the redundant information and its unique contribution, while the synergy relies on access to both classes simultaneously (Fig. 1 C and D). Here, we argue that different learning paradigms require different processing of the local information from the two classes. For instance, in a supervised setting, where one class provides input data and the other provides the ground-truth labels, the intuitive goal becomes to encode in the output what is redundant between these two input classes, which enables the network to learn to extract the label information from the input signal. In general, the interpretability of these information atoms allows to intuitively identify which information processing is necessary at a local level to achieve a global task.
+Fig. 1.
+
+The infomorphic neuron model, analogous to cortical pyramidal neurons, separately integrates two distinct classes of inputs. The neuron adjusts its synaptic weights to maximize the local goal function 
+, based on an information-theoretic decomposition of its own output information. (A) Cortical pyramidal neurons with separate synaptic integration sites for basal and apical dendrites, the former driving output and the latter providing contextual modulation. (B) The infomorphic neuron, modeled after these neurons, is characterized by two functionally distinct sets of inputs that are scaled by synaptic weights and added to obtain the integrated input signals 
+ (receptive) and 
+ (contextual). 
+ and 
+ contribute individually to the probabilities of the neuron's binary output, which are computed using an activation function 
+ and a sigmoid transformation function. (C) The total Shannon output information 
+ of the neuron consists of the mutual information with the joint inputs 
+ and additional residual information 
+ that originates directly from the stochasticity of the neuron. Using Partial Information Decomposition (PID), the joint mutual information 
+ can be further subdivided into four information contributions: i) 
+, the redundant information that is provided by either 
+ or 
+ individually, ii) 
+, the unique information of 
+ that is only provided by 
+ but not by 
+, iii) 
+, the unique information of 
+ that is only provided by 
+ but not by 
+, and iv) 
+, the synergistic information that is provided by 
+ and 
+ only when taken jointly but neither by 
+ nor 
+ taken individually. (D) Any classical mutual-information-based decomposition can only provide a linear combination of the underlying PID quantities. (D, Upper) Classical decomposition into four information contributions that formed the basis for prior work (32-35): the coinformation 
+, the two conditional mutual information values 
+ and 
+, and the stochasticity-caused residual entropy 
+. (D, Lower) The five contributions that are quantified using PID. (E) The neuron's synaptic weights 
+ are optimized to maximize a goal function 
+ that is based on the Partial Information Decomposition of the neuron's overall output information 
+ and parameterized by 
+. Panel (A) is adapted from Fabian Mikulasch's original depiction of a pyramidal neuron (21) (CC0).
+In this work, we derive a parametric local learning rule from a general PID-based goal function, leveraging the differentiable 
+ PID measure (45). We provide a proof of principle that this local learning rule enables networks consisting of compartmental neurons to solve tasks across three classic learning paradigms—supervised, unsupervised, and associative memory learning. Our work additionally shows that PID-based goals can be flexibly applied to different datasets and architectures, while being intuitively interpretable. Note that the relatively simple networks studied in this work should be considered an initial step toward larger and more capable network structures and provide evidence for the promising potential of such a general framework of interpretable local learning goals.
+Below, we first explain our view of neurons as information processors with multiclass input, efficiently characterized by PID. Based on these insights, we then introduce a compartmental neuron model and apply it to a collection of learning scenarios. We conclude with a discussion of strengths, limitations, and next steps. As a side note, the neurons and networks developed in this work are termed infomorphic—as a portmanteau of "information" and "morphous" to indicate that they are directly shaped by the information they process.
+1. Using Information Theory to Describe the Information Processing of a Neuron
+In general, a neuron can be regarded as a Shannon information channel receiving synaptic inputs 
+ from its afferent synapses and producing its own activity 
+ as output. Here, both 
+ and 
+ are modeled as random variables and their relationship can be, in the general case, stochastic. The mutual information (52, 53)
+ 
+then quantifies how much a neuron's output is influenced by its synaptic inputs, whereas the residual (or conditional) entropy
+ 
+quantifies the amount of stochasticity in the output of the neuron that is not predictable from its inputs. The sum of these quantities equals the total entropy or information content of the firing of the neuron
+ 
+[1]
+1.1. Beyond Simple Channels: Differentiating Input Classes.
+The picture of neurons as simple information channels has to be refined in light of the insight that different information streams into a neuron often play qualitatively different roles. In ANNs, forward-propagated signal and backpropagated gradients influence the neuron in very different ways. Similarly, biological neurons often have multiple classes of inputs with distinct information processing characteristics (54). An example of a biological neuron with two distinct input classes can be found in layer-5 pyramidal neurons (55). These neurons are ubiquitous in the cortex, involved in sensory, cognitive, and motor tasks, and have been hypothesized to play a role in conscious awareness (2, 56). They are typically embedded in a relatively stereotyped cortical microcircuit, at the junction of feed-forward and feed-back information streams in the cortical hierarchy (57). To process these two information streams, pyramidal neurons possess two distinct types of dendrites, the basal and apical dendrites (55). Basal dendrites receive input from hierarchically lower cortical areas and play a role in encoding the external features of the environment that are processed along the cortical hierarchy (38). Apical dendrites, in contrast, receive contextual input from higher cortical areas and have been shown to play an important role in modulating perception (58, 59). This connectivity is similar across a range of different brain areas and cognitive domains, motivating the assumption that the general function of pyramidal neurons is independent of the semantics of their input (Fig. 1A and ref. 60).
+The two-compartment structure of layer-5 pyramidal neurons (61) is consistent with many biologically plausible local learning rules in ANNs that require at least two qualitatively different classes of inputs to the neuron, respectively carrying feedforward information to be processed and contextual information to guide this processing (e.g., feed-back, label, error, lateral, contrastive, or reward signals) (38-42). Once these two input classes are explicitly established, they motivate a local learning goal.
+To prepare for the mathematical representation of a neuron's unique, redundant, and synergistic information, we will first reinterpret the source variable 
+ from above as being a composite variable 
+ of the receptive input 
+, which is inspired by the input to the basal dendrites, and the contextual input 
+, which is inspired by the input to the apical dendrites. Analogous to Eq. 1, the total entropy of the neuron 
+ can now be written as
+ 
+[2]
+The dissection of 
+ additionally allows to consider the individual channels of the receptive or contextual inputs to the target, which are characterized by the mutual information terms 
+ or 
+, respectively. Note, however, that these two channels do not simply add up to the total mutual information 
+, because the sum 
+ contains information which is redundantly present in both input classes and will be double-counted, while synergistic information which only becomes apparent if one considers 
+ and 
+ simultaneously will be overlooked (see Fig. 1C, 53, 62). By introducing the coinformation
+ 
+[3]
+the decomposition in Eq. 2 can be refined to
+ 
+[4]
+where the conditional mutual information 
+ captures the remaining dependence of 
+ on 
+ when 
+ is known, and 
+ is defined analogously (53).
+Kay used this decomposition as the starting point to construct models of learning neurons with information theoretic objective functions (32). In our work, we build on this concept by exploiting the superior expressiveness provided by the framework of Partial Information Decomposition to build infomorphic neurons.
+1.2. Uncovering the Information Processing Between Different Input Classes Using Partial Information Decomposition.
+The above perspective of viewing a neuron as a collection of information channels still paints an incomplete picture of the information processing within a neuron because it cannot account for all the different ways in which the different information sources combine and determine the output information: While some of the information in the neuron's output activity 
+ might be provided uniquely by either the receptive input 
+ or the contextual input 
+, other parts might be redundantly supplied by both of them while yet others only become available synergistically when both sources are considered jointly (31). Classical information theory is insufficient for this distinction as it has no concept of "sameness" of information: While one can compute the total amount of information in the output that is coming from each source or from both sources together using mutual information, there is no way of quantifying how much of the information contributed to the output is the same, i.e., redundantly provided by the input variables about the output (43).
+Dissecting the mutual information between multiple source variables and a single target variable into nonoverlapping additive information atoms is the subject of Partial Information Decomposition (43, 46). Using PID, we can subdivide the entropy 
+ into five parts (Fig. 1C)
+ 
+[5]
+where 
+ and 
+ are the unique information atoms of the receptive and contextual inputs, respectively, 
+ refers to the redundant (shared) information, and 
+ refers to the synergistic (complementary) information. These four atoms can describe the information processing in 
+ of 
+ and 
+ in versatile ways, while also having meaningful interpretations: For example, if a neuron encodes the coherent parts of its inputs, this would be reflected in a high redundant information. Alternatively, a neuron might encode the information in its receptive input 
+ that is specifically not present in the contextual input 
+, which would translate to a high unique information contribution from 
+. Finally, if the neuron's output contains information which cannot be obtained from any single source alone, for instance if the output 
+ reflected the logical "exclusive or" of its inputs, the synergy between the sources would be high. Overall, PID provides a decomposition framework with well-defined and intuitive interpretations for understanding a neuron's information processing.
+Note that while the coinformation 
+ (in Eq. 3) is equal to the difference between redundant and synergistic information
+ 
+[6]
+classical information theory provides no tool to disentangle the two components.
+To analyze the information processing of a neuron, the aforementioned PID atoms need to be quantified. Note that despite their strong relation to classical information-theoretic quantities through Eqs. 5 and 6, the size of the PID atoms cannot be determined from classical information-theoretic quantities alone as there are four atoms with only three equations providing constraints (43). An additional quantity has to be defined for PID, which is typically, but not necessarily, the redundant information (43, 44, 46, and references therein). By now, a multitude of different measures for redundant information have been proposed, each fulfilling a number of partly mutually exclusive desiderata and drawing on concepts from different fields such as decision or game theory (44, 63, 64, 65, 66). In this work, we use the PID measure 
+ defined by Makkeh et al. (45) due to its analytical differentiability with respect to the underlying joint probability distribution 
+, allowing for optimization of the PID quantities through gradient ascent.
+2. Infomorphic Neurons
+In a line of similar work, Kay (32) utilized the decomposition in Eq. 4 not as a post hoc analysis tool, but as a parameterizable optimization goal function, extending this idea in subsequent research (33-35). Even before the development of their differentiable PID measure, Wibral et al. (31) envisioned a similar, but more refined neural goal function derived from the decomposition in Eq. 5. In the following paragraphs, we realize this idea in a neuron model closely aligned to prior work (32), which we refer to as the infomorphic neuron, and derive analytic gradients for the PID-based goal function.
+2.1. Multicompartment Computation.
+Infomorphic neurons operate in discrete time and output values 
+ (referred to as "LOW" and "HIGH"), in analogy to time-binned spike trains of biological neurons. Akin to the basal and apical dendrites of layer-5 pyramidal neurons, an infomorphic neuron distinguishes between two classes of input synapses, namely "receptive" inputs 
+ and "contextual" inputs 
+ (Fig. 1 A and B). Inspired by how the inputs of different input classes are individually aggregated in separate compartments in these biological neurons (55), the inputs of the two classes of the infomorphic neuron are separately combined in a weighted sum to produce the aggregate inputs 
+ and 
+ (32). Here, 
+ and 
+ reflect the weights associated with the receptive and contextual inputs, respectively, while 
+ and 
+ denote constant bias values. At any time step, the probability 
+ of a neuron to be in the HIGH state depends only on the instantiation of its aggregate inputs 
+ and 
+, as follows:
+ 
+where 
+ is a sigmoid nonlinearity, and 
+ is an additional activation function. While the activation function can in principle be chosen arbitrarily, a biology-inspired choice of 
+ may draw inspiration from layer-5 pyramidal neurons: By making the activation function be primarily dependent on the receptive inputs, one can imitate the privileged role that basal dendrites play in driving pyramidal neurons (33). In practice, we adapted the degree to which the contextual input influences the output, dependent on the requirements of each task. The choice of activation function will be individually motivated and discussed in the corresponding experimental sections.
+2.2. Local Learning.
+Each infomorphic neuron optimizes its local information processing by changing the two sets of weights 
+ and 
+ of its incoming (afferent) synapses. This information processing can take on very different shapes: For some tasks, optimal information processing could mean coding for coherence between the receptive and contextual inputs, while for other tasks, optimal processing might entail extracting any piece of information (e.g., a feature) exclusively provided by the receptive inputs that is not present in the contextual input.
+Kay first derived a local goal function from an information-theoretic partition of the local mutual information of a neuron (32). Here, we argue for a similar local goal function involving a linear combination of the five components of the output entropy of a neuron as derived from PID and first established by (31):
+ 
+[7]
+Here, the variables 
+ and 
+ are binned versions of the continuous-valued 
+ and 
+ inputs, necessary due to the lack of a differentiable PID measure for mixed discrete-continuous variables (67) and other conceptual difficulties of information theory in continuous networks (68, 69). Note that the binning procedure itself, while used in analogy to previous work (32, 35), is a nondifferentiable operation whose gradients we do not take into account here. Future work might circumvent this problem by using parametric (e.g., bivariate Gaussian) approximations of 
+ (32, 35) combined with PID-estimators for mixed discrete-continuous variables. The neuron's local goal function 
+ is a linear combination of the PID atoms that is defined a priori by choosing the parameters 
+ (Fig. 1E). In the second equality, we introduced a short-hand vector notation of 
+.
+2.3. Optimizing the Goal Function.
+The differentiability of the 
+ measure allows each neuron in an infomorphic network to optimize its own goal function 
+ through gradient ascent.
+The empirical gradients of 
+ with respect to the weight vectors 
+ and 
+ can be analytically derived as
+ 
+ 
+ 
+ 
+ 
+[8]
+and
+ 
+ 
+ 
+ 
+ 
+[9]
+where 
+ indicates the estimator of 
+ based on 
+ input samples in the data, and 
+ is implicitly dependent on the full probability distribution 
+ of 
+ and 
+ over the dataset and the explicit current values of those variables, as well as the goal parameter vector 
+. The full derivation of the gradients can be found in SI Appendix, section 1.
+In practice, we only update the network parameters after a fixed number of discrete network time steps, referred to as a minibatch. For each minibatch, we estimate the full binned probability distribution 
+ from the histogram of inputs and finally conduct a single weight update. We report the number of minibatches as the training time 
+. Instead of using minibatches, it would also be possible due to the pointwise nature of the 
+ PID measure to keep running estimates with exponential forgetting of past samples, which would allow for weight updates after each network time step.
+3. Infomorphic Networks Encompass Various Learning Paradigms
+The parameterized information-theoretic goal function enables groups of infomorphic neurons, i.e., "infomorphic networks," to serve as a very general and versatile approach to learning. In the following, we demonstrate their broad applicability by providing three example applications of infomorphic networks, on supervised learning, unsupervised learning, and online learning of associative memories.
+In correspondence to classical ANNs, infomorphic networks require choices on network topology, activation functions, and goal functions, where the latter are chosen by setting the goal function hyperparameters for each neuron. The ability to arbitrate between different local goals by setting these hyperparameters is a major strength of our framework, and we will motivate and discuss our specific hyperparameter choices in all three presented applications.
+3.1. Supervised Learning by Encoding Coherence Between Input and Label Information.
+We construct a single-layer infomorphic network for supervised classification of MNIST digits (70).
+3.1.1. Topology and inputs.
+Each of 
+ neurons receives the full MNIST image via a set of 
+ receptive input synapses, with 
+ 
+, and a single element of a one-hot label vector as contextual input, with 
+ (Fig. 2A). In this setup, each neuron becomes a one-vs.-all classifier of its assigned digit.
+Fig. 2.
+
+Supervised learning in single-layer infomorphic networks. By maximizing redundant information between image and label, the neurons learn to identify MNIST digits with a test accuracy comparable to logistic regression. (A) Network architecture with one-hot encoded label and 10 neurons, each receiving all 28 
+ 28 image pixels as 
+ and one element of the label vector as 
+. Activation function 
+ is chosen such that 
+ has only modulating effect on the binary output probabilities, in line with the label's role as context for learning. The goal of each neuron is to transmit maximal information 
+ that is redundant between 
+ (image) and 
+ (label element), thereby learning to act as a detector of its respective digit. The learning shows best stability if the goal function sets weak incentives for additionally maximizing the unique and synergistic information: 
+. (B) Information quantities averaged over all neurons, shown for 100 independent training runs. (C) Receptive fields (
+) and information quantities for three sample neurons for a single training run, the dotted line indicating the expected 
+ in case of perfect classification (one-vs.-all entropy of label in test dataset). (D) The average training and test accuracies across 100 training runs, with test accuracy approaching that of logistic regression (reaching on average 89.7% vs. 91.9% for log. regr.). Note that in (B) and (D) the 95-percentile is being displayed.
+3.1.2. Goal functions.
+Viewed through the lens of PID, supervised learning requires extracting from input data the same information that is contained in the label. This is achieved if each neuron's output information is redundantly determined by its two input classes, motivating the goal function 
+. In practice, weak incentives for the other PID quantities 
+ improve performance and stability of learning by preventing neurons from going silent, i.e., always outputting the same value.
+3.1.3. Activation functions.
+To ensure that the receptive inputs are strong enough to drive the neurons during the test phase when the label is missing (all label input 
+), we set the activation function to 
+. This makes the binary output probabilities mostly dependent on the receptive input and only weakly modulated by the contextual information, rendering the label input a teacher signal that strongly influences learning but hardly the dynamics.
+3.1.4. Protocol.
+In the training phase, we present the MNIST images and labels sequentially in random order, with a weight update after each minibatch (See SI Appendix, section 2.B for all chosen training parameters). In the test phase, we present previously unseen MNIST images and set the contextual input to 
+, calculating winner-take-all classification accuracy. Note that instead of calculating 
+, an optimal predictor would marginalize over 
+ to estimate 
+. However, this would require running each test input twice for the two different labels, and performing computations that infomorphic neurons do not implement. Fortunately, due to the merely modulating role of the contextual input, the test accuracy of both approaches is virtually identical (see SI Appendix, section 3.A and Fig. S3).
+3.1.5. Performance and outcome.
+The infomorphic networks reach an average test accuracy of 89.7% (Fig. 2D), slightly lower than the 91.9% we find for multinomial logistic regression. Indeed, logistic regression upper-bounds the network performance, because by setting 
+ in the test phase, the activation function simplifies to 
+ and the firing probability becomes 
+, identical to logistic regression. The receptive weights 
+ of individual neurons after training, plotted as receptive fields, visually reveal their assigned digit and qualitatively match the corresponding receptive fields found in logistic regression (Fig. 2C and SI Appendix, section 3.A and Fig. S2).
+3.1.6. Information dynamics.
+Analyzing the information atoms of individual neurons over the course of training, we find an expected increase in redundant information 
+ (Fig. 2 B and C). This increase is less pronounced in neurons corresponding to digits that are more likely to be confused (SI Appendix, section 3.A and Fig. S1). For these neurons we also find higher unique information from the receptive input 
+, indicating that they are still encoding image information that is not present in their label. Additionally, the average output entropy 
+ of the neurons decreases and approaches the average entropy of the one-hot label encoding (label 
+ present vs. absent) of 
+ bits, while the residual entropy 
+ decreases fast, reflecting a decrease in the neurons' stochasticity.
+Summary of the Article
+The research article by Makkeh et al., published in the Proceedings of the National Academy of Sciences (PNAS) on March 5, 2025, introduces a novel framework for interpretable neural learning using local information-theoretic goal functions based on Partial Information Decomposition (PID). The authors propose "infomorphic" neural networks, which are designed to enhance the understanding of local learning dynamics in both biological and artificial neural networks. These networks leverage PID to define local goal functions that are adaptable across various learning paradigms, including supervised, unsupervised, and associative memory learning. The framework is derived from first principles of information theory, offering a unified and interpretable approach to local learning that bridges theoretical neuroscience and artificial intelligence.
+The article addresses the challenge of understanding how individual computational elements (neurons) contribute to network-level task solutions. Traditional approaches to local learning in biological neural networks (BNNs) and artificial neural networks (ANNs) are often limited to specific paradigms or lack generalizability. The authors build on prior work by introducing a parametric local learning rule derived from PID, which dissects the mutual information of a neuron's output into unique, redundant, and synergistic contributions from two distinct input classes: receptive (data) and contextual (e.g., labels, feedback). This decomposition enables the definition of flexible goal functions that can be tailored to different tasks by adjusting parameters.
+The authors demonstrate the versatility of infomorphic networks through applications in three learning scenarios:
+Supervised Learning
+: A single-layer infomorphic network achieves an average test accuracy of 89.7% on MNIST digit classification, comparable to logistic regression (91.9%), by maximizing redundant information between image data and labels.
+Unsupervised Learning
+: The framework is applied to extract features without labeled data, showcasing its adaptability.
+Associative Memory Learning
+: The networks learn to store and recall patterns, demonstrating their capability in memory tasks.
+The article emphasizes the interpretability of the PID-based approach, which allows researchers to understand the specific information processing roles of neurons (e.g., encoding coherence or unique features). The authors acknowledge limitations, such as the simplicity of the tested networks and the need for future work to scale to larger architectures and address computational challenges like binning continuous inputs.
+Explanation of Key Concepts and Contributions
+1.
+Problem and Motivation
+Both BNNs and ANNs excel at complex tasks due to their interconnected, repetitive structures. However, understanding how local computations contribute to global task solutions remains elusive.
+Existing local learning rules are often paradigm-specific or rely on nonlocal optimization (e.g., backpropagation), limiting interpretability and generalizability.
+The authors aim to develop a general, interpretable framework for local learning that is data-independent and applicable across diverse tasks.
+2.
+Information-Theoretic Foundation
+Information Theory
+: Neurons are modeled as information channels that transform input signals into output activity, quantified by mutual information (how much output depends on inputs) and residual entropy (stochasticity not explained by inputs).
+Partial Information Decomposition (PID)
+: PID extends classical information theory by decomposing mutual information into:
+Unique Information
+: Information provided exclusively by one input class (receptive or contextual).
+Redundant Information
+: Information shared by both input classes.
+Synergistic Information
+: Information only available when both input classes are considered together.
+PID enables a nuanced understanding of how different input types interact to produce a neuron's output, unlike classical mutual information, which cannot distinguish redundant from synergistic contributions.
+3.
+Infomorphic Neuron Model
+Structure
+: Inspired by layer-5 pyramidal neurons, infomorphic neurons have two input classes:
+Receptive Inputs
+: Analogous to basal dendrites, carrying data to be processed (e.g., image pixels).
+Contextual Inputs
+: Analogous to apical dendrites, providing modulation (e.g., labels, feedback).
+Inputs are weighted, summed, and processed through an activation function (sigmoid) to produce a binary output ("HIGH" or "LOW").
+Local Goal Function
+: Each neuron optimizes a parametric goal function, a linear combination of PID atoms (unique, redundant, synergistic information, and residual entropy), defined by hyperparameters. For example, in supervised learning, maximizing redundant information ensures the neuron encodes label-relevant data.
+Learning Rule
+: The authors derive analytic gradients for the goal function using a differentiable PID measure (I_dep), enabling optimization via gradient ascent. Weights are updated after processing minibatches of data.
+4.
+Applications and Results
+Supervised Learning (MNIST)
+:
+A single-layer network with 10 neurons (each acting as a one-vs.-all classifier) processes MNIST images (receptive) and one-hot labels (contextual).
+The goal function prioritizes redundant information to align image and label information, achieving 89.7% test accuracy.
+The receptive weights form interpretable receptive fields resembling digits, and information dynamics show increased redundant information during training.
+Unsupervised and Memory Learning
+: The framework's flexibility is demonstrated by adapting the goal function to extract features (unsupervised) or store patterns (associative memory), though specific results are not detailed in the summary.
+The approach is interpretable because PID atoms reveal how neurons process information (e.g., encoding coherence for supervised tasks or unique features for unsupervised tasks).
+5.
+Significance and Advantages
+Generality
+: The parametric goal function allows infomorphic networks to handle diverse tasks by adjusting hyperparameters, unlike paradigm-specific rules.
+Interpretability
+: PID provides intuitive insights into local information processing, enabling researchers to understand neuron roles (e.g., encoding redundant vs. unique information).
+Biological Plausibility
+: The two-compartment model aligns with cortical pyramidal neurons, bridging neuroscience and AI.
+Constructive Approach
+: Unlike post hoc analysis, the framework designs learning rules from first principles, fostering generalizable insights.
+6.
+Limitations and Future Directions
+Scale
+: The tested networks are simple, and scaling to larger architectures requires further investigation.
+Computational Challenges
+: Binning continuous inputs for PID calculations is nondifferentiable, suggesting a need for parametric approximations or PID measures for mixed discrete-continuous variables.
+Performance
+: While competitive, the framework slightly underperforms logistic regression in supervised tasks, indicating room for optimization.
+Future work could explore larger networks, alternative PID measures, and integration with other biologically plausible learning rules.
+Broader Implications
+This framework advances the field by providing a unified, interpretable approach to local learning that transcends traditional boundaries between learning paradigms. Its information-theoretic basis and biological inspiration make it a valuable tool for both neuroscience (understanding cortical processing) and AI (designing scalable, interpretable networks). By addressing the "black box" nature of neural networks, the infomorphic approach could pave the way for more transparent and adaptable AI systems, while offering insights into the computational principles underlying biological intelligence.
+If you have specific questions about the article or require further details on any aspect, please let me know.
+Some analogies to help explain it
+To make the concepts in the research article by Makkeh et al. more accessible, I will provide analogies that illustrate the key ideas of infomorphic neural networks, Partial Information Decomposition (PID), and local learning in a formal yet intuitive manner. These analogies aim to align with the article's focus on interpretable neural learning based on information-theoretic principles, while respecting the specified professional tone and clarity.
+1.
+Infomorphic Neuron as a Specialized Librarian
+Concept
+: An infomorphic neuron processes two distinct classes of inputs (receptive and contextual) to produce an output, guided by a PID-based goal function that optimizes specific information contributions (unique, redundant, synergistic).
+Analogy
+: Imagine a librarian tasked with summarizing books for a library's database. The librarian receives two types of input:
+Receptive Input
+: The book's content (e.g., a novel's plot, characters, and themes).
+Contextual Input
+: A set of instructions or guidelines (e.g., focus on themes relevant to a specific genre or reader query).
+The librarian's goal is to produce a concise summary (the neuron's output) that captures the most relevant information, as defined by a specific objective. For example:
+In
+supervised learning
+(e.g., classifying a book as "mystery"), the librarian prioritizes information common to both the book's content and the genre label (redundant information), ensuring the summary highlights mystery-related themes.
+In
+unsupervised learning
+, the librarian might focus on unique features of the book not covered by the guidelines (unique information), identifying novel patterns.
+In
+associative memory
+, the librarian links the book's content to related books, requiring both inputs to create a meaningful connection (synergistic information).
+Connection
+: The librarian's objective mirrors the PID-based goal function, which is parameterized to emphasize specific information contributions. The librarian adjusts their summarization strategy (akin to updating synaptic weights) to align with the goal, ensuring the summary is both relevant and interpretable. The infomorphic neuron similarly processes inputs to produce an output that reflects the desired information processing strategy, guided by PID.
+2.
+Partial Information Decomposition (PID) as a Recipe Analysis
+Concept
+: PID dissects the mutual information in a neuron's output into unique, redundant, and synergistic contributions from two input classes, providing a detailed understanding of how inputs interact.
+Analogy
+: Consider a chef analyzing a dish's flavor profile, which results from combining two ingredient sets:
+Receptive Input
+: The main ingredients (e.g., vegetables, spices).
+Contextual Input
+: A seasoning blend or cooking technique (e.g., a specific marinade or roasting method).
+The chef wants to understand how these inputs contribute to the dish's final flavor (the neuron's output). PID is like breaking down the flavor into:
+Unique Information
+: Flavors contributed solely by the main ingredients (e.g., the distinct taste of fresh tomatoes) or the seasoning (e.g., a unique smoky note from the marinade).
+Redundant Information
+: Flavors common to both inputs (e.g., a savory taste present in both the vegetables and the marinade).
+Synergistic Information
+: Flavors that emerge only when both inputs are combined (e.g., a rich umami taste that requires both the tomatoes and the marinade together).
+Connection
+: Just as the chef uses this analysis to adjust the recipe for a desired flavor profile, PID allows the infomorphic neuron to quantify how each input contributes to its output. The neuron optimizes its synaptic weights to emphasize the desired information type (e.g., redundant information for supervised learning), making the learning process interpretable and adaptable.
+3.
+Local Learning as a Team of Independent Consultants
+Concept
+: Infomorphic networks rely on local learning, where each neuron optimizes its own goal function using only locally available information, contributing to the network's global task without requiring centralized coordination.
+Analogy
+: Picture a team of consultants working on a large project (e.g., designing a city's transportation system). Each consultant focuses on a specific area (e.g., bus routes, subway lines, bike paths) and has access to:
+Receptive Input
+: Local data about their area (e.g., traffic patterns, population density).
+Contextual Input
+: Guidelines or feedback from the project manager (e.g., prioritize eco-friendly solutions or connectivity to certain districts).
+Each consultant works independently, refining their plan based on a specific goal (e.g., maximize efficiency, reduce emissions). They don't need to know the full project details or other consultants' plans, but their individual efforts align to achieve the city's overall transportation goals.
+Connection
+: In an infomorphic network, each neuron is like a consultant, optimizing its local goal function (defined by PID) using only its receptive and contextual inputs. The neuron adjusts its weights (like refining a plan) to process information in a way that contributes to the network's task (e.g., classifying images or storing memories). This local autonomy enhances interpretability, as each neuron's role can be understood independently, while still supporting the global objective.
+4.
+Parametric Goal Function as a Customizable Music Mix
+Concept
+: The PID-based goal function is a linear combination of information contributions (unique, redundant, synergistic, residual entropy), parameterized to suit different learning tasks.
+Analogy
+: Imagine a music producer creating a track by mixing different audio elements:
+Receptive Input
+: The primary instruments (e.g., drums, guitar).
+Contextual Input
+: Additional effects or vocals (e.g., reverb, backing harmonies).
+The producer's goal is to create a final track (the neuron's output) with a specific sound profile, defined by a "mixing recipe." The recipe assigns weights to different elements:
+Emphasizing
+redundant information
+is like boosting sounds common to both instruments and vocals (e.g., a shared rhythm), creating a cohesive track for a specific genre.
+Prioritizing
+unique information
+highlights distinct instrument sounds, producing a track with standout features.
+Focusing on
+synergistic information
+amplifies effects that emerge only when instruments and vocals interact, creating a unique harmony.
+The producer adjusts the mixing board sliders (like synaptic weights) to achieve the desired balance, guided by the recipe.
+Connection
+: The parametric goal function in infomorphic neurons works similarly, allowing the neuron to "mix" information contributions by adjusting parameters. For example, in supervised learning, the goal function emphasizes redundant information to align data and labels, while in unsupervised learning, it might prioritize unique information to extract novel features. This flexibility makes the framework versatile and interpretable.
+5.
+Supervised Learning as a Guided Art Restoration
+Concept
+: In supervised learning, infomorphic neurons maximize redundant information between receptive inputs (data) and contextual inputs (labels) to learn task-relevant features, as demonstrated in the MNIST classification task.
+Analogy
+: Consider an art restorer tasked with repairing a damaged painting:
+Receptive Input
+: The damaged painting, containing partial information about the original artwork.
+Contextual Input
+: A reference sketch or description of the original painting (e.g., "It depicts a landscape with blue skies").
+The restorer's goal is to recreate the painting by focusing on elements common to both the damaged painting and the reference (redundant information), such as the blue sky or tree shapes. They prioritize these shared features to ensure the restored painting matches the original as closely as possible.
+During restoration, the restorer refines their technique (like updating weights) based on how well their work aligns with the reference.
+Connection
+: In the MNIST task, each infomorphic neuron acts like a restorer, using the image (receptive input) and label (contextual input) to produce an output that captures information shared between them (e.g., features of a specific digit). The PID-based goal function ensures the neuron focuses on redundant information, enabling accurate classification, while the interpretable nature of PID reveals how the neuron achieves this.
+Why These Analogies Work
+These analogies simplify the technical concepts while preserving their essence:
+They emphasize the
+dual-input structure
+(receptive and contextual) by comparing it to familiar scenarios with two distinct information sources.
+They highlight
+PID's role
+in dissecting information contributions, akin to analyzing components in a recipe or music mix.
+They underscore
+local learning
+by portraying neurons as independent agents (librarians, consultants) working toward a common goal.
+They reflect
+interpretability
+by showing how each agent's role can be understood in isolation, mirroring PID's ability to reveal a neuron's information processing strategy.
+They illustrate
+flexibility
+by demonstrating how the same framework (e.g., a librarian's summarization or a producer's mixing) adapts to different tasks by adjusting priorities.
+If you would like further refinements to these analogies or additional analogies for specific aspects of the article, please let me know.
+3.2. Unsupervised Learning of Independent Features by Maximizing Each Neuron's Unique Information About the Stimulus.
+We construct a very simple data compression task that requires recurrent communication between neurons.
+3.2.1. Topology and inputs.
+Each of the 
+ neurons receives 
+-pixel binary images as receptive inputs, 
+, with each image containing 8 horizontal bars appearing independently with probability 
+ (Fig. 3A). As contextual input, each neuron receives the activity of all other neurons in the previous time step, with 
+.
+Fig. 3.
+
+Unsupervised feature learning in recurrent infomorphic networks. By maximizing unique information with respect to all other neurons, the neurons self-organize to create a highly informative representation of the input. (A) Network architecture for unsupervised learning with 8 neurons, each receiving 8 
+ 8 binary pixel inputs as 
+ and output of all other neurons as 
+. The image consists of 8 independent horizontal bars, randomly appearing with 
+. Activation function 
+ is chosen such that 
+ has only modulating effect on the binary output probabilities, which leads to recurrent connections mainly acting as context for learning. The goal of each neuron is set to maximize unique information 
+ of its own receptive input 
+ with respect to the output of all other neurons, received as contextual input 
+: 
+. (B) Information quantities averaged over all neurons for 300 independent training runs, showing two-phase training for feature competition and stabilization. (C) Receptive and contextual fields (
+, 
+) and information quantities of three sample neurons for a single training run. (D) Mutual information 
+ between all neurons' outputs and input image, approaching full encoding capacity and input information content of 8 bits. Note that in (B) and (D) the 95-percentile is being displayed.
+3.2.2. Goal functions.
+The network-level goal is to encode all 8 bits of the information provided by the image distribution, distributed over the neurons. This can be achieved if each neuron encodes one full bit of image information that is not already encoded by the other neurons, and motivates a goal function maximizing for the conditional mutual information 
+. In order to encourage the network to explicitly disentangle the contributions of each neuron, we chose to only encourage the unique information of the receptive input: 
+.
+3.2.3. Activation functions.
+To avoid temporal oscillations in the network, we chose the same activation function 
+ as in the supervised context, making the recurrent connections relevant for learning, but less so for the dynamics.
+3.2.4. Protocol.
+We sequentially present randomly sampled images containing between 0 and 8 bars. Due to the time delay in recurrent connections, presentation of a new image introduces a mismatch between the receptive and contextual inputs of all neurons. We compensate for the resulting noise by presenting each image for 8 successive time steps.
+Early in training, neurons compete for which information to encode. Two neurons choosing to encode for the same bar leads to a local optimum where both neurons try to increase their receptive weights to reduce stochasticity, however cannot obtain high unique information. To avoid this local maximum and prolong the critical initial phase of high stochasticity and competition, we introduce a strong weight decay (linear down-scaling of all receptive weights after each time step) during the first half of training (see SI Appendix, section 2.C for all chosen training parameters).
+3.2.5. Performance and outcome.
+Over the course of training almost all neurons learn to encode mutually different individual bars (Fig. 3C). Rare encoding errors occur exclusively when two neurons encode the same bar (SI Appendix, Fig. S8). Correspondingly, the total mutual information of the layer 
+ approaches the entropy of the dataset, indicating successful compression of the receptive input information (Fig. 3D).
+3.2.6. Information dynamics.
+The average unique receptive information of the neurons 
+ converges to 0.77 bits, with the average conditional mutual information 
+ reaching close to 1.0 bits (Fig. 3 B and C). This suboptimal result is mostly attributable to individual neurons not having fully converged onto their chosen bar and to the weak contextual cross-talk between neurons (SI Appendix, section 3.B and Fig. S4). However, the above-mentioned rare encoding errors, i.e., two neurons encoding the same bar, show a strikingly different signature of low unique information 
+ and high redundancy 
+ (SI Appendix, section 3.B and Fig. S7).
+3.3. Online Associative Memory Learning by Maximizing the Local Coherence Between Network Firing and External Input.
+We construct an (auto)associative memory network, similar to the Hopfield network (71), with an infomorphic online learning rule.
+3.3.1. Topology and inputs.
+Each of 
+ neurons receives a single element of a (
+)-sparse memory vector as receptive input, with 
+, and the activity of all other neurons in the previous time step as contextual input, with 
+ (Fig. 4A).
+Fig. 4.
+
+Associative memory learning in recurrent infomorphic networks. By maximizing redundant information between external input and output of all other neurons, the neurons learn to memorize a maximum number of patterns exceeding that of classical Hopfield networks. (A) Network architecture for memorizing binary patterns with 100 recurrently connected neurons, each receiving single element of target patterns as 
+ and output of all other neurons as 
+. Activation function 
+ is chosen such that both 
+ and 
+ can directly drive the neuron's output probabilities, to enable an active recovery of patterns based only on recurrent connections at test time (Section 3.3). The goal of each neuron is to learn to predict their respective element of the pattern based on activity of other neurons, which can be done by maximizing the redundant information in the output. Similar to the supervised example, the goal function used here includes additional, weak incentives for maximizing unique and synergistic PID contributions: 
+. (B) Information quantities averaged over all neurons, for 25 independent runs trained on 35 memory patterns. (C) Final accuracy of infomorphic networks and classical Hopfield networks over different numbers of patterns on the horizontal axis. Shown are the results for two noise levels used for testing the recovery of memorized patterns. (D) Accuracy over training for all 25 runs for different numbers of patterns. Note that in (B-D) the 95-percentile is being displayed.
+3.3.2. Goal functions.
+The network-level goal is to align with any external input, when present, and over time inscribe it as an attractor, i.e., a memory, into the recurrent dynamics. The external input thus functions as both the memory cue and the teaching signal, depending on the duration of presentation. Learning a memory pattern upon repeated presentation implies that the recurrent contextual inputs learn to align with the external receptive inputs by providing the same information about the firing of a neuron as the external inputs, motivating the goal function 
+. As in the supervised experiment, weak incentives for the other PID quantities 
+ improve performance by preventing neurons from going silent.
+3.3.3. Activation functions.
+In the absence of a receptive input the neurons should be driven by the contextual synapses, while receptive input, if present, should overrule this recurrent drive and force the neurons into a new firing pattern. As a consequence, each input class individually needs to be able to drive the neuron. To make both inputs driving and encourage high weights, we choose the symmetric activation function
+ 
+ 
+that is monotonic in both 
+ and 
+ and aligns with the positive and negative 8-norm for 
+ and 
+, respectively. (See SI Appendix, section 2.D for all chosen training parameters).
+3.3.4. Protocol.
+In the training phase, we sequentially presented a set of memory patterns to the network in random order. As in the unsupervised experiments, to compensate for the time delay of the recurrent connections, we presented each memory pattern for 8 consecutive time steps. Note that structured sequences of patterns presented for only one time step lead to heteroassociative memory formation (results not reported here, but see ref. 72).
+In the test phase, we present noise-corrupted memory patterns for a single time step, with the noise level 
+ indicating the fraction of pattern elements set at random. After presentation, we set the receptive input of all neurons to 
+ and assess retrieval accuracy by computing the cosine similarity between the network state and the noiseless memory pattern after 20 time steps (Fig. 4D). We define the noise-dependent capacity of the network as the highest number of trained memory patterns such that the average retrieval accuracy exceeds 95%.
+3.3.5. Performance and outcome.
+For noiseless initialization, infomorphic networks attain a capacity of 35 patterns per 100 neurons, which significantly exceeds the limit of 14 patterns in classical Hopfield networks (71). Note that unlike Hopfield networks our readout includes no binarization but remains stochastic, thus likely even limiting the measured capacity in the direct comparison. Furthermore, infomorphic networks outperform Hopfield networks up to a noise level of 
+, making them far more robust to random pattern distortion, even though training is conducted on noise-free patterns (Fig. 4C). Interestingly, infomorphic networks cannot reliably encode very few patterns, as in this case, many neurons receive the exact same input for every pattern, resulting in 0 bits of information in the receptive inputs.
+3.3.6. Information dynamics.
+We find an expected increase in redundant information 
+ over the course of training (Fig. 4B). Surprisingly, this increase is also present in networks that are seemingly above capacity, but then coincides with misinformative unique contextual information 
+, indicating that each neuron's activity is not fully predictable by the other neurons in this case (SI Appendix, section 3.C and Fig. S9).
+4. Discussion
+In this work, we defined the infomorphic neuron, an artificial neuron with two input classes and a flexible, parameterized local goal function derived from Partial Information Decomposition (43). Like classical information theory, PID provides an abstract, high-level description of neural functioning, yet enriches this description with the additional structure of redundancy, uniqueness, and synergy. This structure is inherited by the infomorphic neuron and leads to a highly interpretable and flexible description of local goals, independent of task, substrate, type of signals, and encoding of information therein (31, 37).
+The experiments conducted provide a proof of principle that the level of abstraction gained by an information-based approach does not compromise the ability of model neural networks to learn and solve diverse tasks. Concretely, we find that maximizing the encoding of redundant information between the input and the label enables a single-layer network of infomorphic neurons to do supervised learning. Furthermore, we show that input information can be distributed between multiple infomorphic neurons in a recurrent network in an unsupervised learning task, by making each neuron maximize its encoding of unique input information with respect to the activity of other neurons. Finally, we find that maximizing the encoding of redundant information between an external input and the activity of other neurons in a recurrent infomorphic network leads to the formation of robust associative memories that exceed the memory capacity of classical Hopfield networks.
+Notably, these experiments only explore a fraction of the available space of parameterized goal functions, and other terms of the goal function might become relevant in other learning scenarios. To demonstrate this, we construct primitive error neurons in the spirit of predictive coding (23, 73) (SI Appendix, section 4.B and Fig. S10), which receive simulated observations as receptive input and simulated model predictions as contextual input. They are trained to maximize synergistic information and both unique information atoms, while simultaneously minimizing redundant information. In a similar spirit, goals can be linearly combined to create more complex goal functions in other scenarios. One example of this is the weak incentives for unique and synergistic atoms in the supervised and associative memory experiments. We expect the residual entropy 
+ to be another useful incentive to either reduce or artificially inject noise into infomorphic networks to improve learning.
+Note that changing the hyperparameters 
+ and the activation functions allows us to arbitrate between three very different learning tasks with little effort, providing practical evidence that our goal function 
+ is highly interpretable and provides an intuitively accessible understanding of the local goal of each neuron in solving various tasks. Such interpretability is hard to establish in conventional ANNs, where a global error minimization goal is automatically backpropagated to the local level to adjust neuron parameters (e.g., refs. 74 and 75). Furthermore, a similar understanding of local goal functions might be an insightful target in our description of biological neural networks, and ultimately help to bridge the gap between artificial and biological intelligent systems. To this end, the synthetic methodology of infomorphic networks can easily be combined with post hoc analyses of trained BNNs and ANNs. In particular, it remains an open question which local information quantities these existing networks are effectively maximizing (37, 47, 49).
+4.1. Future Work.
+Both the supervised and unsupervised experiments reported here focused on small single-layer neural networks, yet the ultimate strength of neural networks lies in their scalability to multilayered networks with a large number of neurons (4). Currently, this scalability is not present in infomorphic networks due to a conundrum that is implicitly solved in backpropagation: In most architectures, a neuron does not only need to get a feedforward input and a context signal that conveys target information (like a reward, supervision, or self-supervision signal), but additionally it requires knowledge about what other neurons in the same layer are coding for, such that it can choose to provide a complementary contribution with respect to the target (22). In backpropagation, this information flows to the neuron implicitly through the gradient signal from higher layers (22, 76), yet in infomorphic networks, it needs to be provided explicitly, because it fulfills a different role from the feed-back information: While the neuron typically needs to follow the feed-back signal (redundancy), it simultaneously needs to be different from the lateral signal (uniqueness). In follow-up work, we define an infomorphic neuron with three input classes that combines these ideas, leading to greatly improved supervised learning performance (77).
+Additionally, it has been shown that encoding for synergy plays a role in integration of information from multiple sources or sensory streams, both in the brain (78, 79) and in ANNs (80). This could be tested constructively in infomorphic neurons with four input classes, which could be trained to extract information that is synergistic between two different receptive inputs, redundant with a contextual input and unique with respect to other lateral neurons.
+Infomorphic networks also offer a natural connection to other information-based learning algorithms. Prominently, under the infomax principle (81) it has been shown that in the low-noise regime, neurons maximize global information encoding by finding unique, independent features, which is in line with uniqueness maximization in our unsupervised learning experiments. However, under high noise, as might be prevalent in biological networks (82), more cooperative, redundant representations emerge (81). It remains an intriguing open question whether increasing admixtures of redundancy to the individual neural goals of infomorphic neurons may lead them to develop similar noise-robust representations. To test this hypothesis, our current framework allows increasing the noise by introducing an additional 
+ term or stronger weight decay. However, learning under constant noise is a constrained optimization problem and we leave the introduction of the required Lagrange multipliers to future work.
+Despite their fully local computation, infomorphic neurons currently lack biological plausibility due to the complexity of the gradient equations (Eqs. 8 and 9) as well as the memory-expensive histogram estimation method in Section 2. Whether the gradients can be effectively approximated by simpler equations remains an open question for future work. However, a parameterized estimation of 
+ combined with PID-estimators for mixed discrete-continuous variables would significantly reduce memory cost, e.g., to only 5 parameters for a two-dimensional Gaussian (32, 35), while for some tasks like supervised classification, more expressive multimodal distributions might be necessary. In addition, infomorphic neurons are functional, not anatomical, units and might thus be modeled by small microcircuits instead of individual spiking neurons.
+Finally, notice that the high degree of interpretability of PID and our simple task setups allowed for a very intuitive reasoning about hyperparameters with only minor fine-tuning. However, more complex tasks with bigger infomorphic networks might require more systematic hyperparameter optimization techniques, a variety of which are easily accessible in modern-day machine learning tools (83). Fortunately, the resulting hyperparameter sets will then still be formulated in the language of Partial Information Decomposition and thus potentially provide crucial insights into the optimal local goals to enable the self-organization and collaboration of local units to solve a variety of global tasks (77).
+4.2. Conclusion.
+Leveraging Partial Information Decomposition, this work establishes the infomorphic neuron, a neuron model permitting the flexible and direct optimization of interpretable information-theoretic goals. Through several lines of experimentation, the versatility of these neurons to solve a variety of machine learning tasks has been demonstrated. We propose infomorphic neurons as abstract neuron models that can provide a foundation for studying information processing in neural networks in the language of local goals, opening up many exciting avenues for future research.
+Below, I provide a detailed summary and explanation of the sections on
+Unsupervised Learning
+(Section 3.2) and
+Online Associative Memory Learning
+(Section 3.3) from the provided research article excerpt, followed by a set of analogies to elucidate the key concepts. The response adheres to the formal tone and professional style requested, ensuring clarity, precision, and thoroughness while remaining concise. I will also integrate insights from the discussion section (Section 4) where relevant to contextualize the findings.
+Summary and Explanation
+3.2. Unsupervised Learning of Independent Features by Maximizing Each Neuron's Unique Information About the Stimulus
+Summary
+:
+This section demonstrates the application of infomorphic neural networks to an unsupervised learning task, specifically a data compression problem. The network is designed to encode 8-bit binary images, each consisting of 8 independent horizontal bars, into the activity of 8 neurons. Each neuron aims to capture unique information about the input image relative to the other neurons' outputs, achieved by maximizing the unique information contribution from its receptive input using Partial Information Decomposition (PID). The network employs recurrent connections, where each neuron receives the previous time step's outputs from all other neurons as contextual input. The results show that the neurons self-organize to encode distinct bars, achieving near-optimal compression of the input information.
+Explanation
+:
+Task and Setup
+: The task involves compressing 8-bit binary images (8x8 pixels, with 8 horizontal bars appearing with probability 0.5) into the activity of 8 neurons. Each neuron receives the full image as receptive input (
+X
+t
+X_t
+X
+t
+​
+) and the previous time step's outputs from all other neurons as contextual input (
+Y
+t
+Y_t
+Y
+t
+​
+). The network is recurrent, meaning neurons influence each other over time, simulating a dynamic interaction.
+Goal Function
+: The network's objective is to encode the full 8 bits of image information, with each neuron ideally encoding one unique bit (corresponding to one bar) not encoded by others. This is achieved by setting the goal function to maximize the unique information of the receptive input (
+Unq
+X
+\text{Unq}_X
+Unq
+X
+​
+), formalized as
+Unq
+X
+=
+I
+(
+X
+t
+;
+Z
+t
+∣
+Y
+t
+)
+\text{Unq}_X = I(X_t; Z_t | Y_t)
+Unq
+X
+​
+=
+I
+(
+X
+t
+​
+;
+Z
+t
+​
+∣
+Y
+t
+​
+)
+, the conditional mutual information of the neuron's output (
+Z
+t
+Z_t
+Z
+t
+​
+) with the image given the other neurons' outputs. The goal function is parameterized as
+α
+=
+(
+0
+,
+1
+,
+0
+,
+0
+,
+0
+)
+\alpha = (0, 1, 0, 0, 0)
+α
+=
+(
+0
+,
+1
+,
+0
+,
+0
+,
+0
+)
+, focusing solely on
+Unq
+X
+\text{Unq}_X
+Unq
+X
+​
+.
+Activation Function
+: The activation function is chosen to make the contextual input (recurrent connections) modulate the output probabilities weakly, ensuring that receptive inputs primarily drive the neuron's activity. This prevents temporal oscillations and keeps the recurrent connections relevant for learning rather than dynamics.
+Training Protocol
+: Images are presented sequentially, each for 8 time steps to mitigate noise from the time delay in recurrent connections. Early in training, neurons compete to encode different bars. To avoid local optima (e.g., multiple neurons encoding the same bar), a strong weight decay is applied during the first half of training, maintaining high stochasticity and encouraging competition.
+Performance
+: Most neurons learn to encode distinct bars, with rare errors where two neurons encode the same bar. The total mutual information between the neurons' outputs and the input image approaches 8 bits, indicating successful compression. The average unique information (
+Unq
+X
+\text{Unq}_X
+Unq
+X
+​
+) reaches 0.77 bits, slightly below the ideal 1.0 bit due to incomplete convergence and weak contextual cross-talk.
+Information Dynamics
+: The conditional mutual information (
+I
+(
+X
+t
+;
+Z
+t
+∣
+Y
+t
+)
+I(X_t; Z_t | Y_t)
+I
+(
+X
+t
+​
+;
+Z
+t
+​
+∣
+Y
+t
+​
+)
+) approaches 1.0 bit, reflecting successful encoding of unique features. Errors (e.g., redundant encoding) are marked by low unique information and high redundant information, providing interpretable insights into the learning process.
+Key Insight
+: This experiment showcases the infomorphic framework's ability to perform unsupervised feature extraction by leveraging PID to prioritize unique information. The recurrent architecture and competition mechanism enable self-organization, with neurons naturally distributing the encoding task among themselves.
+3.3. Online Associative Memory Learning by Maximizing the Local Coherence Between Network Firing and External Input
+Summary
+:
+This section applies infomorphic networks to an associative memory task, akin to a Hopfield network, where the network learns to store and retrieve sparse binary patterns. Each of the 100 neurons receives one element of a sparse memory vector as receptive input and the previous time step's outputs from all other neurons as contextual input. The goal is to maximize redundant information between the receptive input and contextual input, enabling the network to align its recurrent dynamics with external patterns and form memory attractors. The infomorphic network outperforms classical Hopfield networks in memory capacity and noise robustness.
+Explanation
+:
+Task and Setup
+: The network consists of 100 neurons tasked with memorizing sparse binary patterns (100 elements, 10% active). Each neuron receives one element of the pattern as receptive input (
+X
+t
+X_t
+X
+t
+​
+) and the previous time step's outputs from all other neurons as contextual input (
+Y
+t
+Y_t
+Y
+t
+​
+). The recurrent architecture allows the network to store patterns as attractors in its dynamics.
+Goal Function
+: The objective is to make the network's recurrent activity predict the external pattern, effectively storing it as a memory. This is achieved by maximizing the redundant information (
+Red
+\text{Red}
+Red
+) between the receptive input (
+X
+t
+X_t
+X
+t
+​
+) and contextual input (
+Y
+t
+Y_t
+Y
+t
+​
+), so that the neuron's output (
+Z
+t
+Z_t
+Z
+t
+​
+) reflects information shared by both. The goal function is set as
+α
+=
+(
+1
+,
+0.01
+,
+0.01
+,
+0.01
+,
+0
+)
+\alpha = (1, 0.01, 0.01, 0.01, 0)
+α
+=
+(
+1
+,
+0.01
+,
+0.01
+,
+0.01
+,
+0
+)
+, emphasizing
+Red
+\text{Red}
+Red
+with weak incentives for unique and synergistic information to prevent neurons from becoming silent.
+Activation Function
+: Unlike the unsupervised case, both receptive and contextual inputs must drive the neuron's output to enable pattern recovery during testing (when receptive input is absent). A symmetric activation function, monotonic in both inputs and based on the 8-norm, ensures that either input can influence the output, supporting active memory retrieval.
+Training Protocol
+: Memory patterns are presented sequentially, each for 8 time steps to account for recurrent delays. During testing, noise-corrupted patterns (with noise level
+ϵ
+\epsilon
+ϵ
+) are presented for one time step, followed by 20 time steps with no receptive input (
+X
+t
+=
+0
+X_t = 0
+X
+t
+​
+=
+0
+). Retrieval accuracy is measured via cosine similarity between the network state and the noiseless pattern.
+Performance
+: The infomorphic network achieves a capacity of 35 patterns per 100 neurons for noiseless initialization, surpassing the classical Hopfield network's limit of 14 patterns. It remains robust up to a noise level of
+ϵ
+=
+0.2
+\epsilon = 0.2
+ϵ
+=
+0.2
+, outperforming Hopfield networks. However, it struggles with very few patterns due to identical inputs reducing information content.
+Information Dynamics
+: Redundant information (
+Red
+\text{Red}
+Red
+) increases during training, as expected. In networks above capacity, high redundant information coexists with negative unique contextual information (
+Unq
+Y
+\text{Unq}_Y
+Unq
+Y
+​
+), indicating that neurons' activities are not fully predictable by others, reflecting capacity limits.
+Key Insight
+: The infomorphic framework excels in associative memory by leveraging PID to align recurrent dynamics with external inputs. Its superior capacity and noise robustness highlight the power of local, information-theoretic learning rules compared to traditional models like Hopfield networks.
+Discussion (Relevant Points from Section 4)
+Interpretability
+: The PID-based goal function provides an intuitive understanding of each neuron's role (e.g., encoding unique features in unsupervised learning or redundant patterns in memory tasks). This contrasts with conventional ANNs, where global error minimization obscures local contributions.
+Versatility
+: The experiments demonstrate that infomorphic networks can handle diverse tasks (supervised, unsupervised, memory) by adjusting the goal function's hyperparameters, showcasing the framework's flexibility.
+Limitations
+: The tested networks are small and single-layered, limiting scalability. The gradient computations and histogram-based probability estimation are computationally intensive, reducing biological plausibility.
+Future Directions
+: Scaling to multilayer networks requires explicit lateral information to ensure complementary encoding among neurons, a challenge implicitly addressed by backpropagation. Exploring synergistic information for multisensory integration, connecting to infomax principles, and simplifying gradient computations are proposed next steps.
+Analogies to Explain Key Concepts
+To elucidate the unsupervised learning and associative memory tasks, I provide tailored analogies that align with the infomorphic framework, PID, and local learning, maintaining a formal tone and professional clarity.
+1.
+Unsupervised Learning as a Team of Archivists Organizing a Library
+Concept
+: In unsupervised learning, each neuron maximizes unique information to encode a distinct feature (e.g., one bar) not captured by other neurons, enabling distributed compression of the input image.
+Analogy
+: Imagine a team of 8 archivists tasked with organizing a collection of documents, each describing 8 independent topics (like the 8 bars). Each document is a binary image, with topics present or absent randomly. The archivists work together to create a concise index of the collection:
+Receptive Input
+: The document's content (the image with bars).
+Contextual Input
+: Notes from the other archivists about which topics they've already indexed (previous neuron outputs).
+Each archivist's goal is to index a unique topic not covered by others, ensuring the team collectively captures all 8 topics. They adjust their focus (like synaptic weights) based on what others are indexing, competing early on to claim distinct topics.
+To avoid multiple archivists indexing the same topic, they introduce "disruption" (weight decay) early in the process, encouraging exploration of different topics.
+Connection
+: Each archivist mirrors an infomorphic neuron maximizing unique information (
+Unq
+X
+\text{Unq}_X
+Unq
+X
+​
+). The recurrent connections (contextual inputs) inform each neuron about other neurons' encodings, enabling self-organization. The near-optimal compression (8 bits) reflects the team's success in distributing the indexing task, with rare errors (redundant indexing) detectable via PID's interpretable metrics.
+2.
+Associative Memory as a Choir Learning Harmonies
+Concept
+: In associative memory, neurons maximize redundant information to align their recurrent activity with external patterns, forming memory attractors that can be retrieved despite noise.
+Analogy
+: Picture a choir of 100 singers learning to perform a set of musical pieces (the memory patterns). Each singer is responsible for one note in each piece:
+Receptive Input
+: The sheet music for their specific note (one element of the pattern).
+Contextual Input
+: The sounds produced by the other singers in the previous measure (previous neuron outputs).
+The choir's goal is to memorize each piece so that, given a partial or noisy cue (a corrupted pattern), they can sing the full piece correctly. Each singer adjusts their performance (like synaptic weights) to ensure their note harmonizes with the others, focusing on notes that align with both their sheet music and the choir's collective sound (redundant information).
+During rehearsal, each piece is practiced repeatedly (8 time steps). In performance (testing), a noisy cue is given briefly, and the choir continues singing based on their collective harmony.
+Connection
+: Each singer represents an infomorphic neuron maximizing redundant information (
+Red
+\text{Red}
+Red
+) to align their output with both the external pattern and the recurrent network state. The network's high capacity (35 patterns) and noise robustness (
+ϵ
+=
+0.2
+\epsilon = 0.2
+ϵ
+=
+0.2
+) reflect the choir's ability to memorize and reconstruct pieces accurately, surpassing traditional methods (Hopfield networks). PID reveals when the harmony fails (e.g., negative unique information above capacity).
+3.
+PID as a Food Critic Analyzing a Dish's Ingredients
+Concept
+: PID dissects the neuron's output information into unique, redundant, and synergistic contributions, guiding the learning process in both tasks.
+Analogy
+: Consider a food critic evaluating a dish made from two ingredient sets:
+Receptive Input
+: The primary ingredients (e.g., vegetables).
+Contextual Input
+: The seasonings or cooking method (e.g., herbs or roasting).
+The critic analyzes the dish's flavor (the neuron's output) to identify:
+Unique Information
+: Flavors exclusive to the vegetables (e.g., carrot's sweetness) or seasonings (e.g., rosemary's aroma).
+Redundant Information
+: Flavors shared by both (e.g., a savory taste).
+Synergistic Information
+: Flavors emerging only from their combination (e.g., a roasted umami taste).
+In
+unsupervised learning
+, the critic praises dishes where the vegetables contribute unique flavors not found in the seasonings, ensuring each chef (neuron) highlights a distinct ingredient. In
+associative memory
+, the critic values dishes where the vegetables and seasonings produce the same flavor, ensuring consistency across the meal (memory pattern).
+Connection
+: PID's decomposition mirrors the critic's analysis, providing interpretable metrics to guide neurons. In unsupervised learning, maximizing
+Unq
+X
+\text{Unq}_X
+Unq
+X
+​
+ensures distinct feature encoding, while in associative memory, maximizing
+Red
+\text{Red}
+Red
+aligns recurrent and external inputs, with PID revealing errors (e.g., redundant encoding or negative unique information).
+4.
+Local Learning as Independent City Planners
+Concept
+: Each neuron optimizes its local goal function using only locally available information, contributing to the network's global task without centralized coordination.
+Analogy
+: Imagine a group of city planners designing a city's infrastructure, with each planner responsible for one district:
+Receptive Input
+: Local data about their district (e.g., traffic patterns).
+Contextual Input
+: Reports from other planners about their districts' designs (previous neuron outputs).
+In
+unsupervised learning
+, each planner aims to develop a unique feature for their district (e.g., a park or market) not replicated elsewhere, ensuring the city offers diverse amenities. They adjust their plans based on others' reports to avoid overlap.
+In
+associative memory
+, planners ensure their district's layout (e.g., road network) aligns with a city-wide blueprint (the pattern) and other districts' layouts, creating a cohesive system that can be reconstructed from partial plans.
+Connection
+: Each planner represents an infomorphic neuron optimizing a PID-based goal function. In unsupervised learning, maximizing unique information ensures distinct contributions, while in associative memory, maximizing redundant information aligns local and global patterns. The local autonomy enhances interpretability, as each planner's role is clear.
+Why These Analogies Work
+Dual Inputs
+: The analogies (archivists, singers, food critic, planners) emphasize the two input classes (receptive and contextual) by comparing them to distinct information sources (documents/notes, sheet music/choir sounds, ingredients/seasonings, local data/reports).
+PID's Role
+: The food critic analogy clarifies how PID dissects information into interpretable components, applicable to both tasks.
+Local Learning
+: The archivists and planners highlight the autonomy of neurons, showing how local optimization achieves global goals without centralized control.
+Task-Specific Goals
+: The unsupervised (archivists) and associative memory (choir) analogies reflect the distinct PID-based objectives (unique vs. redundant information), illustrating the framework's versatility.
+Interpretability
+: Each analogy underscores how PID provides clear insights into neuron behavior, akin to understanding an archivist's indexing choices or a singer's harmony contributions.
+If you require further elaboration on any analogy, additional analogies for specific aspects, or deeper analysis of the discussion section, please let me know.
+How does it compare to this? Organic Learning
+8. Organic Learning
+An Evolution Based Alternative to Deep Learning for Natural Languages that can learn a useful amount of any language on the planet in five minutes on a laptop
+
+Monica Anderson
+Monica Anderson
+Jul 25, 2022 • 12 min read
+8. Organic Learning
+Deep Neural Networks Family Tree
+An Evolution Based Machine Learning Algorithm
+for Natural Language Understanding.
+
+Introduction
+I have (along with other researchers at Syntience Inc) been researching Deep Neural Networks of my own design since Jan 1, 2001. We made a major breakthrough in summer of 2017 and are now seeking to productize a Cloud Microservice for for Natural Language Understanding called UM1.
+
+This post provides an overview of the ML algorithm used, which is called Organic Learning. A separate and detailed description of UM1, including links to downloadable test code, is available in Chapter 9. Understanding Machine One. The test code is written in python, but the UM1 service can be called from any language.
+
+An Understanding Machine is not an Artificial Intelligence; Intelligence requires both Understanding and Reasoning. Reasoning is simply not part of the design; Organic Learning only learns to Understand language, not to Reason about it.
+
+And UM1 is, as the name implies, a pure Understanding-Only Machine, not even capable of learning. It is also safe; the Understanding it outputs is the total impact it can have on the world. Further, everything at the algorithm level is fixed; it is a read-only system and can not learn or improve between updated release versions, which is important for repeatability.
+
+On the other hand, it is fully general in the "AGL" sense: It can ("at the factory" at Syntience Inc) learn any human language by just reading online books in that language. And it may well Understand many things beyond mere language. Future testing will determine how much of the World (as described in the books it reads) the system is capable of Understanding by reading. And it may come as a surprise to some that Understanding is what a brain spends over 99% of its cycles on. It is the central problem in AI, and we cannot move on to Reasoning until we get Understanding right. Because you cannot Reason about that which you do not Understand.
+
+And as you will see in the next chapter, the API for UM1 is very easy to use. No linear algebra will be required. Some set theory would be useful, especially the Jaccard distance metric. Programmers capable of modifying a working python example should be able to add these capabilities to their apps no matter what programming language they are currently using.
+
+Problem Statement
+Traditional Natural Language Processing (NLP) methods can perform many filtering and classification tasks but these algorithms, being Reductionist and statistical, cannot cross the syntax-to-semantics gap that would provide actual language Understanding. Many NLP algorithms rely on statistical Models and - as all Reductionist strategies tend to do - discard too much context too early. Neural networks, in contrast, exploit such contexts.
+
+Deep Learning (DL) can now reliably identify objects in an image understanding situation and have made inroads into language Understanding, including semantics. But DL really is a poor fit for natural languages. Some results are impressive, such as DL based language translation and the amusing confabulations spewed by GPT/3 . DL algorithms used are computationally expensive, which is justified for image understanding. But language is linear and correlation discovery is a simple lookup in a reasonably recent past (instead of a convolution in a 2D image space, or worse). This means much more effective correlation discovery and Epistemic Reduction algorithms are available for text than for images.
+
+The "Generalization Gap", or sometimes, the "Semantic Gap", is the step from syntax to semantics, from text to understanding, and is the single major hurdle to computer based Understanding of languages, and therefore, to understanding of the world. Some people still doubt that Deep Learning can bridge this gap for languages. But I think that most kinds of DNN systems are capable of this and will provide bona fide human-like (but not necessarily human-level) language Understanding.
+
+If some company already has an existing NLP (Reductionist, Language Model Based) solution to a problem, why would they consider switching to NLU? Because they may need to handle things that word and grammar based systems cannot really handle or even identify without much effort and expense, such as
+
+Hypotheticals
+Negations
+Questions
+Irony and satire
+Pronouns and other co-references
+Free form social noise like greetings
+Non sequiturs
+Rhetorical questions
+Nested sentence structures
+Unexpected out-of-domain words
+Foreign language words and phrases
+Colloquial, truncated or abbreviated phrases
+Skills in these matters can now be learned much easier than they could be analyzed and then programmed. And to do it in more languages, just learn more of them.
+
+
+Deep Neural Networks Family Tree
+Definitions
+A Deep Discrete Neuron Network (DDNN) is a Deep Neural Network (DNN) that uses software simulations of discrete neurons interconnected with explicit neuron-to-neuron synapse-like links. In contrast, Neural Networks used in Deep Learning use linear algebra style operations on arrays of floating point numbers. These representations are not isomorphic in spite of some claims to the opposite.
+
+In what follows, I will use the term Deep Learning or "DL" to describe the family of hundreds of Deep Neural Network algorithms inspired by (and building on) the work of LeCun, Hinton, Bengio, Schmidhuber, Ng, Dean, et al. As the diagram above shows, both DL and DDNNs are DNNs.
+
+DDNNs have been studied before; they are much more brain-like than DL based systems and therefore a plausible first attempt by researchers who approach DNNs from a neuroscience angle. But the resulting systems have so far not been able to compete with other methods, including DL, on useful tasks. These failures can be attributed exactly to the same reasons Deep Learning for image Understanding didn't work until 2012: Our machines were too small and too weak, and our training corpora were too small. Some algorithmic and Epistemological confusions also prevented Epistemic Reduction from working in these early attempts.
+
+DL was the first DNN that worked. It is not the only one. We can finally create and use Deep Discrete Neuron Networks, because our computers are now up to the task.
+
+Advantages of Organic Learning
+Organic Learning is well positioned to replace Deep Learning (DL) in natural language domains.
+
+OL was explicitly designed for sequential data like text, voice, or DNA.
+DL was designed to understand images and its use for text is a poor fit.
+OL requires 5-6 orders of magnitude less computation and less energy than DL for NLU.
+OL does not require (and cannot even benefit from) a GPU, T-Chip, or other special hardware. Conventional von Neumann architectures work best. Specifically, there is no need for any kind of "active memory" or "memory based computation" or other forms of "per-neuron" parallelism.
+OL learns in a fraction of the learning time required in DL based language understanding. Minutes on a single thread on a laptop rather than days using hundreds of GPU based hosts in a cloud. Learning is effective with much smaller corpora than those used in DL, as long as SOTA accuracy is not a design requirement.
+OL is capable of unsupervised learning of any language given nothing more than plain (untagged) text in that language .
+OL scales as needed. The only limit is the size of main memory.
+OL inference (runtime) engine (UM1) requires much less memory.
+OL runtime clients require no end-user programming in TensorFlow, Keras, or other ML languages. Python sample code is available.
+Connectome Algorithms
+The learner starts out empty and then learns recurring sequential patterns it discovers in its input stream. The learning algorithm slowly builds a Connectome, a graph of Nodes and Links (like neurons and synapses) to reify the experiences.
+
+The framework provides direct Java level access to the  learned connectome and its individual neurons and can be directly used for Epistemology level experiments. Clients will not have access to this, but researchers at Syntience benefit from this as implementers. We call the results of programming at this Meta-learning-level "Connectome Algorithms"
+
+We have a "Clojure REPL" running in the same JVM that is accessed asynchronously from an outside Emacs editor using an API. We can interactively conduct experiments in Clojure (a LISP) on the Connectome. Most of these involve graph traversal to discover concept correlations.
+
+Potential
+It is worth emphasizing that OL is not an incremental improvement on Deep Learning. It is a completely novel capability, never seen before, with its own strengths, potential, and limitations. In patent language, it is a fruit of a different tree than DL, and was designed from the start using a Holistic Stance, as described in Chapter 7, The Red Pill of Machine Learning.
+
+Because it is new, we have few clues about how to estimate its impact. We can foresee a range of future applications for general human language understanding by computers, even small and cheap ones. An algorithm for human-like (but not necessarily human-level) Natural Language Understanding - NLU(*), as opposed to NLP -  such as Organic Learning, opens up what has been estimated to become a $1 Trillion NLU market out of a multi-Trillion general AI/ML market.
+
+OL has been developed by 1-2 people and has worked only since 2017. In contrast, Deep Learning has benefited from thousands of researchers improving it since 2012. This is only the beginning for OL.
+
+Towards voice input and output
+OL and UM1 are text based. If we want voice input and output, then we can use speech-to-text and text-to-speech systems before and/or after OL or UM1. While useful, the main use of voice I/O will only be realized when we get decent ML based question answering systems, or better, systems that can handle "Contiguous Rolling Context Mixed Initiative Dialog". We are continuing research in this direction. OL could probably handle speech by learning from speech input like current ML based voice input systems but we have not researched this.
+
+The unreasonable efficiency of Organic Learning
+The OL and UM1 algorithms are very fast. Learning can stream, sustained, at 5,000 cps per thread, and Understanding has been run at 100,000 cps per thread on a laptop. Deep Learning based NLU projects like BERT and GPT/3 take months to learn in the cloud. Their results are not directly comparable to OL but either strategy may work in any specific application and should be evaluated on a case by case basis. The energy savings alone make a compelling argument for using OL.
+
+Learning is thread-safe. In a 200 thread machine, the system could be reading from 200 different text files, such as different pages in Wikipedia, simultaneously, into the same global RAM image of Nodes and Links. This would be like having one single brain and 200 pairs of eyes reading books.
+
+There are entire classes of applications that could use the "Industry strength Understanding" provided by OL. It may not beat State of the Art in academia, but it can be used with very little API programming effort and has a shallow learning curve for humans. We also expect OL to handle multiple languages well, and it might compete well on price because of energy and compute savings. A cloud based microservice could handle this for any kind of agent, such as language based phone apps.
+
+Designed for Sequence Processing
+Convolution of images in DL for the purpose of correlation discovery is expensive. When Understanding language, we still require correlation discovery, but text is linear and this operation becomes a much simpler problem in the time/sequence domain rather than (as in DL) in a 2D/3D/4D image/movie/point cloud domain. In effect, all correlations in text are references to something experienced in the past, and the past is linear, searchable and indexable. This, and the next paragraphs, explain the amazing learning speed of Organic Learning.
+
+Only Activate Relevant Concepts
+In OL, unless we are reading about, say, a potato harvest, there is no reason to touch any of the software neurons involved in "representing" potato harvests. So we can have billions of learned concepts just sitting quietly in main memory, consuming no CPU cycles, until "their topic" is discussed. They activate, make a contribution to understanding, disambiguation, and learning, and they may even may learn something themselves. They then return to dormancy until next time the topic is discussed. This is a major advantage of discrete-neuron strategies.
+
+Therefore, OL systems do not require explicit attention controlling mechanisms. Focus emerges from matches between the global gathered experience and the concepts discovered in the text in the input stream.
+
+In contrast, in DL, every pixel of a processed image is pushed through the entire GPU processing stack many times. And each layer does some moderately expensive array arithmetic, which is why using GPUs is so important in DL.
+
+Track Correlations Explicitly
+One of the main operations in Deep Learning is correlation discovery by convolution of images in multiple layers. This is done in the upward pass. The discovered correlations are used to somewhat adjust the weights of the DL network in the Stochastic Gradient Descent downward pass. Because of this, the network has changed, necessitating another upward pass of convolutions through the entire stack, until there is sufficient convergence.
+
+In contrast, in Organic Learning, when the algorithm discovers a correlation it simply inserts a Synapse-like link to represent that correlation. Being an evolutionary system, the correlation will remain as long as it contributes to correct Understanding but will be removed in a Darwinian competition if it doesn't contribute to positive results. These mostly-persistent Synapse-based correlations make re-convolution unnecessary. Do it once, and it's done.
+
+Neural Darwinism = RL + Sex
+The idea of Neural Darwinism is that in brains, from millisecond to millisecond, there is a continuous battle for relevance among ideas. The ideas are evaluated for fit to both the current sensory input and the totality of gathered experience that has been reified in the Connectome.
+
+Those parts of the Connectome that assist in providing a good outcome are rewarded and other parts may be punished. This is Reinforcement Learning (RL).
+
+In a Neural Darwinism based Machine Learning system the best ideas get to breed with other good ideas, occasionally producing even better ideas. This is how we can generate ideas that are better, often in the meaning of "better abstractions", than any of the ideas we started with. This is the reason sexual reproduction speeds up evolution so much, in nature and in our algorithms spaces. It allows multiple independently discovered inventions to merge into one individual - a fact that is often neglected in naïve discussions about the effectiveness of Evolutionary Computation.
+
+Evolution is perceived as slow because evolution in nature takes a lot of time. But computers can evolve populations of thousands of individuals in milliseconds, and Genetic Algorithms, when done right and attacking a problem in a suitable problem domain, are very competitive and are much faster than their reputation.
+
+Character based input
+An OL system does not require the input to be parsed into words; it reads text character by character which means it can also learn languages that do not use segmented (space separated) words, such as Chinese. Each character read from the input activates a "character input neuron" that then signals other neurons, etc., and this cascade of signaling is what determines both what the sentence means and whether and where to attach any new understanding learned from that character, given the past, up to that point, as context. This incremental attachment operation is what provides the "Organic Growth".
+
+Flexibility and Code Size
+OL is a simple java program, about 4000 lines of code for the learning algorithm itself. Add three times that for debugging, visualization, APIs, and test framework.  The core algorithm exists in two versions: Learning (Organic Learning Learner)  and Runtime (Understanding Machine One - UM1). Learning, all told, is about 16,000 lines. The UM1 code is about 1,700 lines, of which about 500 lines implement the main algorithm. Um1 only imports I/O and Collection classes.
+
+The learner creates, as its main output, a file containing a "node wiring list" describing which neurons connect to which other neurons. Such a Competence Creation event is typically scheduled after each 10 million characters of corpus have been read. Given a Competence file name, UM1 loads that list and re-creates the learned neural structure and then uses that as the basis of its Natural Language Understanding Service.
+
+The learner is currently kept as a trade secret. The UM1 runtime can be source licensed to customers since it does not contain any of the learning code. But initially UM1 will only be available as our cloud based MicroService.
+
+The OL Learner can also be saved in a full Java image format which can be re-started later to continue learning. This means any learned skill can be used as a base for further learned skills. After learning Basic English, we can top it off with Medical English and Business English, targeted at different application domains.
+
+Test Strategies
+We have used many different tests of language understanding competence for this research but the strategy described in Noah Smith's paper "Adversarial Evaluation for Models of Natural Language" is our favorite. We think our tests are closer to capturing Understanding than most NLP era tests; it can be made more or less difficult by choosing more subtle distinctions between the test cases; They are easy to understand, quick to execute, and can be adopted to many situations. We can execute these tests asynchronously at regular intervals such as after each 1 million characters of corpus. We designed the system to not be able to learn from its test data.
+
+NLP era test cases emphasize Reasoning and various puzzles, which require cognitive capabilities that we decided to not even try to implement until we have productized our 100% pure Understanding systems. As a consequence, we cannot currently beat state of the art at GLUE or SUPERGLUE.
+
+Demonstration of Learning English
+The Organic Learning algorithm can learn a useful amount of any language on the planet in five minutes running on an old Mac laptop. With "useful amount" I mean that the system could be used for "industrial strength" Understanding, such as in a chatbot. Of course, as is common in Machine Learning situations, learning overnight or even for a few days will continue to improve the results.
+
+Below is an annotated screenshot of our demo of the system learning English from scratch. This demo is running code from December 2019.
+
+You can inspect the test file we used. Download it here. The system cannot learn from tests, which is why we can run it as often as we want.
+
+
+We can demonstrate this live, in person or in Zoom.  Or you can watch this movie:
+
+
+
+
+0:00
+/14:10
+1×
+
+
+Organic Learning Algorithm learning English in five minutes on an old Mac laptop
+Sign up for more like this and event invitations
+Enter your email
+Subscribe
+Previous Article
+Next Article
+Experimental Epistemology © 2025
+To compare the
+infomorphic neural networks
+described in the research article by Makkeh et al. with
+Organic Learning (OL)
+as presented by Monica Anderson, I will systematically analyze their key characteristics, objectives, methodologies, and applications. The comparison will focus on their approaches to learning, interpretability, computational efficiency, and applicability to tasks, particularly in the context of natural language understanding (NLU) for OL and general neural learning for infomorphic networks. The response adheres to the requested formal tone, ensuring clarity, precision, and professionalism, while providing a thorough yet concise evaluation. Following the comparison, I will offer analogies to clarify the distinctions and similarities.
+Comparison of Infomorphic Neural Networks and Organic Learning
+1.
+Objective and Scope
+Infomorphic Neural Networks
+:
+Objective
+: Develop a general, interpretable framework for local learning in neural networks, applicable to both biological and artificial systems, across diverse tasks (supervised, unsupervised, and associative memory learning).
+Scope
+: The framework is task-agnostic, demonstrated on image classification (MNIST), feature extraction (unsupervised), and memory tasks (associative memory). It is not specifically tailored for NLU but could potentially be adapted for language tasks.
+Focus
+: Emphasizes local, information-theoretic goal functions derived from Partial Information Decomposition (PID) to understand how individual neurons contribute to network-level tasks, bridging neuroscience and AI.
+Organic Learning (OL)
+:
+Objective
+: Provide a fast, energy-efficient, and general algorithm for NLU, capable of learning any human language from plain text in minutes, targeting "industrial-strength" understanding for applications like chatbots.
+Scope
+: Specifically designed for sequential data (text, potentially voice or DNA), with a focus on NLU. It is not intended for reasoning or tasks outside understanding, such as image processing or memory storage.
+Focus
+: Aims to bridge the syntax-to-semantics gap in language understanding, offering a holistic, evolution-based alternative to traditional NLP and deep learning (DL) methods.
+Comparison
+: Infomorphic networks are broader in scope, targeting a universal framework for neural learning across paradigms, while OL is narrowly focused on NLU with a practical, application-driven goal. Both aim for generality (infomorphic across tasks, OL across languages), but infomorphic networks prioritize theoretical interpretability, whereas OL emphasizes practical efficiency and deployment.
+2.
+Learning Approach
+Infomorphic Neural Networks
+:
+Methodology
+: Uses a parametric, PID-based local goal function to optimize each neuron's information processing (unique, redundant, synergistic contributions). Neurons adjust synaptic weights via gradient ascent, guided by analytically derived gradients.
+Learning Types
+: Supports supervised (maximizing redundant information for classification), unsupervised (maximizing unique information for feature extraction), and associative memory learning (maximizing redundant information for pattern storage).
+Architecture
+: Compartmental neuron model with two input classes (receptive and contextual), inspired by cortical pyramidal neurons. Networks can be feedforward or recurrent, depending on the task.
+Training
+: Requires structured training protocols (e.g., minibatches for supervised learning, multiple time steps for recurrent tasks) and can be computationally intensive due to histogram-based probability estimation.
+Organic Learning
+:
+Methodology
+: Employs an evolution-based algorithm (Neural Darwinism) that builds a connectome (graph of nodes and links) by discovering recurring sequential patterns in text. Correlations are explicitly stored as synapse-like links, with reinforcement learning and "sexual reproduction" of ideas enhancing abstractions.
+Learning Types
+: Primarily unsupervised, learning language patterns from untagged text. It does not support supervised or memory tasks, as its focus is understanding, not reasoning or storage.
+Architecture
+: Deep Discrete Neuron Network (DDNN) with explicit neuron-to-neuron connections, contrasting with DL's array-based operations. The connectome is dynamically built and stored, with only relevant neurons activated during processing.
+Training
+: Extremely fast, learning a "useful amount" of any language in 5 minutes on a laptop, streaming at 5,000 characters per second per thread. It scales with main memory and requires minimal corpora compared to DL.
+Comparison
+: Infomorphic networks use a mathematically rigorous, information-theoretic approach with flexible goal functions, supporting multiple learning paradigms but requiring more computational effort. OL leverages an evolutionary, biologically inspired approach optimized for sequential data, achieving remarkable speed and efficiency but limited to unsupervised NLU. Infomorphic networks are more versatile, while OL is highly specialized and efficient for its domain.
+3.
+Interpretability
+Infomorphic Neural Networks
+:
+Strength
+: Highly interpretable due to PID, which dissects a neuron's output into unique, redundant, and synergistic contributions. This allows researchers to understand each neuron's role (e.g., encoding distinct features or aligning with labels) across tasks.
+Mechanism
+: The parametric goal function (
+α
+\alpha
+α
+) explicitly defines the desired information processing, making it intuitive to adjust for different tasks. Post hoc analysis of PID atoms reveals learning dynamics and errors (e.g., redundant encoding in unsupervised tasks).
+Application
+: Interpretability bridges neuroscience and AI, enabling insights into biological and artificial neural processing.
+Organic Learning
+:
+Strength
+: Offers interpretability at the connectome level, where researchers can inspect the graph of nodes and links to understand learned patterns. However, this is primarily for developers at Syntience, not end-users.
+Mechanism
+: The connectome represents correlations as explicit synapse-like links, and graph traversal (via a Clojure REPL) reveals concept correlations. However, the evolutionary process (Neural Darwinism) is less transparent than PID, as it relies on emergent competition and abstraction.
+Application
+: Interpretability supports meta-learning experiments but is less emphasized for end-users, who interact with the UM1 runtime via a simple API.
+Comparison
+: Infomorphic networks provide superior interpretability through PID's structured decomposition, making them ideal for theoretical research and understanding local neural contributions. OL's interpretability is more developer-focused, with the connectome offering insights into learned structures but less clarity on individual neuron roles. Infomorphic networks are better suited for academic and neuroscience applications, while OL prioritizes practical deployment.
+4.
+Computational Efficiency
+Infomorphic Neural Networks
+:
+Requirements
+: Computationally intensive due to gradient computations and histogram-based probability estimation for PID. The article notes that current implementations lack biological plausibility due to complex gradients and memory demands.
+Hardware
+: Runs on standard hardware but does not specify optimization for low-resource devices. Scaling to larger networks is a challenge due to computational bottlenecks.
+Training Time
+: Not explicitly quantified, but the use of minibatches and multiple time steps suggests longer training times compared to OL, especially for recurrent tasks.
+Organic Learning
+:
+Requirements
+: Extremely efficient, requiring 5-6 orders of magnitude less computation and energy than DL. It runs on conventional von Neumann architectures (e.g., laptops) without needing GPUs or specialized hardware.
+Hardware
+: Scales with main memory, making it suitable for low-resource devices. The UM1 runtime is lightweight (1,700 lines of code, 500 for the core algorithm).
+Training Time
+: Learns a useful amount of any language in 5 minutes, with sustained learning at 5,000 characters per second per thread. Inference runs at 100,000 characters per second.
+Comparison
+: OL is significantly more efficient, designed for rapid learning and low-resource deployment, making it ideal for practical NLU applications. Infomorphic networks, while theoretically robust, are computationally heavier and less optimized for real-time or low-resource settings, reflecting their research-oriented focus.
+5.
+Applications and Performance
+Infomorphic Neural Networks
+:
+Applications
+: Demonstrated on:
+Supervised Learning
+: MNIST classification (89.7% accuracy, comparable to logistic regression).
+Unsupervised Learning
+: Feature extraction from binary images, achieving near-optimal compression (8 bits).
+Associative Memory
+: Pattern storage, surpassing Hopfield networks (35 patterns vs. 14 per 100 neurons).
+Performance
+: Competitive within each task but slightly below state-of-the-art (e.g., logistic regression for MNIST). The framework's strength lies in its versatility and interpretability, not raw performance.
+Potential for NLU
+: Not tested for language tasks, but the unsupervised learning approach (maximizing unique information) could theoretically be adapted for feature extraction in text, and the supervised approach could support classification tasks in NLU.
+Organic Learning
+:
+Applications
+: Focused on NLU, with potential applications in chatbots, language-based phone apps, and multi-language understanding. It handles complex linguistic phenomena (e.g., irony, hypotheticals, negations) that traditional NLP struggles with.
+Performance
+: Claims "industrial-strength" understanding after 5 minutes of learning, suitable for practical applications but not aiming for state-of-the-art academic benchmarks (e.g., GLUE or SUPERGLUE). Its efficiency and ease of use are key advantages.
+Potential Beyond NLU
+: May extend to understanding non-linguistic domains (e.g., world knowledge from books), but this is speculative and untested.
+Comparison
+: Infomorphic networks are more versatile, covering multiple learning paradigms, but their performance is task-specific and not optimized for NLU. OL excels in NLU with unmatched speed and efficiency, but its scope is limited to understanding sequential data. Infomorphic networks could theoretically be adapted for NLU, but OL is already tailored for this domain.
+6.
+Biological Plausibility
+Infomorphic Neural Networks
+:
+Inspiration
+: Modeled after layer-5 pyramidal neurons with two input classes (receptive and contextual), aligning with cortical microcircuits. The PID framework reflects biological principles of information processing.
+Limitations
+: Gradient computations and histogram estimation are computationally complex, reducing biological plausibility. The article suggests future simplifications (e.g., parametric probability estimation) to address this.
+Organic Learning
+:
+Inspiration
+: Draws on Neural Darwinism, mimicking brain-like competition and evolution of ideas. The discrete neuron model (DDNN) is more biologically inspired than DL's array-based operations.
+Limitations
+: While brain-like in concept, the evolutionary process and connectome management may not directly map to biological mechanisms. The focus on efficiency prioritizes practical outcomes over strict biological fidelity.
+Comparison
+: Both approaches are biologically inspired, but infomorphic networks are more explicitly tied to cortical neuron models, while OL's Neural Darwinism offers a higher-level analogy to brain evolution. Infomorphic networks face greater challenges in achieving biological plausibility due to computational complexity.
+Analogies to Clarify the Comparison
+1.
+Infomorphic Networks as a Modular Workshop, OL as a Specialized Assembly Line
+Infomorphic Networks
+: Imagine a workshop with modular tools, where craftsmen (neurons) can be configured to perform various tasks (e.g., carving, welding, painting) based on a blueprint (PID goal function). Each craftsman uses local materials (receptive and contextual inputs) and adjusts their technique (weights) to contribute to products like sculptures (classification), patterns (features), or storage systems (memories). The workshop is versatile but requires careful setup and significant resources.
+Organic Learning
+: Picture an assembly line optimized for producing a single product: language understanding modules. Workers (neurons) rapidly assemble these modules from text inputs, using an evolutionary process to refine connections (connectome). The line is incredibly fast and efficient, producing functional modules in minutes, but it's designed solely for this task and cannot pivot to other products.
+Connection
+: Infomorphic networks are flexible and interpretable, like a workshop adaptable to multiple tasks, but less efficient. OL is specialized and streamlined for NLU, like an assembly line, offering unmatched speed but limited versatility.
+2.
+PID vs. Neural Darwinism as Recipe Analysis vs. Natural Selection
+PID (Infomorphic Networks)
+: A chef analyzes a dish's flavor (neuron output) by breaking it into components: unique flavors from vegetables or spices, shared flavors, and combined flavors (PID atoms). This detailed recipe guides the chef to adjust ingredients (weights) for specific dishes (tasks), ensuring clarity in how each ingredient contributes.
+Neural Darwinism (OL)
+: A farmer breeds crops (ideas) through natural selection, where the best-performing plants (correlations) survive and crossbreed to produce better varieties (abstractions). The process is organic and efficient, yielding robust crops (language understanding), but the exact contributions of each plant are less transparent.
+Connection
+: PID provides a structured, interpretable framework for understanding neuron contributions, while Neural Darwinism relies on emergent competition, prioritizing efficiency over detailed insight. Both achieve meaningful outcomes but differ in transparency.
+3.
+Local Learning as Independent Engineers vs. Collaborative Ecosystem
+Infomorphic Networks
+: A team of engineers (neurons) designs a city's infrastructure, each focusing on a district (local goal). They use a blueprint (PID) to decide whether to build unique features (unsupervised) or align with a master plan (supervised/memory). Each engineer works independently, ensuring their contribution is clear and measurable.
+Organic Learning
+: An ecosystem of organisms (neurons) evolves to process a food source (text). Each organism adapts to find and store nutrients (correlations), competing and collaborating to form a robust food web (connectome). The ecosystem is highly efficient but less transparent about individual roles.
+Connection
+: Infomorphic networks emphasize local autonomy and interpretability, like engineers with clear roles, while OL's evolutionary approach creates a cohesive system with emergent roles, like an ecosystem, prioritizing speed and scalability.
+Conclusion
+Infomorphic Neural Networks
+are a theoretically robust, interpretable framework for general neural learning, excelling in versatility and offering insights into local neural contributions across supervised, unsupervised, and memory tasks. However, they are computationally intensive and not optimized for NLU, making them better suited for research and neuroscience-AI integration.
+Organic Learning
+is a highly efficient, specialized algorithm for NLU, achieving rapid learning and low-resource deployment for language understanding. Its evolutionary approach and focus on sequential data make it ideal for practical applications, but it lacks the versatility and interpretability of infomorphic networks.
+Potential Overlap
+: Infomorphic networks could theoretically be adapted for NLU by designing PID-based goal functions for language tasks, but they would likely be less efficient than OL. Conversely, OL's connectome could inspire recurrent architectures in infomorphic networks, though its evolutionary mechanism is less interpretable.
+If you have specific aspects of the comparison you'd like to explore further (e.g., potential NLU applications for infomorphic networks, deeper analysis of OL's connectome), or if you'd like additional analogies, please let me know.
+A list of all of the main ideas in this conversation.
+Below is a comprehensive list of the main ideas discussed in our conversation regarding the research article on
+infomorphic neural networks
+by Makkeh et al. and the comparison with
+Organic Learning
+by Monica Anderson. The list is organized to reflect the key concepts from the summaries, explanations, analogies, and comparisons, presented in a clear, formal, and structured manner, as per your preference for a professional tone.
+Main Ideas from the Conversation
+1.
+Infomorphic Neural Networks: Core Framework
+Objective
+: Develop a general, interpretable framework for local neural learning applicable to both biological and artificial neural networks, addressing the challenge of understanding how local computations contribute to network-level tasks.
+Partial Information Decomposition (PID)
+: A key information-theoretic tool that dissects a neuron's output into unique, redundant, and synergistic information contributions from two input classes (receptive and contextual), enabling interpretable learning goals.
+Infomorphic Neuron Model
+: Modeled after layer-5 pyramidal neurons, with two input classes (receptive for data, contextual for modulation), processing inputs via weighted sums and a sigmoid activation function to produce binary outputs.
+Local Goal Function
+: A parametric function defined as a linear combination of PID atoms (unique, redundant, synergistic information, residual entropy), optimized via gradient ascent to tailor neuron behavior to specific tasks.
+Versatility
+: Supports multiple learning paradigms (supervised, unsupervised, associative memory) by adjusting the goal function's parameters, demonstrating flexibility across tasks.
+2.
+Applications of Infomorphic Neural Networks
+Supervised Learning (MNIST Classification)
+:
+Maximizes redundant information between image data (receptive) and labels (contextual) to achieve 89.7% test accuracy, comparable to logistic regression (91.9%).
+PID provides interpretable insights into neuron roles, revealing increased redundant information and reduced stochasticity during training.
+Unsupervised Learning (Feature Extraction)
+:
+Maximizes unique information to encode distinct features (horizontal bars in binary images), achieving near-optimal compression (8 bits).
+Recurrent architecture with contextual inputs (other neurons' outputs) enables self-organization, with competition and weight decay preventing redundant encoding.
+Associative Memory Learning
+:
+Maximizes redundant information to align recurrent network activity with sparse binary patterns, forming memory attractors.
+Outperforms classical Hopfield networks (35 patterns vs. 14 per 100 neurons) and shows robustness to noise (up to
+ϵ
+=
+0.2
+\epsilon = 0.2
+ϵ
+=
+0.2
+).
+Performance Insights
+: Competitive but not state-of-the-art, with strengths in interpretability and versatility rather than raw accuracy.
+3.
+Interpretability and Biological Inspiration
+Interpretability via PID
+: PID's decomposition into unique, redundant, and synergistic contributions provides intuitive insights into each neuron's role, enabling analysis of learning dynamics and errors (e.g., redundant encoding in unsupervised tasks).
+Biological Plausibility
+: Inspired by cortical pyramidal neurons with basal (receptive) and apical (contextual) dendrites, aligning with biological information processing principles, though complex gradient computations reduce plausibility.
+Bridging Neuroscience and AI
+: The framework fosters understanding of local learning in both biological and artificial systems, offering a constructive approach to neural processing.
+4.
+Limitations and Future Directions for Infomorphic Networks
+Computational Challenges
+: Intensive gradient computations and histogram-based probability estimation limit scalability and biological plausibility.
+Scalability
+: Tested on small, single-layer networks; scaling to multilayer architectures requires explicit lateral information to ensure complementary encoding among neurons.
+Future Work
+: Simplifying gradients, developing PID measures for mixed discrete-continuous variables, exploring synergistic information for multisensory integration, and connecting to infomax principles for noise-robust representations.
+5.
+Organic Learning: Core Framework
+Objective
+: Provide a fast, energy-efficient algorithm for natural language understanding (NLU), capable of learning any human language from untagged text in minutes, targeting practical applications like chatbots.
+Neural Darwinism
+: An evolution-based approach where ideas (correlations) compete and breed to form abstractions, building a connectome (graph of nodes and links) to represent learned patterns.
+Deep Discrete Neuron Network (DDNN)
+: Uses explicit neuron-to-neuron connections, contrasting with deep learning's (DL) array-based operations, designed for sequential data (text).
+Understanding Machine One (UM1)
+: A runtime service for NLU, fixed and read-only, using a pre-learned connectome to process text without further learning or reasoning capabilities.
+6.
+Key Features of Organic Learning
+Efficiency
+: Learns a "useful amount" of any language in 5 minutes on a laptop, streaming at 5,000 characters per second, with inference at 100,000 characters per second, requiring 5-6 orders of magnitude less computation than DL.
+Unsupervised Learning
+: Learns from plain text without tags, handling complex linguistic phenomena (e.g., irony, negations, hypotheticals) that traditional NLP struggles with.
+Scalability and Accessibility
+: Scales with main memory, runs on standard hardware (no GPUs needed), and offers a simple API for integration, with minimal programming effort.
+Connectome-Based Interpretability
+: Developers can inspect the connectome to understand learned patterns, though this is less transparent for end-users compared to PID.
+7.
+Comparison of Infomorphic Networks and Organic Learning
+Scope and Versatility
+:
+Infomorphic networks are task-agnostic, supporting supervised, unsupervised, and memory tasks, but not optimized for NLU.
+OL is specialized for NLU, excelling in language tasks but limited to unsupervised understanding without reasoning or other paradigms.
+Learning Approach
+:
+Infomorphic networks use PID-based gradient optimization, flexible but computationally intensive.
+OL employs Neural Darwinism, rapidly building a connectome through evolutionary competition, optimized for sequential data.
+Interpretability
+:
+Infomorphic networks offer superior interpretability via PID, revealing precise neuron roles across tasks.
+OL's connectome provides developer-level insights, but the evolutionary process is less transparent.
+Computational Efficiency
+:
+Infomorphic networks are resource-heavy, suitable for research but not low-resource deployment.
+OL is highly efficient, ideal for practical, low-resource applications.
+Applications
+:
+Infomorphic networks excel in diverse tasks (e.g., MNIST, feature extraction, memory), with potential for NLU adaptation.
+OL is tailored for NLU, with potential for broader understanding (e.g., world knowledge) but untested outside language.
+Biological Plausibility
+:
+Infomorphic networks are inspired by cortical neurons but limited by computational complexity.
+OL's Neural Darwinism mimics brain-like evolution, but its mechanisms are less directly tied to biological structures.
+8.
+Analogies for Infomorphic Neural Networks
+Specialized Librarian
+: Neurons as librarians summarizing books (outputs) using content (receptive) and guidelines (contextual), with PID guiding the summary's focus (e.g., redundant for supervised learning).
+Recipe Analysis
+: PID as a chef analyzing a dish's flavors (output) into unique, redundant, and synergistic components from ingredients (inputs), tailoring recipes for tasks.
+Independent Consultants
+: Neurons as consultants designing city districts (local goals) using local data and feedback, contributing to a cohesive city (network task).
+Customizable Music Mix
+: Goal function as a producer mixing audio elements (PID atoms) to create tracks (outputs) tailored to genres (tasks).
+Guided Art Restoration
+: Supervised learning as restorers aligning a damaged painting (data) with a reference (labels) to maximize shared features (redundant information).
+Team of Archivists
+: Unsupervised learning as archivists indexing unique document topics (features), competing to avoid overlap, guided by others' notes (contextual inputs).
+Choir Learning Harmonies
+: Associative memory as singers aligning notes (outputs) with sheet music (patterns) and choir sounds (recurrent inputs) to memorize pieces.
+9.
+Analogies for Comparing Infomorphic Networks and Organic Learning
+Modular Workshop vs. Specialized Assembly Line
+: Infomorphic networks as a versatile workshop crafting diverse products (tasks), OL as an efficient assembly line for language modules (NLU).
+Recipe Analysis vs. Natural Selection
+: PID as a chef's structured flavor analysis, Neural Darwinism as a farmer's emergent crop breeding, highlighting interpretability vs. efficiency.
+Independent Engineers vs. Collaborative Ecosystem
+: Infomorphic neurons as engineers with clear roles, OL neurons as organisms in an evolving ecosystem, reflecting local autonomy vs. emergent collaboration.
+10.
+Broader Implications
+Infomorphic Networks
+: Advance theoretical understanding of neural learning, with potential to bridge neuroscience and AI, inform biological models, and develop interpretable AI systems.
+Organic Learning
+: Democratizes NLU with efficient, accessible technology, potentially transforming industries (e.g., chatbots, multi-language apps) and opening a significant NLU market.
+Complementary Potential
+: Infomorphic networks could adapt PID for NLU tasks, leveraging OL's connectome insights, while OL's efficiency could inspire optimizations in infomorphic architectures.
+Notes
+The list consolidates ideas from the summaries, explanations, and comparisons, ensuring all major concepts are captured without redundancy.
+Analogies are included as main ideas, as they were central to clarifying complex concepts in the conversation.
+If you need a more detailed breakdown of any specific idea or additional categorization (e.g., by task or theoretical vs. practical implications), please let me know.
+How can Grok help?
+Grok 3
+
