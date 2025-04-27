@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """
 A script to extract plain text from PDF, EPUB, and MHTML files.
-
 It can process specific files passed as arguments, or scan the current directory.
 
 Usage:
-    python extract_text.py file1.pdf file2.epub
-    python extract_text.py                 # processes all PDF, EPUB, and MHTML in current dir
+    python extract-text.py file1.pdf file2.epub
+    python extract-text.py                 # processes all PDF, EPUB, and MHTML in current dir
 
 Dependencies:
     pip install PyMuPDF ebooklib beautifulsoup4
@@ -135,4 +134,3 @@ if __name__ == "__main__":
     else:
         print("[i] No files specified. Processing current directory...")
         process_directory(os.getcwd())
-
