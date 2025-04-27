@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# Define progress and summary files
+summary_file="detailed-overview.txt"
 progress_file="progress.log"
-summary_file="codex-singularis.txt"
 main_dir=$(pwd)
 
 # Function to check if a file is already processed
@@ -10,87 +9,53 @@ is_processed() {
     grep -Fxq "$1" "$main_dir/$progress_file"
 }
 
-# Create progress and summary files if they don't exist
+# Create progress file if it doesn't exist
 touch "$main_dir/$progress_file"
-touch "$main_dir/$summary_file"
 
-# Start logging script progress
-echo "Script started at $(date)" >> "$main_dir/$progress_file"
-echo "Summaries will be saved to $summary_file" >> "$main_dir/$progress_file"
-
-# Function to process text files in a directory
+# Process text files in the current directory
 process_files() {
-    local dir=$1
-    echo "Processing directory: $dir"
-    
-    # Iterate over each .txt file in the specified directory
-    for file in "$dir"/*.txt; do
-        # Skip if no .txt files are found
-        if [ ! -e "$file" ]; then
-            continue
-        fi
-
-        # Skip processing the summary file
-        if [ "$(basename "$file")" == "$summary_file" ]; then
-            echo "Skipping summary file: $summary_file"
-            continue
-        fi
-
-
-        # Process the file if it's a regular file
+    for file in *.txt; do
         if [ -f "$file" ]; then
-            local file_name=$(basename "$file")  # Get the file name only
-            
-            # Process only if not processed before
-            if ! is_processed "$file_name"; then
-                echo "Processing $file_name"
-                echo "Processing $file_name" >> "$main_dir/$progress_file"
+            file_path=$(pwd)/"$file"
+            if ! is_processed "$file_path"; then
+                echo "Processing $file"
+                echo "Processing $file" >> "$main_dir/$summary_file"
 
-                # Create a temporary directory for the file's chunks
-                sanitized_name=$(basename "$file" | tr -d '[:space:]')
-                temp_dir=$(mktemp -d "$dir/tmp_${sanitized_name}_XXXXXX")
-                echo "Temporary directory created: $temp_dir" >> "$main_dir/$progress_file"
-
-                # Split the file into chunks of 200 lines each
-                split -l 100 "$file" "$temp_dir/chunk_"
-                echo "File split into chunks: $(find "$temp_dir" -type f)" >> "$main_dir/$progress_file"
-
-                # Summarize each chunk and append to the summary file
-                for chunk_file in "$temp_dir"/chunk_*; do
-                    [ -f "$chunk_file" ] || continue
-                    echo "Summarizing chunk: $(basename "$chunk_file")"
-                    ollama run vanilj/phi-4 "Summarize in detail and explain:" < "$chunk_file" | tee -a "$main_dir/$summary_file"
-                    echo "" >> "$main_dir/$summary_file"
-                done
-
-                # Remove the temporary directory
-                rm -rf "$temp_dir"
-                echo "Temporary directory $temp_dir removed" >> "$main_dir/$progress_file"
-
-                # Mark the file as processed
-                echo "$file_name" >> "$main_dir/$progress_file"
+                ollama run wizardlm2 "The speaker is Darin Stevenson. Summarize:" < "$file" | tee -a "$main_dir/$summary_file"
+                echo "$file_path" >> "$main_dir/$progress_file"
             fi
         fi
     done
 }
 
-# Recursively process subdirectories
+# Check for subdirectories and recursively process them
 process_subdirectories() {
-    local parent_dir=$1
-    
-    # Iterate over all subdirectories
-    for dir in "$parent_dir"/*/; do
+    for dir in */; do
         if [ -d "$dir" ]; then
-            process_files "$dir"  # Process files in the subdirectory
-            process_subdirectories "$dir"  # Recursive call for nested subdirectories
+            echo "Entering directory $dir"
+            echo "Directory: $dir" >> "$main_dir/$summary_file"
+            
+            # Change into the subdirectory
+            cd "$dir" || continue
+
+            # Process files in the subdirectory
+            process_files
+
+            # Recursively process any subdirectories within
+            process_subdirectories
+
+            # Return to the parent directory
+            cd "$main_dir"
         fi
     done
 }
 
 # Main execution
-process_files "$main_dir"  # Process files in the main directory
-process_subdirectories "$main_dir"  # Process files in subdirectories
+echo "Processing directory: $main_dir"
 
-# Mark script completion
-echo "Script completed at $(date)" >> "$main_dir/$progress_file"
+# Remove the call to process_files here
+# process_files
+
+# Start processing subdirectories
+process_subdirectories
 
