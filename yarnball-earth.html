@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yarnball Earth Concept Map</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #1a0033;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+    }
+    #graph {
+      width: 100vw;
+      height: 100vh;
+    }
+    .node {
+      cursor: pointer;
+    }
+    .node text {
+      fill: #e0e0e0;
+      font-size: 14px;
+    }
+    .link {
+      stroke: #00ccff;
+      stroke-opacity: 0.6;
+    }
+    .popup {
+      position: absolute;
+      background: #2a004d;
+      padding: 10px;
+      border: 2px solid #00ccff;
+      border-radius: 5px;
+      max-width: 300px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="graph"></div>
+  <div id="popup" class="popup"></div>
+
+  <script>
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    const svg = d3.select("#graph")
+      .append("svg")
+      .attr("width", width)
+      .attr("height", height);
+
+    const nodes = [
+      { id: "Yarnball Earth", group: 0, description: "Planetary cognitive infrastructure: a self-knitting system of empathy and recursion." },
+      { id: "Keyhole Device", group: 1, description: "Cities as epistemological compressors, encoding care and meaning.", ref: "April 17, 2025: Micromegas Ontology" },
+      { id: "Swarm Intelligence", group: 2, description: "Ecological urbanism via homeostatic feedback loops.", ref: "April 1, 2025: SITH Theory" },
+      { id: "Interface Philosophy", group: 3, description: "Gestural, semiotic urban controls like Swype.", ref: "March 21, 2025: Ender’s Mind Prison ciphers" },
+      { id: "Recursive Consciousness", group: 4, description: "Terraforming contests as collective cognition.", ref: "April 14, 2025: Haplopraxis recursion" },
+      { id: "Planetary Empathy", group: 5, description: "Whales and volcanoes as mythic sentience.", ref: "April 17, 2025: Billion whales vision" },
+      { id: "Semantic Transparency", group: 6, description: "Holographic tartans as readable urban texts.", ref: "April 14, 2025: Oblicosm Doctrine" }
+    ];
+
+    const links = [
+      { source: "Yarnball Earth", target: "Keyhole Device" },
+      { source: "Yarnball Earth", target: "Swarm Intelligence" },
+      { source: "Yarnball Earth", target: "Interface Philosophy" },
+      { source: "Yarnball Earth", target: "Recursive Consciousness" },
+      { source: "Yarnball Earth", target: "Planetary Empathy" },
+      { source: "Yarnball Earth", target: "Semantic Transparency" },
+      { source: "Keyhole Device", target: "Swarm Intelligence" },
+      { source: "Swarm Intelligence", target: "Planetary Empathy" },
+      { source: "Interface Philosophy", target: "Semantic Transparency" },
+      { source: "Recursive Consciousness", target: "Keyhole Device" },
+      { source: "Planetary Empathy", target: "Interface Philosophy" }
+    ];
+
+    const simulation = d3.forceSimulation(nodes)
+      .force("link", d3.forceLink(links).id(d => d.id).distance(100))
+      .force("charge", d3.forceManyBody().strength(-200))
+      .force("center", d3.forceCenter(width / 2, height / 2));
+
+    const link = svg.append("g")
+      .attr("class", "links")
+      .selectAll("line")
+      .data(links)
+      .enter().append("line")
+      .attr("class", "link");
+
+    const node = svg.append("g")
+      .attr("class", "nodes")
+      .selectAll("g")
+      .data(nodes)
+      .enter().append("g")
+      .attr("class", "node")
+      .call(d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended));
+
+    node.append("circle")
+      .attr("r", 10)
+      .attr("fill", d => ["#ffd700", "#00ccff", "#00ff99", "#ff3399", "#cc33ff", "#ff6633", "#33ccff"][d.group]);
+
+    node.append("text")
+      .attr("dx", 12)
+      .attr("dy", ".35em")
+      .text(d => d.id);
+
+    simulation.on("tick", () => {
+      link
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+      node
+        .attr("transform", d => `translate(${d.x},${d.y})`);
+    });
+
+    const popup = d3.select("#popup");
+    node.on("mouseover", function(event, d) {
+      popup.style("display", "block")
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 10) + "px")
+        .html(`<strong>${d.id}</strong><br>${d.description}<br><em>${d.ref || ""}</em>`);
+    });
+    node.on("mouseout", () => popup.style("display", "none"));
+
+    function dragstarted(event, d) {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+
+    function dragged(event, d) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+
+    function dragended(event, d) {
+      if (!event.active) simulation.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+    }
+  </script>
+</body>
+</html>
