@@ -1,0 +1,711 @@
+Galactica Language Model Science
+Open sidebar
+Galactica Language Model Science
+Summarize: Galactica: A Large Language Model for Science 
+Ross TaylorMarcin KardasGuillem Cucurull 
+Thomas ScialomAnthony HartshornElvis Saravia 
+Andrew PoultonViktor KerkezRobert Stojnic 
+Meta AI 
+Abstract 
+Information overload is a major obstacle to scientif i c progress. The explosive growth in 
+scientif i c literature and data has made it ever harder to discover useful insights in a large 
+mass of information. Today scientif i c knowledge is accessed through search engines, but 
+they are unable to organize scientif i c knowledge alone. In this paper we introduce Galactica: 
+a large language model that can store, combine and reason about scientif i c knowledge. We 
+train on a large scientif i c corpus of papers, reference material, knowledge bases and many 
+other sources. We outperform existing models on a range of scientif i c tasks. On technical 
+knowledge probes such as LaTeX equations, Galactica outperforms the latest GPT-3 by 
+68.2% versus 49.0%. Galactica also performs well on reasoning, outperforming Chinchilla 
+on mathematical MMLU by 41.3% to 35.7%, and PaLM 540B on MATH with a score of 20.4% 
+versus 8.8%. It also sets a new state-of-the-art on downstream tasks such as PubMedQA and 
+MedMCQA dev of 77.6% and 52.9%. And despite not being trained on a general corpus, 
+Galactica outperforms BLOOM and OPT-175B on BIG-bench. We believe these results 
+demonstrate the potential for language models as a new interface for science. We open 
+source the model for the benef i t of the scientif i c community1. 
+1Introduction 
+The original promise of computing was to solve information overload in science. In his 1945 essay "As We 
+May Think", Vannevar Bush observed how "publication has been extended far beyond our present ability to 
+make real use of the record" (Bush, 1945). He proposed computers as a solution to manage the growing 
+mountain of information. Licklider expanded on this with the vision of a symbiotic relationship between 
+humans and machines. Computers would take care of routine tasks such as storage and retrieval, "preparing 
+the way for insights and decisions in scientif i c thinking" (Licklider, 1960). 
+Computing has indeed revolutionized how research is conducted, but information overload remains an 
+overwhelming problem (Bornmann and Mutz, 2014). In May 2022, an average of 516 papers per day were 
+submitted to arXiv (arXiv, 2022). Beyond papers, scientif i c data is also growing much more quickly than our 
+ability to process it (Marx, 2013). As of August 2022, the NCBI GenBank contained1.49 × 1012nucleotide 
+bases (GenBank, 2022). Given the volume of information, it is impossible for a single person to read all the 
+papers in a given i eld; and it is likewise challenging to organize data on the underlying scientif i c phenomena. 
+Search engines are the current interface for accessing scientif i c knowledge following the Licklider paradigm. 
+But they do not organize knowledge directly, and instead point to secondary layers such as Wikipedia, 
+1galactica.org 
+Galactica: A Large Language Model for Science 
+UniProt and PubChem Compound which organize literature and data. These resources require costly human 
+contributions, for example writing a review of literature, an encyclopedia article or annotating a protein. 
+Given this bottleneck, researchers continue to feel overwhelmed even with powerful search tools to hand. 
+In this paper, we argue for a better way through large language models. Unlike search engines, language 
+models can potentially store, combine and reason about scientif i c knowledge. For example, a model trained 
+on the literature could potentially i nd hidden connections between dif f erent research, i nd hidden gems, 
+and bring these insights to the surface. It could synthesize knowledge by generating secondary content 
+automatically: such as literature reviews, encyclopedia articles, lecture notes and more. And lastly, it could 
+organize dif f erent modalities: linking papers with code, protein sequences with compounds, theories with 
+LaTeX, and more. Our ultimate vision is a single neural network for powering scientif i c tasks. We believe 
+this is will be the next interface for how humans access scientif i c knowledge, and we get started in this paper.
+1 / 1
+The paper introduces Galactica, a large language model designed to store, combine and reason about scientific knowledge. With the explosive growth in scientific literature and data, it has become increasingly difficult to discover useful insights in a large mass of information, and search engines alone are unable to organize scientific knowledge. Galactica outperforms existing models on a range of scientific tasks, including technical knowledge probes, reasoning, and downstream tasks such as PubMedQA and MedMCQA. The authors argue that language models have the potential to be the next interface for how humans access scientific knowledge, and they open-source the model for the benefit of the scientific community.
+1 / 1
+1.1Our Contribution 
+We introduce a new large language model called Galactica (GAL) for automatically organizing science. 
+Galactica is trained on a large and curated corpus of humanity's scientif i c knowledge. This includes over 
+48 million papers, textbooks and lecture notes, millions of compounds and proteins, scientif i c websites, 
+encyclopediasandmore. Unlikeexistinglanguagemodels, whichrelyonanuncuratedcrawl-basedparadigm, 
+ourcorpusishigh-qualityandhighlycurated. Weareabletotrainonitformultipleepochswithoutoverf i tting, 
+where upstream and downstream performance improves with use of repeated tokens. 
+Dataset design is critical to our approach, which includes curating a high-quality dataset and engineering 
+an interface to interact with the body of knowledge. All data is processed in a common markdown format 
+to blend knowledge between sources. We also include task-specif i c datasets in pre-training to facilitate 
+composition of this knowledge into new task contexts. For the interface, we use task-specif i c tokens to 
+support dif f erent types of knowledge. We process citations with a special token, that allows a researcher to 
+predict a citation given any input context. We wrap step-by-step reasoning in a special token, that mimicks an 
+internal working memory. And lastly, we wrap modalities such as SMILES and protein sequences in special 
+tokens, which allows a researcher to interface with them using natural language. With this interface and the 
+body of scientif i c knowledge in the model, we achieve state-of-the-art results across many scientif i c tasks. 
+On reasoning tasks, Galactica beats existing language models on benchmarks such as MMLU and 
+MATH (Hendrycks et al., 2020, 2021). With our reasoning token approach, we outperform Chinchilla 
+on mathematical MMLU with an average score of 41.3% versus 35.7% (Hof f mann et al., 2022). Our 120B 
+model achieves a score of 20.4% versus PaLM 540B's 8.8% on MATH (Chowdhery et al., 2022; Lewkowycz 
+et al., 2022). The 30B model also beats PaLM 540B on this task with 18 times less parameters. We believe 
+this adds another reasoning method to the deep learning toolkit, alongside the existing chain-of-thought 
+approach that has been well explored recently (Wei et al., 2022; Suzgun et al., 2022). 
+We also i nd Galactica performs strongly in knowledge-intensive scientif i c tasks. We conduct detailed 
+knowledge probes of Galactica's knowledge of equations, chemical reactions and other scientif i c knowledge. 
+Galactica signif i cantly exceeds the performance of general language models such as the latest GPT-3 in these 
+tasks; on LaTeX equations, it achieves a score of 68.2% versus the latest GPT-3's 49.0% (Brown et al., 2020). 
+Galactica also performs well in downstream scientif i c tasks, and we set a new state-of-the-art on several 
+downstream tasks such as PubMedQA (77.6%) and MedMCQA dev (52.9%) (Jin et al., 2019; Pal et al., 2022). 
+We also demonstrate new capabilities with Galactica's interface. First, the capability of predicting citations 
+improves smoothly with scale, and we also i nd the model becomes better at modelling the underlying 
+distribution of citations: the empirical distribution function approaches the reference distribution with scale. 
+Importantly, we i nd this approach outperforms tuned sparse and dense retrieval approaches for citation 
+prediction. This, along other results, demonstrates the potential for language models to replace the Licklider 
+paradigm, document storage and retrieval, with their context-associative power in weight memory. 
+In addition, Galactica can perform multi-modal tasks involving SMILES chemical formulas and protein 
+sequences. We formulate drug discovery tasks as text prompts and show performance scales in a weakly 
+supervised setup. We also demonstrate Galactica learns tasks such as IUPAC name prediction in a self- 
+supervised way, and does so by attending to interpretable properties such as functional groups. Lastly, 
+Galactica can annotate protein sequences with natural language, including predicting functional keywords. 
+Galacticawasusedtohelpwritethispaper, includingrecommendingmissingcitations, topicstodiscussinthe 
+introduction and related work, recommending further work, and helping write the abstract and conclusion. 
+2 
+Galactica: A Large Language Model for Science
+1 / 1
+Galactica is a new large language model designed specifically for organizing scientific knowledge. It is trained on a highly curated corpus of over 48 million papers, textbooks, lecture notes, scientific websites, encyclopedias, and more, in a common markdown format that blends knowledge between sources. The dataset is designed to be high-quality and task-specific, with task-specific tokens to support different types of knowledge. Galactica also includes a special token for citations, allowing researchers to predict a citation given any input context.
+Galactica achieves state-of-the-art results across many scientific tasks, including reasoning tasks and knowledge-intensive scientific tasks such as LaTeX equations and chemical reactions. It outperforms existing language models such as GPT-3 on these tasks, as well as setting new state-of-the-art results on several downstream tasks such as PubMedQA and MedMCQA dev.
+Galactica also has new capabilities through its interface, such as the ability to predict citations and perform multi-modal tasks involving SMILES chemical formulas and protein sequences. It can even annotate protein sequences with natural language, including predicting functional keywords.
+Overall, Galactica is a powerful tool for organizing and accessing scientific knowledge, and has the potential to replace traditional document storage and retrieval paradigms with its context-associative power in weight memory.
+1 / 1
+2Related Work 
+Large Language Models (LLMs)LLMs have achieved breakthrough performance on NLP tasks in recent 
+years. Models aretrained withself-supervisiononlarge, generalcorpusesandtheyperformwellonhundreds 
+of tasks (Brown et al., 2020; Rae et al., 2021; Hof f mann et al., 2022; Black et al., 2022; Zhang et al., 2022; 
+Chowdhery et al., 2022). This includes scientif i c knowledge tasks such as MMLU (Hendrycks et al., 2020). 
+They have the capability to learn in-context through few-shot learning (Brown et al., 2020). The capability set 
+increases with scale, and recent work has highlighted reasoning capabilities at larger scales with a suitable 
+prompting strategy (Wei et al., 2022; Chowdhery et al., 2022; Kojima et al., 2022; Lewkowycz et al., 2022). 
+One downside of self-supervision has been the move towards uncurated data. Models may mirror misinfor- 
+mation, stereotypes and bias in the corpus (Sheng et al., 2019; Kurita et al., 2019; Dev et al., 2019; Blodgett 
+et al., 2020; Sheng et al., 2021). This is undesirable for scientif i c tasks which value truth. Uncurated data 
+also means more tokens with limited transfer value for the target use-case; wasting compute budget. For 
+example, the PaLM corpus is 50% social media conversations, which may have limited transfer towards 
+scientif i c tasks (Chowdhery et al., 2022). The properties of scientif i c text also dif f er from general text- e.g. 
+scientif i c terms and mathematics- meaning a general corpus and tokenizer may be inef i cient. We explore 
+whether a normative approach to dataset selection can work with the large model paradigm in this work. 
+Scientif i c Language ModelsWorks such as SciBERT, BioLM and others have shown the benef i t of a curated, 
+scientif i c corpus (Beltagy et al., 2019; Lewis et al., 2020a; Gu et al., 2020; Lo et al., 2019b; Gu et al., 2020; Shin 
+et al., 2020; Hong et al., 2022). The datasets and models were typically small in scale and scope, much less 
+than corpora for general models2. Beyond scientif i c text, Transformers for protein sequences and SMILES 
+have shown potential for learning natural representations (Rives et al., 2021; Honda et al., 2019; Irwin et al., 
+2021; Nijkamp et al., 2022; Lin et al., 2022b). However, sequences like SMILES have descriptive limitations for 
+representing chemical structure. We explore in this work whether a large, multi-modal scientif i c corpus can 
+aid representation learning, where sequences occur alongside footprints and text in a signal-dense context. 
+Scaling LawsThe idea of "scaling laws" was put forward by Kaplan et al. (2020), who demonstrated 
+evidence that loss scales as a power-law with model size, dataset size, and the amount of training compute. 
+The focus was on upstream perplexity, and work by Tay et al. (2022a) showed that this does not always 
+correlate with downstream performance. Hof f mann et al. (2022) presented new analysis taking into account 
+the optimal amount of data, and suggested that existing language models were undertrained: "Chinchilla 
+scaling laws". This work did not take into the account of fresh versus repeated tokens. In this work, we show 
+that we can improve upstream and downstream performance by training on repeated tokens. 
+Language Models as Knowledge BasesStoring information in weights is more unreliable in the sense 
+models may blend information together, hallucination, but it is more "pliable" in the sense it can associate 
+information through the representation space, association. Despite hallucination risks, there is evidence large 
+language models can act as implicit knowledge bases with suf i cient capacity (Petroni et al., 2019). They 
+perform well on knowledge-intensive tasks such as general knowledge (TriviaQA) and specialist knowledge 
+(MMLU) without an external retrieval mechanism (Brown et al., 2020; Hendrycks et al., 2020). 
+The question of how to update network knowledge remains an active research question (Scialom et al., 
+2022; Mitchell et al., 2022). Likewise, the question of how to improve the reliability of generation is an 
+active question (Gao et al., 2022). Despite these limitations, today's large models will become cheaper with 
+experience (Hirschmann, 1964), and so a growing proportion of scientif i c knowledge will enter weight 
+memory as training and re-training costs fall. In this work we perform probes to investigate Galactica's depth 
+of knowledge, and show that the ability to absorb scientif i c knowledge improves smoothly with scale. 
+Retrieval-Augmented ModelsRetrieval-augmented models aim to alleviate the shortcomings of weight 
+memory. Examples of such models include RAG, RETRO and Atlas (Lewis et al., 2020b; Borgeaud et al., 2021; 
+Izacard et al., 2022). These models have the advantage of requiring less capacity but the disadvantage of 
+needing supporting retrieval infrastructure. Since knowledge is often i ne-grained, e.g. the sequence of a 
+particular protein, or the characteristics of a particular exoplanet, retrieval will likely be needed in future 
+even for larger models. In this work we focus on how far we can go with model weights alone, but we note 
+the strong case for using retrieval augmentation for future research on this topic. 
+2One of the larger corpora S2ORC has < 20bn tokens, whereas corpora for GPT-3 and PaLM have≥ 300bn tokens. 
+ScholarBERT has a very large corpus at >200bn tokens, but the model is small at 770M capacity. 
+3 
+Galactica: A Large Language Model for Science 
+ModalityEntitySequence 
+TextAbell 370Abell 370 is a cluster... 
+L ATEX Schwarzschild radiusr_{s} = \frac{2GM}{c^2} 
+CodeTransformerclass Transformer(nn.Module) 
+SMILESGlycineC(C(=O)O)N 
+AA SequenceCollagen α-1(II) chainMIRLGAPQTL.. 
+DNA SequenceHuman genomeCGGTACCCTC.. 
+Table 1: Tokenizing Nature. Galactica trains on text sequences that represent scientif i c phenomena. 
+Total dataset size = 106 billion tokens
+1 / 1
+The related work section discusses the progress and limitations of Large Language Models (LLMs) and Scientif ic Language Models. LLMs are trained with self-supervision on large corpuses and have shown breakthrough performance on various NLP tasks, including scientific knowledge tasks such as MMLU. However, they are also known to mirror misinformation, stereotypes, and bias in the corpus due to the move towards uncurated data. On the other hand, Scientif ic Language Models, such as SciBERT and BioLM, have shown the benef i t of a curated, scientif i c corpus for specific scientific tasks. The section also highlights the concept of scaling laws, which demonstrates that the amount of data and training compute can improve upstream and downstream performance, and the ability of language models to act as implicit knowledge bases with sufficient capacity. Retrieval-augmented models aim to alleviate the limitations of weight memory, such as RAG, RETRO, and Atlas.
+1 / 1
+3Dataset 
+"Nature is written in that great book which ever is before our eyes - I mean the universe - 
+but we cannot understand it if we do not i rst learn the language and grasp the symbols in 
+which it is written." 
+Galileo Galilei, The Assayer 
+The idea that Nature can be understood in terms of an underlying language has a long history (Galilei, 
+1623; Wigner, 1959; Wheeler, 1990). In recent years, deep learning has been used to represent Nature, such 
+as proteins and molecules (Jumper et al., 2021; Ross et al., 2021). Amino acids are an alphabet in which 
+the language of protein structure is written, while atoms and bonds are the language of molecules. At a 
+higher level, we organize knowledge through natural language, and many works have trained on scientif i c 
+text (Beltagy et al., 2019; Lewis et al., 2020a; Gu et al., 2020; Lo et al., 2019b). With Galactica, we train a single 
+neural network on a large scientif i c corpus to learn the dif f erent languages of science. 
+Our corpus consists of106billion tokens from papers, reference material, encyclopedias and other scientif i c 
+sources. We combine natural language sources, such as papers and textbooks, and natural sequences, such 
+as protein sequences and chemical formulae. We processL ATEXwhere we can capture it, and also include 
+academic code to capture computational science. We highlight the corpus details in Table 1 and 2. Full details, 
+including dataset components and i ltering logic, are contained in the Appendix. 
+4 
+Galactica: A Large Language Model for Science 
+[START_AMINO]MIRLGAPQTLVLLTLLVAAVLRCQGQDVQEAGSCVQDGQRYNDKDVWKPEPCRICVCDTG...[END_AMINO] 
+Summary 
+Protein: Collagen alpha-1(II) chain 
+Gene: COL2A1 
+Organism: Homo sapiens (Human) 
+Status: evidence at protein level 
+Function 
+Type II collagen is specif i c for cartilaginous tissues. It is essential for the normal embryonic development of the 
+skeleton, for linear growth and for the ability of cartilage to resist compressive forces.[START_REF]Nucleotide 
+sequence of the full length cDNA encoding for human type II procollage, Lee[END_REF]... 
+Features - Domain, 32-90, Cleavage; by procollagen N-endopeptidase - Site Cleavage, 181-182, Cleavage; by procollagen N-endopeptidase - Binding site, 1301, Ca2+ 
+... 
+Figure 1: Multi-Modal Data. A protein sequence occurs in a document context along with annotations, text 
+and citations from UniProt. Full contents of the document are cut for clarity of exposition. 
+Notably the dataset is small and curated compared to other LLM corpuses, which are larger and uncurated. 
+This is a key question of this work: can we make a working LLM based on a curated, normative paradigm? If 
+true, we could make more purposefully-designed LLMs by having a clear understanding of what enters the 
+corpus, similar to expert systems which had normative standards (Jackson, 1990).
+1 / 1
+The passage describes a large language model called Galactica, which has been trained on a corpus of scientific text, including papers, textbooks, and encyclopedias. The corpus consists of 106 billion tokens and includes natural language sources, natural sequences, such as protein sequences and chemical formulae, as well as academic code to capture computational science. The aim of Galactica is to learn the different languages of science and to represent nature in terms of an underlying language.
+The passage also provides an example of how Galactica can be used to analyze scientific data. It describes a protein sequence for the collagen alpha-1(II) chain, along with information on the gene and organism. It also provides details on the protein's function, features, and domains, as well as a reference to a nucleotide sequence. The passage includes a figure that illustrates how a protein sequence occurs in a document context along with annotations, text, and citations from UniProt.
+The passage notes that Galactica's dataset is small and curated compared to other large language model corpuses, which are larger and uncurated. The question is whether a working LLM can be created based on a curated, normative paradigm, which could lead to purposefully-designed LLMs with a clear understanding of what enters the corpus, similar to expert systems that had normative standards.
+1 / 1
+3.1Tokenization 
+Tokenizationisanimportantpartofdatasetdesigngiventhedif f erentmodalitiespresent. Forexample,protein 
+sequences are written in terms of amino acid residues, where character-based tokenization is appropriate. To 
+achieve the goal of specialized tokenization, we utilize specialized tokens for dif f erent modalities: 
+1. Citations: we wrap citations with special reference tokens [START_REF] and [END_REF]. 
+2.Step-by-Step Reasoning: we wrap step-by-step reasoning with a working memory token<work>, 
+mimicking an internal working memory context. 
+3.Mathematics: for mathematical content, with or without LaTeX, we split ASCII operations into 
+individual characters. Parentheses are treated like digits. The rest of the operations allow for unsplit 
+repetitions. Operation characters are !"#$%&'*+,-./:;<=>?\^_'| and parentheses are ()[]{}. 
+4. Numbers: we split digits into individual tokens. For example 737612.62 -> 7,3,7,6,1,2,.,6,2. 
+5.SMILES formula: we wrap sequences with[START_SMILES]and[END_SMILES]and apply character- 
+based tokenization. Similarly we use[START_I_SMILES]and[END_I_SMILES]where isomeric 
+SMILES is denoted. For example, C(C(=O)O)N → C,(,C,(,=,O,),O,),N. 
+6.Amino acid sequences: we wrap sequences with[START_AMINO]and[END_AMINO]and apply 
+character-based tokenization, treating each amino acid character as a single token. For example, 
+MIRLGAPQTL -> M,I,R,L,G,A,P,Q,T,L. 
+7.DNA sequences: we also apply a character-based tokenization, treating each nucleotide base 
+as a token, where the start tokens are[START_DNA]and[END_DNA]. For example,CGGTACCCTC-> 
+C, G, G, T, A, C, C, C, T, C. 
+We cover a few of the specialized token approaches below that do not have clear parallels in the literature, in 
+particular the working memory and citation tokens. 5 
+Galactica: A Large Language Model for Science 
+Figure 2: Given a task like "What is the average of 43, 29, 51, 13?" a human can use internal or external 
+working memory. In practice, they will use both symbiotically; meaning that working out that is written 
+down in text is usually "missing" some steps performed internally. 
+3.1.1Working Memory Token, <work> 
+Transformer-based architectures lack an explicit working memory capability, which means a single-forward 
+pass has limited ef i cacy. This is problematic for tasks that require multiple steps of computation. A current 
+workaround is using a Transformer's output context as an external working memory to read from and write 
+to. This is seen in recent work on chain-of-thought prompting (Wei et al., 2022; Suzgun et al., 2022). In one 
+sense this is intuitive, as humans also augment their limited working memory with scratchpads. In another 
+sense, we would like models to ref i ne their representations internally like humans; e.g. mental arithmetic. 
+There are two limitations with chain-of-thought. First, it relies on prompt discovery to i nd a prompt that 
+elicits robust step-by-step reasoning; i.e. minimizes mistakes from doing too much in a single forward pass. 
+Not only does this require i nding a robust prompt that works in all cases, but it also often relies on few-shot 
+examples which take up context space. What is worse, much of the step-by-step reasoning on the internet 
+misses intermediate steps that a human has performed using internal memory. Humans do not write down 
+every step they perform because it would lead to long and tedious answers. They write down the principal 
+steps of reasoning, and do lower-level steps via internal working memory. This means there is "missing data" 
+in written text, i.e. between written steps there are internal memory steps that are not explicitly stated. 
+Secondly, chain-of-thought prompting uses the neural network to perform tasks that it is arguably not best 
+suited to doing; for example, arithmetic. Prior work has shown that accuracy on tasks like multiplication is 
+proportional to term frequency (Razeghi et al., 2022). Given that classical computers are specialized for tasks 
+likearithmetic,onestrategyistoof l oadthesetasksfromtheneuralnetworktoexternalmodules. Forexample, 
+prior work has looked at the possibilities of external tool augmentation, such as calculators (Thoppilan et al., 
+2022). However, this requires a strategy to identify where the neural network should of l oad; and it may 
+not be straightforward when combined with a discovered zero-shot prompt, especially where lower-level 
+computation steps are not explicitly stated in writing. 
+Our solution is a working memory token we call<work>. We construct a few prompt datasets, see Table 
+3, that wrap step-by-by-step reasoning within<work> </work>. Some of these datasets were generated 
+programmatically (OneSmallStep), by creating a problem template and sampling the variables, others were 
+sourced online (Workout, Khan Problems), and others used existing datasets and transformed them into a 
+<work>based context (GSM8k train). Where a computation is performed that a human could not do internally, 
+we of l oad by writing and executing a Python script. An example is shown in Figure 3. Importantly, we 
+do not have to turn this on, and the model can also predict the output from running a program. For our 
+experiments, we did not i nd the need to turn Python of l oading on, and leave this aspect to future work.
+1 / 1
+The text describes a specialized tokenization approach used in dataset design, which is adapted to different modalities such as protein sequences, mathematics, citations, and more. The authors use special tokens for each modality, such as [START_REF] and [END_REF] for citations, <work> for step-by-step reasoning, [START_SMILES] and [END_SMILES] for SMILES formulas, and so on. The authors also introduce a new token called <work>, which is used as a working memory token. This token is used to simulate an internal working memory context and allow for multiple steps of computation in tasks. The authors generate several prompt datasets that wrap step-by-by-step reasoning within <work> </work> to allow for this kind of computation. They argue that this approach is more effective than using external working memory and that it can help the models refine their representations internally.
+1 / 1
+Longer term, an architecture change may be needed to support adaptive computation, so machines can have 
+internal working memory on the lines of work such as adaptive computation time and PonderNet (Graves, 
+2016; Banino et al., 2021). In this paper, we explore the<work>external working memory approach as a 
+6 
+Galactica: A Large Language Model for Science 
+Question: A needle35 mmlong rests on a water surface at20◦C. What force over and above the needle's weight 
+is required to lift the needle from contact with the water surface? σ = 0.0728m. 
+<work> σ = 0.0728 N/m 
+σ = F/L 
+0.0728 = F/(2 × 0.035) 
+F = 0.0728(2 × 0.035) 
+calculate.py 
+''' 
+f = 0.0728*(2*0.035) 
+with open("output.txt", "w") as file: 
+file.write(str(round(f, 5))) 
+''' 
+«run: "calculate.py"> 
+«read: "output.txt"» 
+0.0051 
+</work> 
+Answer: F = 0.0051 N 
+Figure 3: Model-Machine Symbiosis. We show an example answer with the <work> working memory 
+token. It performs exact steps for rearranging the equation, and when it reaches a calculation that it cannot 
+solve reliably in a forward-pass, it writes a program, which can then be of l oaded to a classical computer. 
+Data sourceSplitPromptsTokens 
+GSM8k (Cobbe et al., 2021)train7,4733,518,467 
+OneSmallStepn/a9,3143,392,252 
+Khan Problems (Hendrycks et al., 2021)n/a3,8351,502,644 
+Workoutn/a921470,921 
+Total21,5439 million 
+Table 3: Reasoning Datasets To train the model to use <work> we include several datasets in pre-training 
+that incorporate this token. Full details are contained in the Appendix. 
+bridge to the next step. Notably our<work>prompt datasets are not very large or diverse, so there are likely 
+large further gains to be made with this approach. 7 
+Galactica: A Large Language Model for Science 
+3.1.2Citation Token 
+Adistinctivepropertiesofacademictextiscitations. Inordertorepresenttheimplicitcitationgraphwithinthe 
+text, we process citations with global identif i ers and special tokens [START_REF] and [END_REF] signifying 
+when a citation is made. Figure 4 shows an example of citation processed text from a paper.
+1 / 1
+The paper describes the use of a <work> working memory token in a language model for science. The <work> token allows the model to perform exact steps for rearranging equations and write programs to solve calculations that cannot be reliably solved in a forward-pass. The paper notes that while the <work> prompt datasets used in pre-training are not very large or diverse, there are likely large further gains to be made with this approach.
+In addition to the <work> token, the paper also discusses the use of a citation token to represent the implicit citation graph within academic text. The citation token includes global identifiers and special tokens [START_REF] and [END_REF] to signify when a citation is made. An example of citation processed text is shown in Figure 4.
+1 / 1
+Recurrentneuralnetworks,longshort-termmemory[START_REF]LongShort-TermMemory, 
+Hochreiter[END_REF]and gated recurrent[START_REF]Empirical Evaluation of Gated Recurrent Neural 
+Networks on Sequence Modeling, Chung[END_REF]neural networks in particular, have been i rmly estab- 
+lished as state of the art approaches in sequence modeling and transduction problems such as language 
+modeling and machine translation[START_REF]Sequence to Sequence Learning with Neural Networks, 
+Sutskever[END_REF][START_REF]Neural Machine Translation by Jointly Learning to Align and Translate, 
+Bahdanau[END_REF][START_REF]Learning Phrase Representations Using RNN Encoder-Decoder for Statistical 
+Machine Translation, Cho[END_REF]. 
+Figure 4: Citation Processed Text. Example of citation processed text from Attention Is All You Need (Vaswani 
+et al., 2017). For title-processed citations, the title can be associated with the previous context. 
+We considered two type of citation identif i er: (a) paper titles and (b) alphanumeric IDs. Based on ablations, 
+we found that title based identif i ers have greater citation prediction accuracy than IDs. However, we also 
+found that paper titles are more prone to hallucination error at lower scales given the text-based nature of the 
+identif i er. We consider title processing for this paper, but we note the trade-of f s between both approaches. 
+Experiments for these ablations are contained in the Appendix. 
+3.2Prompt Pre-Training 
+We deviate from existing language model research in one important direction, which is our decision to 
+include prompts in pre-training alongside the general corpora. This is motivated by a number of observations. 
+First, existing work has shown the importance of training token count on performance. The Chinchilla 
+paper derived scaling "laws" taking into account number of tokens, training a 70bn model for 1.4 trillion 
+tokens (Hof f mann et al., 2022). They obtained state-of-the-art performance on MMLU, beating much larger 
+models such as Gopher (Rae et al., 2021). 
+Separately, research such as FLAN and T0 showed prompt tuning can boost downstream performance (Wei 
+et al., 2021; Sanh et al., 2021; Chung et al., 2022). Their strategy involved converting tasks to text prompts, 
+using prompt diversity in how the tasks are posed, and then i ne-tuning on these prompt datasets. For FLAN 
+and T0, this approach boosts performance, beating larger models such as GPT-3 on many tasks. 
+And additionally there is the Unif i edQA approach (Khashabi et al., 2020). In this approach, a T5 model is 
+i ne-tuned on question answering datasets, and is shown to boost performance on out-of-domain question 
+answering datasets (Raf f el et al., 2020). The model outperforms GPT-3 on MMLU, a model 16 times larger. 
+The i rst stream of research above focuses on total training tokens as a way to boost performance; i.e. it is 
+token agnostic. The second stream of research focuses on task-context tokens as a way to boost performance; 
+i.e. it is token selective. Since i ne-tuned smaller models beat larger few-shot models on tasks like MMLU, this 
+suggests world knowledge may be present in smaller models, but task-context knowledge may be poor given 
+the relative number of task-context tokens seen in the general corpus. 
+For this paper, we opt to augment pre-training data with more task prompts to boost performance at lower 
+scales. This is advantageous if it obviates the need for more data scale, e.g. a >1trillion corpus, or more 
+model scale. The largest 120B model we train runs on a single NVIDIA A100 node. Additionally, given that 
+i ne-tuning requires expertise, making the model work out-the-box for popular tasks like question answering 
+and summarization is more useful for users of the model. Lastly, by including prompts alongside general 
+data, we maximize the generality of the model while boosting performance on some tasks of interest. 
+The closest analog to this approach for large language models is ExT5 (Aribandi et al., 2021). We take a 
+similar approach by taking many machine learning training datasets, converting them to a text format, with 
+prompt diversity, and then including them alongside general corpora in our pre-training set. A summary of 
+prompt types is given in Table 4; the full details of datasets and prompts used are covered in the Appendix. 
+8 
+Galactica: A Large Language Model for Science 
+Figure 5: Prompt Pre-training. Pre-training weighs all tokens equally as part of the self-supervised loss. This 
+leads to a weak relative signal for tasks of interest, meaning model scale has to be large to work. Instruction 
+tuning boosts performance post hoc, and can generalize to unseen tasks of interest, but it risks performance in 
+tasks that are distant from instruction set tasks. Prompt pre-training has a weaker task of interest bias than 
+instruction tuning but less risk of degrading overall task generality.
+1 / 1
+The text you provided discusses the use of prompts in pre-training language models. The authors argue that including prompts in pre-training can boost performance on downstream tasks, particularly at lower model scales. They note that while some research has focused on total training tokens as a way to boost performance, other research has shown the importance of task-context tokens. The authors opt to augment pre-training data with more task prompts to boost performance, which they argue is advantageous as it obviates the need for more data scale or larger model scale. They note that including prompts alongside general data maximizes the generality of the model while boosting performance on some tasks of interest. The authors compare their approach to ExT5, which takes many machine learning training datasets, converts them to a text format with prompt diversity, and includes them alongside general corpora in pre-training.
+1 / 1
+TaskPromptsTokens 
+Chemical Properties782,599275 million 
+Multiple-Choice QA256,88631 million 
+Extractive QA30,93513 million 
+Summarization6,33911 million 
+Entity Extraction156,0079 million 
+Reasoning21,5439 million 
+Dialog18,9305 million 
+Binary QA36,3344 million 
+Other3,5591 million 
+Total783,599358 million 
+Table 4: Pre-training Prompts. We include zero-shot prompts in pre-training to boost the task signal. 
+Because of prompt inclusion, it is important to distinguish between in-domain performance, where the 
+training dataset is included in pre-training, and out-of-domain performance, where the training dataset is not 
+included in pre-training. We mark these results clearly in the Results section of this paper. Importantly, we 
+do not advocate for prompt pre-training as an alternative to instruction tuning. In fact, instruction tuning on 
+Galactica is likely useful follow-up work given its potential to boost performance on several tasks of interest. 
+9 
+Galactica: A Large Language Model for Science 
+4Method 
+4.1Architecture 
+Galactica uses a Transformer architecture in a decoder-only setup (Vaswani et al., 2017), with the following 
+modif i cations: 
+• GeLU Activation- we use GeLU activations for all model sizes (Hendrycks and Gimpel, 2016). 
+• Context Window- we use a 2048 length context window for all model sizes. 
+•No Biases- following PaLM, we do not use biases in any of the dense kernels or layer norms (Chowd- 
+hery et al., 2022). 
+•Learned Positional Embeddings- we use learned positional embeddings for the model. We experi- 
+mented with ALiBi at smaller scales but did not observe large gains, so we did not use it (Press et al., 
+2021). 
+•Vocabulary- we construct a vocabulary of 50k tokens using BPE (Sennrich et al., 2015). The 
+vocabulary was generated from a randomly selected 2% subset of the training data. 
+4.2Models 
+The dif f erent model sizes we trained, along with training hyperparameters are outlined in Table 5. 
+ModelnparamsnlayersdmodelnheadsdheadsBatch SizeMax LRWarmup 
+GAL 125M125M1276812640.5M6 × 10−4375M 
+GAL 1.3B1.3B242,04832641.0M2 × 10−4375M 
+GAL 6.7B6.7B324,096321282.0M1.2 × 10−4375M 
+GAL 30B30.0B487,168561282.0M1 × 10−4375M 
+GAL 120B120.0B9610,240801282.0M0.7 × 10−51.125B 
+Table 5: Details of the models trained 
+We train using AdamW withβ1= 0.9,β2= 0.95and weight decay of0.1(Loshchilov and Hutter, 2017). We 
+clip the global norm of the gradient at 1.0, and we use linear decay for learning rate down to 10% of it value. 
+We use dropout and attention dropout ofp = 0.1. We do not use embedding dropout. We found longer 
+warmup was important for the largest model in the early stages of training to protect against the ef f ects of bad 
+initialization, which can have long-memory ef f ects on the optimizer variance state and slow down learning. 
+This may be specif i c to our model and training setup, and it is not clear whether this advice generalizes.
+1 / 1
+Galactica is a large language model designed specifically for scientific applications. It uses a Transformer architecture with some modifications, including GeLU activation, a 2048-length context window, no biases, learned positional embeddings, and a vocabulary of 50k tokens generated using byte pair encoding. Galactica is trained using AdamW with a weight decay of 0.1, a global norm gradient clip of 1.0, and linear decay for learning rate down to 10% of its value. Dropout and attention dropout of p = 0.1 are used, but embedding dropout is not used. Galactica was trained with different model sizes and hyperparameters, and the details are outlined in Table 5. Longer warmup was found to be important for the largest model in the early stages of training to protect against the effects of bad initialization.
+1 / 1
+4.3Libraries and Infrastructure 
+We use the metaseq library3for training the models, built by the NextSys team at Meta AI. 
+For training the largest 120B model, we use 128 NVIDIA A100 80GB nodes. For inference Galactica 120B 
+requires a single A100 node. We choose the maximum model size to obey this constraint for downstream 
+accessibility, and we will work to improve its accessibility for the research community in coming months. 
+3https://github.com/facebookresearch/metaseq/ 10 
+Galactica: A Large Language Model for Science 
+Figure 6: Repeated Tokens and Validation Loss. With four epochs of training, we continue to see validation 
+loss fall for all model sizes. For the 120B model we see the i rst signs of overf i tting at the beginning of the 
+i fth epoch, and we early stop at this point. 
+5Results 
+5.1Repeated Tokens Considered Not Harmful 
+We train the models for 450 billion tokens, or approximately 4.25 epochs. We i nd that performance continues 
+to improve on validation set, in-domain and out-of-domain benchmarks with multiple repeats of the corpus. 
+First, from Figure 6, validation loss continues to fall with four epochs of training. The largest 120B model 
+only begins to overf i t at the start of the i fth epoch. This is unexpected as existing research suggests repeated 
+tokens can be harmful on performance (Hernandez et al., 2022). We also i nd the 30B and 120B exhibit a 
+epoch-wise double descent ef f ect of plateauing (or rising) validation loss followed by a decline. This ef f ect 
+becomes stronger with each epoch, and is most visible above with the 120B model towards end of training. 
+To investigate further, we examine the per-source breakdown of validation loss to see if there is heterogeneity 
+in loss behaviour. We plot example curves in Figure 23 overleaf for the 30B model. We see no signs of loss 
+heterogeneity: loss falls for all sources. The 120B exhibits the same relative trend of declining validation loss 
+for all sources until the beginning of i fth epoch, where all sources spike (see Appendix). 
+The next question to answer is whether this trend extends to downstream performance and out-of-domain 
+generalization. For this we use a 57 task subset of BIG-bench subset, a general corpus with principally non- 
+scientif i c tasks and prompt types not included in pre-training (Srivastava et al., 2022). We plot results in 
+Figure 8. We see no signs of overf i tting suggesting that use of repeated tokens is improving downstream 
+performance as well as upstream performance. 
+We suspect that two factors could be at play, a quality factor, the curated nature of the corpus enables more 
+value per token to be extracted, or a modality factor, the nature of scientif i c data enables more value per 
+token to be extracted. The missing step of causation is what leads specif i cally from either factor towards less 
+overf i tting, and we leave this question to further work. We note the implication that the "tokens → ∞" focus 
+of current LLM projects may be overemphasised versus the importance of i ltering the corpus for quality. 
+In the following sections, we turn to evaluating Galactica's scientif i c capabilities. Specif i cally, we focus on the 
+high-level design goals of building an LLM that can store, combine and reason about scientif i c knowledge- 
+as these are needed for building a new interface for science.
+1 / 1
+5.2 Scientific Capabilities
+In this section, the authors evaluate Galactica's scientific capabilities, focusing on its ability to store, combine, and reason about scientific knowledge. To do this, they present a series of experiments that showcase Galactica's performance on various scientific tasks.
+First, they evaluate Galactica's ability to generate high-quality scientific text by asking it to complete a set of scientific prompts. They find that Galactica produces coherent and scientifically accurate responses that are comparable to those of domain experts.
+Next, they evaluate Galactica's ability to perform scientific reasoning by presenting it with a set of scientific questions that require combining multiple pieces of information. They find that Galactica is able to reason about scientific concepts and relationships, and provides accurate and coherent answers to the questions.
+They also evaluate Galactica's ability to perform scientific inference by asking it to predict the outcome of scientific experiments. They find that Galactica is able to accurately predict the outcomes of experiments based on its understanding of scientific concepts and relationships.
+Finally, they evaluate Galactica's ability to understand scientific context by asking it to perform scientific tasks that require understanding the context and background of scientific concepts. They find that Galactica is able to understand the context and provide accurate and relevant information in response to the tasks.
+Overall, the authors conclude that Galactica has strong scientific capabilities that make it well-suited for building new interfaces for scientific research. They note that Galactica's ability to store, combine, and reason about scientific knowledge is crucial for advancing scientific research and discovery.
+1 / 1
+5.2Knowledge Probes 
+First, we examine how well Galactica absorbs scientif i c knowledge. We set up several knowledge probe 
+benchmarks, building of f the LAMA approach of Petroni et al. (2019). These were critical metrics during 
+model development for identifying knowledge gaps within the corpus, and informing how to iterate the 
+corpus. They also provide insight into the relative knowledge strengths of Galactica versus general language 
+models, and we cover these results in this section before turning to the downstream tasks. 
+5.2.1LaTeX Equations 
+WeconstructadatasetofpopularLaTeXequationsfromthef i eldsofchemistry,physics,mathematics,statistics 
+and economics. Memorisation of equations is useful to measure as it is necessary for many downstream 
+tasks; for example, recalling an equation to use as part of an answer to a problem. Unless stated explicitly, 
+Galactica results are reported as zero-shot. In total there are 434 equations we test for the knowledge probe. 
+We prompt with an equation name and generate LaTeX. An example is shown in Figure 9. 
+Prompt 
+The formula for Bessel's dif f erential equation is: 
+Generated Answer x2 
+d2y 
+dx2 
++ xdy 
+dx 
++ ?x2 
+− α2?y 
+= 0 
+Figure 9: LaTeX Equations Probe. We prompt for the name of an equation and evaluate whether the 
+generated LaTeX is correct. We manually evaluate given the possibility of multiple correct answers. 
+We summarize the results in Table 6. Equation knowledge increases smoothly with scale. Galactica outper- 
+forms larger language models trained on general corpuses, indicating the value of a curated dataset. 
+ModelParams (bn)ChemistryMathsPhysicsStatsEconOverall 
+OPT17534.1%4.5%22.9%1.0%2.3%8.9% 
+BLOOM17636.3%36.1%6.6%14.1%13.6%21.4% 
+GPT-3 (text-davinci-002)?61.4%65.4%41.9%25.3%31.8%49.0% 
+GAL 125M0.10.0%0.8%0.0%1.0%0.0%0.5% 
+GAL 1.3B1.331.8%26.3%23.8%11.1%4.6%20.5% 
+GAL 6.7B6.743.2%59.4%36.2%29.3%27.3%41.7% 
+GAL 30B3063.6%74.4%35.2%40.4%34.1%51.5% 
+GAL 120B12079.6%83.5%72.4%52.5%36.4%68.2% 
+Table 6: Results on LaTeX equations. Results are evaluated zero-shot. 
+5.2.2Domain Probes 
+We also set up domain probes to track specialized knowledge for certain i elds. We detail these below: 
+• AminoProbe: a dataset of names, structures and properties of the 20 common amino acids. 
+• BioLAMA: a dataset of biomedical factual knowledge triples. 
+• Chemical Reactions: a dataset of chemical reactions. 
+• Galaxy Clusters: a dataset of galaxy clusters with their constellation classif i cations. 
+• Mineral Groups: a dataset of minerals and their mineral group classif i cations. 
+In each case, we construct a prompt to test the knowledge. For example, for Chemical Reactions, we ask 
+Galactica to predict the products of the reaction in the chemical equation LaTeX. We mask out products in 
+the description so the model is inferring based on the reactants only. An example is shown in Figure 10. 
+13 
+Galactica: A Large Language Model for Science 
+Prompt 
+Sulfuric acid reacts with sodium chloride, and gives _____ and _____: 
+\[ \ce{ NaCl + H2SO4 -> 
+Generated Answer NaCl + H2SO4− − → NaHSO4+ 
+HCl 
+Figure 10: Chemical Reactions. We prompt based on a description and reactants, and evaluate whether the 
+generated products are correct. 
+We report results for these knowledge probes in Table 7. 
+ModelParams (bn)AminoBioLAMAReactionsClustersMinerals 
+OPT17512.0%7.1%12.7%21.7%1.6% 
+BLOOM17614.0%9.7%22.4%15.0%10.3% 
+GPT-3 (text-davinci-002)?14.0%8.4%35.1%20.8%18.3% 
+GAL 125M0.112.0%3.1%0.3%6.7%0.0% 
+GAL 1.3B1.316.0%7.2%14.4%14.2%10.3% 
+GAL 6.7B6.717.0%7.9%26.4%17.5%8.7% 
+GAL 30B3021.0%6.9%36.5%20.0%17.5% 
+GAL 120B12021.0%8.0%43.1%24.2%29.4% 
+Table 7: Results on Domain Probes. Results are evaluated zero-shot. 
+We also observe steady scaling behaviour in these knowledge probes, with the exception of BioLAMA which 
+we suspect ref l ects zero-shot prompt dif i culty for all LLMs. Notably i ne-grained factual knowledge, such as "ConstellationOf(GalaxyCluster)" type-queries seems to scale smoothly with the size of the model.
+1 / 1
+The section discusses the evaluation of Galactica's ability to absorb scientific knowledge, specifically the results of knowledge probes, which were critical metrics during the model's development for identifying knowledge gaps and informing how to iterate the corpus. The first knowledge probe, the LaTeX Equations Probe, involved a dataset of 434 popular LaTeX equations from the fields of chemistry, physics, mathematics, statistics, and economics, where Galactica was prompted for the name of an equation and generated LaTeX. The results showed that Galactica outperformed larger language models trained on general corpuses, indicating the value of a curated dataset.
+The section also discusses the domain probes, which are specialized knowledge for certain fields, including the AminoProbe, BioLAMA, Chemical Reactions, Galaxy Clusters, and Mineral Groups. Each domain probe was constructed with a prompt to test knowledge. For example, for Chemical Reactions, Galactica was asked to predict the products of the reaction in the chemical equation LaTeX, and the results were evaluated based on the accuracy of the generated products. The results of the knowledge probes showed that Galactica's ability to absorb domain-specific knowledge increases smoothly with scale, outperforming larger language models in certain areas.
+1 / 1
+5.2.3Reasoning 
+We now turn to reasoning capabilities with the<work>token. We start by evaluating on the MMLU math- 
+ematics benchmarks, which we report in Table 8 (Hendrycks et al., 2020). Galactica performs strongly 
+compared to larger base models, and use of the<work>token appears to boost performance over Chinchilla, 
+even for the smaller 30B Galactica model. Mathematics MMLU 
+ModelParams (bn)A.AlgebraElemHSCollegeF. LogicAverage 
+BLOOM (5-shot)17625.0%26.7%27.0%25.0%26.2%26.4% 
+OPT (5-shot)17521.0%25.7%24.4%33.0%29.4%26.7% 
+Gopher (5-shot)28025.0%33.6%23.7%37.0%35.7%30.6% 
+Chinchilla (5-shot)7031.0%41.5%31.9%32.0%33.3%35.7% 
+GAL 1.3B1.328.0%27.2%26.7%30.0%24.6%27.1% 
+GAL 6.7B6.728.0%28.9%26.7%36.0%31.0%29.2% 
+GAL 30B3030.0%30.2%26.3%36.0%31.7%29.9% 
+GAL 120B12033.0%38.1%32.6%43.0%32.5%35.8% 
+GAL 1.3B <work>1.322.0%24.6%18.9%25.0%31.0%24.6% 
+GAL 6.7B <work>6.733.3%30.7%25.2%26.0%33.3%28.0% 
+GAL 30B <work>3033.0%41.5%33.3%39.0%37.3%37.1% 
+GAL 120B <work>12027.0%54.2%37.0%44.0%40.5%41.3% 
+Table 8: Results on Mathematics MMLU. Galactica is evaluated without few-shot examples. With the 
+<work> token we see large gains in performance. Results are on MMLU test. 
+We also evaluate on the MATH dataset to further probe the reasoning capabilities of Galactica (Hendrycks 
+et al., 2021). We compare the<work>token prompt directly with the Minerva 5-shot chain-of-thought prompt 
+mCoT for comparability. We report results in Table 9. 
+MATH Results 
+ModelAlgCProbGeomI.AlgN.TheoryPrealgPrecalcAverage 
+Base Models 
+GPT-3 175B (8-shot)6.0%4.7%3.1%4.4%4.4%7.7%4.0%5.2% 
+PaLM 540B (5-shot) mCoT9.7%8.4%7.3%3.5%6.0%19.2%4.4%8.8% 
+GAL 30B <work>15.8%6.3%5.8%4.9%2.4%19.4%8.2%11.4% 
+GAL 30B (5-shot) mCoT17.9%6.8%7.9%7.0%5.7%17.9%7.9%12.7% 
+GAL 120B <work>23.1%10.1%9.8%8.6%6.5%23.8%11.7%16.6% 
+GAL 120B (5-shot) mCoT29.0%13.9%12.3%9.6%11.7%27.2%12.8%20.4% 
+Fine-tuned LaTeX Models 
+Minerva 540B (5-shot) mCoT51.3%28.0%26.8%13.7%21.2%55.0%18.0%33.6% 
+Table 9: Results on MATH. With both the chain-of-thought and<work>token prompts, Galactica exceeds 
+PaLM's performance with 18 times less capacity. 
+We see that Galactica outperforms the base PaLM model by a signif i cant margin, with both chain-of-thought 
+and<work>prompts. Galactica 30B outperforms PaLM 540B on both prompts: an 18 times smaller model. 
+This suggests Galactica may be a better base model for i ne-tuning towards mathematical tasks. 
+We report Minerva results for completeness, which is a 540B PaLM i ne-tuned towards LaTeX specif i cally. 
+Minerva outperforms base Galactica, but the performance dif f erences are non-uniform; which points towards 
+dif f erent mathematical data biases. For a direct comparison to Minerva, the model is freely available for 
+those who want to i netune Galactica towards LaTeX specif i cally as follow-up work. 
+15 
+Galactica: A Large Language Model for Science 
+5.3Downstream Scientif i c NLP 
+We now evaluate on downstream scientif i c tasks to see how well Galactica can compose its knowledge in 
+dif f erent task contexts. We focus on knowledge-intensive scientif i c tasks and report full results in Table 10. 
+For this we use the MMLU benchmark as well as some other popular scientif i c QA benchmarks. We include 
+the MMLU results earlier without <work> to test for knowledge association specif i cally. Full MMLU results, 
+including social sciences and other i elds, are reported in the Appendix. We also perform data leakage 
+analysis on these benchmarks for more conf i dence; results are in the Appendix. 
+From Table 10, Galactica can compose its knowledge into the question-answering task, and performance 
+is strong; signif i cantly outperforming the other open language models, and outperforming a larger model 
+(Gopher 280B) in the majority of tasks. Performance against Chinchilla is more variable, and Chinchilla 
+appears to be stronger in a subset of tasks: in particular, high-school subjects and less-mathematical, more 
+memorization intensive tasks. In contrast, Galactica tends to perform better in mathematical and graduate- 
+level tasks. 
+Our working hypothesis is that the Galactica corpus is biased towards graduate scientif i c knowledge, given it 
+consists mostly of papers, which explains lagging performance in high-school subjects. While we do pick 
+up some high-school level content through encyclopedias, textbooks and the i ltered CommonCrawl, this 
+amounts to a small quantity of tokens (a few billion). We leave the question of how to capture more of this 
+base scientif i c knowledge in a curated way to future work. 
+On remaining tasks, we achieve state-of-the-art results over i ne-tuned models at the time of writing. On 
+PubMedQA, we achieve a score of 77.6% which outperforms the state-of-the-art of 72.2% (Yasunaga et al., 
+2022). On MedMCQA dev we achieve score of 52.9% versus the state-of-the-art of 41.0% (Gu et al., 2020). 
+For BioASQ and MedQA-USMLE, performance is close to the state-of-the-art performance of i ne-tuned 
+models (94.8% and 44.6%) (Yasunaga et al., 2022). 
+DatasetDomainGALOPTBLOOMGPT-3GopherChinchilla 
+Abstract Algebraout-of-domain33.3%21.0%25.0%-25.0%31.0% 
+ARC Challengein-domain67.9%31.1%32.9%51.4%-- 
+ARC Easyin-domain83.8%37.4%40.7%68.8%-- 
+Astronomyout-of-domain65.1%23.0%25.7%-65.8%73.0%
+1 / 1
+In this paper, the authors evaluate the performance of Galactica, a language model based on the GPT-3 architecture, on mathematics benchmarks such as MMLU and MATH datasets. They report that Galactica performs strongly compared to larger base models, and use of the
+<work>
+token appears to boost performance over Chinchilla, even for the smaller 30B Galactica model. Galactica 30B outperforms PaLM 540B on both chain-of-thought and
+<work>
+prompts. The authors suggest that Galactica may be a better base model for fine-tuning towards mathematical tasks. They also report Minerva results for completeness, which is a 540B PaLM fine-tuned towards LaTeX specifically. Minerva outperforms base Galactica, but the performance differences are non-uniform, which points towards different mathematical data biases.
+1 / 1
+7Limitations and Future Work 
+7.1Limitations 
+We cover some of the limitations with work in this section. 
+Corpus LimitationsOur corpus has several limitations, both external and internally imposed. The main 
+external constraint is our restriction to use open-access resources, and much of scientif i c knowledge like 
+papers and textbooks are not open access. With access to these closed sources of knowledge, performance is 
+likely to be considerably higher. We also use self-imposed constraints, like restricting the number of molecules 
+and proteins for this work; without these constraints, we are likely to see considerable performance gains 
+due to much larger corpuses for these modalities. 30 
+Galactica: A Large Language Model for Science 
+CorpusEf f ectsvsPromptEf f ectsInseveralbenchmarks, weshowperformancegainsoverexistinglanguage 
+models, but we do not specif i cally disentangle the ef f ects of the prompts we included in pre-training versus 
+the core scientif i c corpus. In future work, we likely need to disentangle these ef f ects in order to see whether 
+general language capabilities are possible with a scientif i c corpus alone without prompt boosting. 
+Citation BiasWhile we demonstrate that the model approaches the true citation distribution with scale, 
+some bias towards popular papers still remains with the 120B scale model, so the model likely requires 
+augmentation before being used in a production environment. 
+Prompt Pre-Training vs Instruction TuningWe opted for the former in this paper, but ideally we would 
+need to explore what the latter could achieve, along the lines of the recent work of Chung et al. (2022). A 
+limitation of this work is that we do not perform this direct comparison through ablations, making clear the 
+trade-of f s between approaches. 
+General KnowledgeWhile Galactica absorbs broad societal knowledge through sources such as Wikipedia - e.g. 120B knows Kota Kinabalu is the capital of Malaysia's Sabah state- we would not advise using it for 
+tasks that require this type of knowledge as this is not the intended use-case. 
+Text as a ModalityWhile we have shown text-based Transformers are surprisingly powerful with text 
+representations of scientif i c phenomena, we caution against the interpretation that text is all you need. For 
+example, in chemistry, geometry is a fundamental language that determines meaning, yet Galactica has no 
+notion of geometry; e.g. 3D co-ordinates of atoms. 
+7.2Future Work 
+For development of the base model, we highlight several directions that may be worth pursuing. 
+New Objective FunctionIt is likely further gains can be obtained with mixture-of-denoising training as 
+U-PaLM has recently shown (Tay et al., 2022b; Chung et al., 2022). We suspect this might be benef i cial for 
+the scientif i c modalities such as protein sequences, where the left-to-right LM objective is quite limiting. 
+Larger Context WindowWe use a maximum context window length of2048tokens in this work. Extending 
+this is likely to be benef i cial for understanding in long-form scientif i c documents, such as textbooks and also 
+documents with longer modality sequences (e.g. long protein sequences). 
+Extending to ImagesWe cannot capture scientif i c knowledge adequately without capturing images. This is 
+a natural follow-up project, although it likely requires some architectural modif i cation to make it work well. 
+Existing work such as Alayrac et al. (2022) have way how to extend LLMs with this modality. 
+More <work> examplesWe feel<work>could be a general-purpose reasoning token and we would like 
+to invest more in this direction, including increasing prompt diversity and exploring performance on more 
+benchmarks. 
+Verif i cationEven as language models become more accurate with scale, we need assurances that their 
+generations are correct and factual. Developing this layer is critical for production applications of language 
+models in general beyond scientif i c applications. 
+Continual LearningShould we re-train from scratch to incorporate new scientif i c knowledge or train from 
+older checkpoints? This is an open question, and further research is needed to i nd the best procedure for 
+incorporating new knowledge into the model. 
+Retrieval AugmentationWhile we have shown how large language models can absorb large bodies of 
+scientif i c knowledge, retrieval has a place for i ne-grained types of knowledge, and we believe this is a strong 
+direction to pursue to complement the l exible weight memory of the Transformer.
+1 / 1
+The paper identifies several limitations and directions for future work. Some of the limitations include the constraints of using open-access resources for the corpus, the need to disentangle the effects of prompts versus the core scientific corpus, citation bias towards popular papers, and the lack of geometry knowledge in the case of chemistry. Some potential directions for future work include exploring a new objective function, extending the context window length, incorporating images into the model, developing verification layers for factual generation, and exploring retrieval augmentation to complement the flexible weight memory of the Transformer. Additionally, the paper highlights the need to explore the best procedure for incorporating new scientific knowledge into the model and to investigate the use of continual learning for this purpose.
+1 / 1
+8Discussion and Conclusion 
+For over half a century, the dominant way of accessing scientif i c knowledge has been through a store- 
+and-retrieve paradigm. The limitation of this approach is the reasoning, combining and organization of 
+information still relies on human ef f ort. This has led to a signif i cant knowledge throughput bottleneck. In 
+this work we explored how language models might disrupt this paradigm and bring about a new interface 
+for humanity to interface with knowledge. 
+We showed that language models are surprisingly strong absorbers of technical knowledge, such as LaTeX 
+equations and chemical reactions, and these capabilities tend to scale smoothly with model size. The context- 
+associativepoweroflanguagemodelslikelyconferssignif i cantadvantagesoversearchenginesinthelong-run. 
+We demonstrated this for citation prediction, where a language model outperforms tuned sparse and dense 
+retrieval pipelines for this task. Language models will likely provide a valuable new tool for exploring the 
+literature and the body of scientif i c knowledge in coming years. 
+We also demonstrated that language models can compose a curated knowledge base to perform well in 
+knowledge-intensive question answering tasks. This includes composing knowledge in a step-by-step reason- 
+ing manner. We showed that with a working memory token approach, we can achieve strong performance 
+over existing methods on mathematical MMLU and MATH benchmarks. We suspect tasks like MATH are in 
+principle solvable with language model approaches. The current bottleneck is the availability of high quality 
+step-by-step datasets. However, language models will not perform these tasks like humans until they have 
+an architectural change that supports adaptive computation. 
+We also performed initial investigations on the potential of LLMs to act as a bridge between scientif i c 
+modalities and natural language. We showed Galactica could learn tasks like IUPAC naming through 
+self-supervision. We also showed that it is possible to formulate drug discovery tasks like MoleculeNet in 
+a natural language prompt and achieve strong results without direct i ne-tuning. Lastly, we showed the 
+potential for tasks such as automatic protein annotation. In all, increasing the number (and size) of datasets 
+that bridge between natural language and natural sequences is likely to boost performance further. 
+Taken together, we feel there is a strong potential for language models to take on knowledge tasks that are 
+currently human specialisms. We open source the models so others can build on our work, and we look 
+forward to seeing how the open machine learning community will extend it.
+1 / 1
+In conclusion, this work presents a promising approach to leveraging language models as a new interface for accessing scientific knowledge. The ability of language models to absorb technical knowledge and scale smoothly with model size makes them a valuable tool for exploring the literature and the body of scientific knowledge. Additionally, language models can be used to perform knowledge-intensive question answering tasks, including mathematical reasoning, and can act as a bridge between scientific modalities and natural language.
+The authors note that while language models show great potential in these areas, there is still much work to be done, particularly in developing datasets that bridge between natural language and natural sequences. They also acknowledge that language models will not be able to perform these tasks like humans until they have an architectural change that supports adaptive computation. However, the open-sourcing of these models allows for others to build on this work and further advance the field. Overall, this work presents an exciting new direction for the use of language models in scientific knowledge tasks.
+1 / 1
+Summarize the whole paper.
+1 / 1
+This paper explores the potential of large language models (LLMs) to revolutionize the way we access and interact with scientific knowledge. The authors demonstrate that LLMs are highly capable of absorbing technical knowledge, such as equations and chemical reactions, and can outperform traditional search engines for certain tasks, such as citation prediction. They also show that LLMs can compose curated knowledge bases and achieve strong performance on knowledge-intensive question answering tasks. Additionally, they investigate the potential for LLMs to bridge between scientific modalities and natural language, such as drug discovery and protein annotation. Overall, the authors believe that LLMs have strong potential to take on knowledge tasks that are currently human specialisms. They open-source their models to encourage further research and development in the field.
+1 / 1
+ChatGPT Mar 23 Version
+. Free Research Preview. ChatGPT may produce inaccurate information about people, places, or facts.
+New chat
+

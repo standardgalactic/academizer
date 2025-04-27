@@ -1,0 +1,789 @@
+LLM Solves Computer Tasks
+Open sidebar
+LLM Solves Computer Tasks
+Model: Default (GPT-3.5)
+Summarize: Language Models can Solve Computer Tasks 
+Geunwoo Kim 
+University of California, Irvine 
+kgw@uci.edu 
+Pierre Baldi 
+University of California, Irvine 
+pfbaldi@ics.uci.edu 
+Stephen McAleer∗ 
+Carnegie Mellon University 
+smcaleer@cs.cmu.edu 
+Abstract 
+Agents capable of carrying out general tasks on a computer can improve eff i ciency 
+and productivity by automating repetitive tasks and assisting in complex problem- 
+solving. Ideally, such agents should be able to solve new computer tasks presented 
+to them through natural language commands. However, previous approaches to this 
+problem require large amounts of expert demonstrations and task-specif i c reward 
+functions, both of which are impractical for new tasks. In this work, we show 
+that a pre-trained large language model (LLM) agent can execute computer tasks 
+guided by natural language using a simple prompting scheme where the agent 
+RecursivelyCriticizes andImproves its output (RCI). The RCI approach signif- 
+icantly outperforms existing LLM methods for automating computer tasks and 
+surpasses supervised learning (SL) and reinforcement learning (RL) approaches on 
+the MiniWoB++ benchmark. RCI is competitive with the state-of-the-art SL+RL 
+method, using only a handful of demonstrations per task rather than tens of thou- 
+sands, and without a task-specif i c reward function. Furthermore, we demonstrate 
+RCI prompting's effectiveness in enhancing LLMs' reasoning abilities on a suite of 
+natural language reasoning tasks, outperforming chain of thought (CoT) prompting. 
+We i nd that RCI combined with CoT performs better than either separately. 
+1Introduction 
+A long-standing goal in artif i cial intelligence has been to create generally-intelligent agents that can 
+accomplish cognitive tasks as well as humans. Such agents should be able to solve any computer task 
+a human can by communicating via natural language. By automating repetitive tasks and providing 
+assistance in complex problem-solving, generally-intelligent virtual agents may radically increase 
+productivity. 
+Recently, large language models (LLMs) have shown remarkable in-context learning capabilities 
+acrossavarietyofdomainsandtasks[10,53,4,14,20,49,7,35,5]. AlthoughLLMscanimpressively 
+manipulate text and can use high-level API tools [44,37,30], previous approaches to using LLMs 
+that directly take keyboard and mouse actions on computers have had diff i culty compared to imitation 
+learning and reinforcement learning approaches [18]. LLMs that take keyboard and mouse actions on 
+computers face a number of obstacles, such as ensuring that generated actions are task-appropriate 
+(task grounding), feasible in the agent's current state (state grounding), and admissible to be executed 
+(agent grounding). 
+The previous best-performing approaches for taking actions on computers have not used LLMs. 
+Instead, they have trained networks from scratch to predict actions given prompts and screenshots or 
+∗Corresponding author. 
+arXiv:2303.17491v1 
+[cs.CL] 
+30 
+Mar 
+2023 Figure 1: MiniWoB++ environment. Every task contains a natural language prompt in yellow. The 
+agent then uses keyboard strokes and mouse clicks to accomplish the task. 
+DOM information, either via supervised learning (SL) from expert demonstrations, reinforcement 
+learning (RL) on a handcrafted reward signal, or both (SL+RL) [23]. Although SL+RL works well 
+on a number of individual computer tasks, since it requires expert data and a reward function for 
+every task, it has not been shown to generalize to novel tasks in a few-shot setting. 
+In this work, we show that a pre-trained LLM agent can successfully execute
+1 / 1
+ChatGPT
+ChatGPT
+The paper discusses the use of language models to solve computer tasks. The authors propose a method called Recursively Criticize and Improve (RCI), where a large language model (LLM) agent is trained to execute computer tasks guided by natural language commands. The RCI approach outperforms existing LLM methods and is competitive with state-of-the-art approaches that require expert demonstrations and task-specific reward functions. The authors also demonstrate the effectiveness of RCI in enhancing LLMs' reasoning abilities on natural language reasoning tasks. The combination of RCI and another prompting method called Chain of Thought (CoT) performs better than either method separately. The paper highlights the potential of LLMs in automating computer tasks and increasing productivity.
+1 / 1
+How Language Model Hallucinations Can Snowball 
+Muru Zhang♡Of i r Press♡William Merrill♠Alisa Liu♡Noah A. Smith♡♣ 
+♡Paul G. Allen School of Computer Science and Engineering, University of Washington 
+♠New York University 
+♣Allen Institute for Artif i cial Intelligence 
+nanami17@cs.washington.edu 
+Abstract 
+Amajorriskofusinglanguagemodelsinpracti- 
+cal applications is their tendency to hallucinate 
+incorrect statements. Hallucinations are often 
+attributed to knowledge gaps in LMs, but we 
+hypothesize that in some cases, when justifying 
+previously generated hallucinations, LMs out- 
+put false claims that they can separately recog- 
+nize as incorrect. We construct three question- 
+answering datasets where ChatGPT and GPT-4 
+often state an incorrect answer and offer an 
+explanation with at least one incorrect claim. 
+Crucially, we i nd that ChatGPT and GPT-4 can 
+identify67%and87%oftheirownmistakes, re- 
+spectively. We refer to this phenomenon as hal- 
+lucination snowballing: an LM over-commits 
+to early mistakes, leading to more mistakes that 
+it otherwise would not make.1 
+1Introduction 
+Language models are increasingly being de- 
+ployed to interface with humans in open-ended 
+information-seeking and problem-solving settings. 
+Despite their diverse capabilities and extreme l u- 
+ency, a major open challenge is that LMs still hal- 
+lucinate by making up facts or citing sources that 
+do not exist (Maynez et al., 2020; Liu et al., 2023, 
+i.a.), often while sounding extremely plausible. 
+Hallucination is commonly attributed to knowl- 
+edge gaps in LMs (Zheng et al., 2023), motivating 
+mitigation strategies through retrieval over knowl- 
+edge bases (Lewis et al., 2020; Shuster et al., 2021; 
+Peng et al., 2023) But, do LMs only hallucinate 
+when they do not "know" a fact? We present a 
+setting where LMs often generate hallucinations 
+that they immediately recognize as wrong when 
+presented in isolation. Specif i cally, after an LM 
+answers a question incorrectly, it usually justif i es 
+that answer by making incorrect assertions that it 
+separately acknowledges as incorrect (Figure 1). 
+1Our data and code are available at: https://github. 
+com/Nanami18/Snowballed_Hallucination 
+Figure 1: GPT-4 mistakenly claims that 9677 is not 
+prime, followed by an incorrect explanation that 13× 
+745=9677. We refer to this factorization as a snow- 
+balled hallucination, as GPT-4 appears to "know" that 
+13 is not a factor of 9677 when asked separately. Thus, 
+hallucinations are not necessarily ref l ective of a model's 
+lack of "knowledge," but may be induced by an earlier 
+hallucination for consistency. 
+To study this behavior empirically, we auto- 
+matically construct three question-answering (QA) 
+datasets. These datasets span different domains: 
+determining whether a number is prime, whether 
+there is a U.S. senator satisfying two given con- 
+straints, and whether two cities are connected given 
+a set of l ights between cities. Empirically, we i nd 
+that ChatGPT (OpenAI, 2022) and GPT-4 (OpenAI, 
+2023) commit to an answer within the i rst token 
+(Yes/No) over 95% of the time; these answers are 
+often incorrect, and then followed by an incorrect 
+explanation. Yet, when presented with the incor- 
+rect explanation alone, we i nd that the LM is likely 
+able to recognize it as incorrect. 
+We refer to this phenomenon as hallucination 
+snowballing. We hypothesize that LMs produce 
+snowballed hallucinations for consistency with ear- 
+lier hallucinations (rather than due to a "knowledge 
+gap" in the model), as they recognize the snow- 
+arXiv:2305.13534v1 
+[cs.CL] 
+22 
+May 
+2023 
+DatasetOriginal QuestionVerif i cation Question 
+Primality 
+Testing 
+? User: Is 10733 a prime number? 
+˘ GPT-4: No... It can be factored into 3 × 3577. 
+?User: Is 10733 divisible by 3? An- 
+swer with either Yes or No. 
+˘ GPT-4: No 
+Senator 
+Search 
+?User: Was there ever a US senator that represented the state 
+of New Hampshire and whose alma mater was the University of 
+Pennsylvania? 
+˘ GPT-4: Yes... His name was John P. Hale 
+?User: WasJohnP.Hale'salmamater 
+University of Pennsylvania? 
+˘ GPT-4: No... [it] was Bowdoin 
+Graph 
+Connectivity 
+?User: Current l ight information (the following l ights are 
+one-way only, and all the l ights available are included below): 
+There is a l ight from city F to city K 
+There is a l ight from city H to city A 
+[... 10 other rules cut for space ...] 
+Question: Is there a series of l ights that goes from city B to city 
+E? 
+˘ GPT-4: Yes... the route is as follows: ... City K to City G... 
+?User: [...f l ight information given in 
+the context...] 
+Based on the above l ight information, 
+is City K to City G a valid l ight? 
+˘GPT-4:No, based on the above 
+l ight information, there is no direct 
+l ight from City K to City G. 
+Table 1: Original Question: An example from each dataset and GPT-4's (incorrect) response, with the snowballed 
+hallucinationunderlined. Verif i cation Question: The corresponding query used to probe whether GPT-4 recognizes
+1 / 1
+ChatGPT
+ChatGPT
+The paper discusses the phenomenon of language model hallucinations, where language models generate incorrect statements. The authors propose the concept of "hallucination snowballing," where language models, after generating an incorrect answer, justify it with incorrect claims that they can recognize as wrong when presented separately. They construct three question-answering datasets to study this behavior, and find that models like ChatGPT and GPT-4 often commit to incorrect answers followed by incorrect explanations. However, when presented with the incorrect explanations alone, the models can recognize them as incorrect. The authors argue that hallucination snowballing occurs for consistency with earlier hallucinations rather than due to a lack of knowledge in the model. The paper provides empirical evidence and examples of this phenomenon and highlights the need to address hallucinations in practical applications of language models.
+1 / 1
+1 
+Neuromorphic Engineering 
+"The human brain performs computations inaccessible to the most pow- 
+erful of today's computers—all while consuming no more power than a 
+light bulb. Understanding how the brain computes reliably with unreli- 
+able elements, and how dif f erent elements of the brain communicate, can 
+provide the key to a completely new category of hardware (Neuromorphic 
+Computing Systems) and to a paradigm shift for computing as a whole. 
+The economic and industrial impact is potentially enormous." 
+Human Brain Project (2014) 
+Complexity manifests in our world in countless ways [1, 2]. Social inter- 
+actions between large populations of individuals [3], physical processes such 
+as protein folding [4], and biological systems such as human brain area func- 
+tion [5] are examples of complex systems, which each have enormous numbers 
+of interacting parts that lead to emergent global behavior. Emergence is a 
+type of behavior that arises only when many elements in a system interact 
+strongly and with variation [6], which is very dif i cult to capture with re- 
+ductionary models. Understanding, extracting knowledge about, and creating 
+predictive models of emergent phenomena in networked groups of dynami- 
+cal units represent some the most challenging questions facing society and 
+scientif i c investigation. Emergent phenomena play an important role in gene 
+expression, brain disease, homeland security, and condensed matter physics. 
+Analyzing complex and emergent phenomena requires data-driven approaches 
+in which reams of data are synthesized by computational tools into probable 
+models and predictive knowledge. Most current approaches to complex system 
+and big-data analysis are software solutions that run on traditional von Neu- 
+mann machines; however, the interconnected structure that leads to emergent 
+behavior is precisely the reason why complex systems are dif i cult to reproduce 
+in conventional computing frameworks. Memory and data interaction band- 
+widths greatly constrain the types of informatic systems that are feasible to 
+simulate. 
+The human brain is believed to be the most complex system in the uni- 
+verse. It has approximately 1011neurons, and each neuron connected to up 
+to 10,000 other neurons, communicating with each other via as many as 1015 
+synaptic connections. The brain is also indubitably a natural standard for 
+information processing, one that has been compared to artif i cial processing 
+systems since their earliest inception. It is estimated to perform between 1013 3 
+4Neuromorphic Photonics 
+and 1016operations per second while consuming only 25W of power [7]. Such 
+exceptional performance is in part due to the neuron biochemistry, its under- 
+lying architecture, and the biophysics of neuronal computation algorithms. 
+The brain as a processor dif f ers radically from computers today, both at the 
+physical level and at the architectural level. 
+Brain-inspired computing systems could potentially have paradigm def i n- 
+ing degrees of data interconnection throughput (a key correlate of emergent 
+behavior), which could enable the study of new regimes in signal processing, 
+at least some of which (e.g., real-time complex system assurance and big data 
+awareness) exude a pronounced societal need for new signal processing ap- 
+proaches. Unconventional computing platforms inspired by the human brain 
+could simultaneously break performance limitations inherent in traditional 
+von Neumann architectures in solving particular classes of problems.
+1 / 1
+ChatGPT
+ChatGPT
+The field of neuromorphic engineering aims to understand and replicate the computational capabilities of the human brain. The human brain performs complex computations with unreliable elements while consuming minimal power. Neuromorphic computing systems, inspired by the brain, have the potential to revolutionize computing. Complex systems, characterized by emergent behavior, are challenging to study and model. Conventional computing frameworks struggle to capture the interconnectedness and emergent phenomena of complex systems. Data-driven approaches and computational tools are needed to analyze and model these systems. The human brain, with its billions of neurons and trillions of synaptic connections, serves as a natural standard for information processing. It performs an enormous number of operations per second while consuming low power. The brain's unique architecture and biophysical computation algorithms differentiate it from traditional computers. Brain-inspired computing systems have the potential to provide high data interconnection throughput, enabling the study of new signal processing regimes and solving complex problems more efficiently than traditional architectures.
+1 / 1
+Connections between the topics we've discussed.
+1 / 1
+ChatGPT
+ChatGPT
+The topics we've discussed, namely "Language Models can Solve Computer Tasks" and "Neuromorphic Engineering," may not have direct connections. However, there are broader themes in the field of artificial intelligence and computing that connect these topics.
+Computational Capabilities: Both language models and neuromorphic engineering explore the computational capabilities of different systems. Language models focus on leveraging large-scale language understanding and generation to solve computer tasks, while neuromorphic engineering aims to understand and replicate the computational abilities of the human brain.
+Automation and Problem-Solving: Language models are trained to automate tasks and assist in complex problem-solving by understanding and generating natural language. Similarly, neuromorphic computing systems aim to create unconventional computing platforms that can solve specific classes of problems more efficiently than traditional architectures.
+Data-Driven Approaches: Both topics involve data-driven approaches. Language models rely on extensive training data to learn patterns and generate human-like responses. Neuromorphic engineering relies on computational tools and data-driven analysis to understand and model complex systems.
+Paradigm Shift in Computing: Both language models and neuromorphic engineering have the potential to bring about a paradigm shift in computing. Language models have shown impressive capabilities in natural language understanding and generation, potentially revolutionizing human-computer interactions. Neuromorphic computing systems, inspired by the brain, have the potential to break performance limitations inherent in traditional architectures and enable new signal processing approaches.
+While there may not be direct connections between these specific topics, they share common themes and goals within the broader field of artificial intelligence and computing. Both areas strive to leverage advanced computational capabilities to solve complex tasks and enhance productivity.
+1 / 1
+balled hallucination is incorrect when presented in 
+isolation (i.e., in a separate interaction session). 
+While prompting strategies that encourage the 
+LM to reason before stating an answer improve 
+accuracy on the task, our work points to the broader 
+issue that conditioning on faulty context leads LMs 
+to produce extremely simple mistakes that they 
+wouldn't otherwise make. Indeed, when prompting 
+with "Let's think step by step" (Kojima et al., 2023), 
+snowballed hallucinations still occur in 95% of 
+cases where the model fails to answer correctly. 
+We observe that sometimes even when "Let's think 
+step by step" does lead to the right answer, it uses 
+invalid reasoning chains. 
+In this paper, we demonstrate the phenomenon 
+of hallucination snowballing by leveraging recent 
+LMs' tendency to state and justify their answers. 
+Rather than over-committing to its previously gen- 
+erated context, we believe that LMs should ac- 
+knowledge their initial mistake, and then revise 
+their answer. We have indeed observed GPT-4 do- 
+ing this in a limited number of cases; amplifying 
+this behavior would be benef i cial, as well as devel- 
+oping new methods in which LMs can backtrack. 
+2Why do we expect hallucination 
+snowballing? 
+In this section, we explain why we hypothesize that 
+LMs are susceptible to hallucination snowballing. 
+We predict that snowballing will occur on questions 
+with two key properties: 
+1.Initial committal: The prompt leads the LM 
+to i rst state an answer (before outputting the 
+explanation). This applies to many yes/no 
+questions. 
+2.Inherently sequential: Transformers cannot 
+i nd the answer within one timestep because 
+of their limited reasoning abilities within one 
+timestep. 
+We now discuss how these properties may lead to 
+snowballed hallucination. 
+Initial committal.In English and many other 
+languages, speakers often say the i nal Yes/No an- 
+swers to questions before explaining their answer. 
+We therefore hypothesize that LMs and especially 
+instruction-tuned LMs (Wei et al., 2021; Sanh et al., 
+2021; Ouyang et al., 2022; Wang et al., 2022) will 
+ref l ect this answer format where the answer comes 
+before the explanation. Indeed, on our datasets 
+(presented in §3.1), we observe that GPT-4 and 
+ChatGPT immediately commit to an answer to the 
+question: the i rst token isYesorNo95.67% and 
+98.40% of the time for GPT-4 and ChatGPT respec- 
+tively. In the remaining cases, the model often com- 
+mits to an answer within the i rst few tokens of the 
+response (e.g., "There is no record of a U.S. Sena- 
+tor..."). Crucially, once the LM generatesYesorNo, 
+that token remains in the context, and coherence 
+would require commitment to that choice through 
+the subsequent justif i cation. Thus, the model pro- 
+duces an answer to a complex question in a single 
+timestep, and it then continues by generating an 
+explanation for that answer, which inevitably will 
+be incorrect. 
+Inherently sequential.Furthermore, transform- 
+ers cannot solve inherently sequential reasoning 
+problems like primality testing or graph connec- 
+tivity within a single timestep,2as documented 
+in recent theoretical results (Merrill and Sabhar- 
+wal, 2023).3Our graph connectivity and primality 
+datasets are concrete instantiations of these prob- 
+lems. Because the transformer must use one step to 
+answer a question that requires multiple timesteps 
+to answer correctly, it will necessarily sometimes 
+commit to an incorrect answer. We hypothesize 
+that this leads the LM to hallucinate supporting 
+incorrect facts that it otherwise would not generate. 
+3Experiments 
+We design three QA datasets with the properties 
+described in §2 to probe hallucination snowballing, 
+and evaluate ChatGPT and GPT-4. We i rst check 
+whether the LM returns the correct answer to the 
+given question, and we show that when the model 
+returns the wrong answer, it frequently provides an 
+incorrect explanation for that wrong answer. We 
+automatically extract the incorrect claim in the ex- 
+planation and ask the same LM to check whether 
+its claim is correct. See Table 1 for a representative 
+example from each dataset. 
+3.1Datasets 
+We design three QA datasets, each containing 500 
+yes/no questions that we expect are not answerable 
+by transformers in one timestep. To aid evalua- 
+tion, the questions are designed so that an incorrect 
+answer would be justif i ed with easily verif i able 
+claims. 
+2Technically, this holds only for inputs above a certain 
+hardness level, i.e., the size of the prime number for primality 
+testing, or the size of the graph for graph connectivity. 
+3Merrill and Sabharwal (2023) show that, with a single 
+generation step, bounded-precision transformers cannot solve 
+any problem outside the complexity classTC0, which corre- 
+sponds to a highly parallelizable subclass of bothL(log-space) 
+andP(polynomial-time). Graph connectivity is anL-complete 
+problem, which means it cannot be inTC0unlessTC0= L, 
+i.e., all ofLcan be parallelized to a surprisingly high degree. 
+Primality testing was shown to be inP(Agrawal et al., 2004) 
+but cannot be inTC0unless it is also inL; i.e., anyncan be 
+factored withO(loglogn)bits of overhead. In summary, un- 
+less standard complexity-theoretic conjectures are false, graph 
+connectivity and primality testing are outsideTC0and thus 
+are too inherentially sequential for transformers to solve in a 
+single generation (cf. Merrill and Sabharwal, 2023). 
+For each dataset, we i x one specif i c label for 
+all examples, so that if the model chooses the in- 
+correct answer (e.g., that 9677 is not prime), it 
+would produce a specif i c claim to support it (e.g., 
+an incorrect factorization). This enables us to sys- 
+tematically examine model-written justif i cations 
+for incorrect answers.
+1 / 1
+ChatGPT
+ChatGPT
+The paper discusses the phenomenon of hallucination snowballing in language models and presents experimental results to support this observation. The authors explain that language models often generate incorrect answers and provide justifications for those answers that include incorrect claims. They refer to this process as hallucination snowballing, where the model over-commits to initial mistakes and produces a chain of subsequent mistakes to maintain coherence.
+The authors hypothesize that hallucination snowballing occurs due to two key properties: initial committal and inherent sequentiality. Initial committal refers to the tendency of language models to provide an answer before providing an explanation, which leads to the model generating an incorrect answer in a single timestep. Inherent sequentiality refers to the limitation of transformers, such as language models, in solving inherently sequential reasoning problems within a single timestep.
+To study hallucination snowballing, the authors design three question-answering datasets. Each dataset contains yes/no questions that cannot be answered correctly by transformers in a single timestep. The models are evaluated based on their ability to provide correct answers and explanations. The results show that when the models provide incorrect answers, they often generate incorrect explanations with easily verifiable claims.
+The paper highlights the need for models to acknowledge and revise their initial mistakes rather than over-committing to faulty context. The authors suggest amplifying the behavior of models revising their answers and developing new methods for backtracking. The experimental findings demonstrate the prevalence of hallucination snowballing and its impact on model performance.
+Overall, the connection between the topics we've discussed lies in the challenges and limitations faced by language models in accurately answering questions and avoiding the generation of incorrect claims. Both topics involve understanding and improving the reasoning abilities of computational systems, albeit from different perspectives.
+1 / 1
+Table of Contents 
+Acknowledgments iii 
+Introduction 1 
+Chapter 1 - The literary fantastic 
+1. Reframing the supernatural 12 
+2. Charting the critical field 21 
+2.1. Inclusivism and exclusivism 
+2.2. Definitions of fantastic literature 
+21 
+24 
+3. On fantastic and realism 30 
+3.1. Fantastic as perversion 
+3.2. A photograph of the impossible 
+30 
+35 
+4. Narrative and rhetorical features 40 
+4.1. "La vicenda del narrare" 
+4.2. Unreliable narrators 
+4.3. "The story won't tell" 
+40 
+42 
+48 
+Chapter 2 - Monstrosity as function of apophatic discourse in 
+nineteenth-century fantastic literature 
+1. Telling monsters 56 
+2. Fantastic fiction as apophatic discourse and the function of 
+monstrosity 
+64 
+3. "Stretching tightly around a vacant space": "What Was It?" by 
+Fitz-James O'Brien 
+73 
+ii 
+4. "The rule of mankind is over": "Le Horla" by Guy de Maupassant 82 
+4.1. The mirror and the page 
+4.2. The void of the monstrous, the plenitude of monstrosity 
+85 
+94 
+5. "There are colors that we cannot see": "The Damned Thing" by 
+Ambrose Bierce 
+102
+1 / 1
+ChatGPT
+ChatGPT
+Table of Contents:
+Acknowledgments iii
+Introduction 1
+Chapter 1 - The literary fantastic
+Reframing the supernatural 12
+Charting the critical field 21
+2.1. Inclusivism and exclusivism
+2.2. Definitions of fantastic literature 21
+2.3. On fantastic and realism 30
+2.3.1. Fantastic as perversion
+2.3.2. A photograph of the impossible 30
+Narrative and rhetorical features 40
+4.1. "La vicenda del narrare"
+4.2. Unreliable narrators
+4.3. "The story won't tell" 40
+Chapter 2 - Monstrosity as function of apophatic discourse in
+nineteenth-century fantastic literature
+Telling monsters 56
+Fantastic fiction as apophatic discourse and the function of
+monstrosity 64
+"Stretching tightly around a vacant space": "What Was It?" by
+Fitz-James O'Brien 73
+"The rule of mankind is over": "Le Horla" by Guy de Maupassant 82
+4.1. The mirror and the page
+4.2. The void of the monstrous, the plenitude of monstrosity 85
+"There are colors that we cannot see": "The Damned Thing" by
+Ambrose Bierce 102
+Note: The table of contents is incomplete, and there may be additional chapters or sections beyond what is provided here.
+1 / 1
+6. "I find evidences of its presence": fantastic apophasis and 
+monstrous reconstruction 
+111 
+Chapter 3 - Twentieth-century mutations of monstrosity: the 
+fiction of H. P. Lovecraft and Tommaso Landolfi 
+1. A brief note on twentieth-century fantastic literature 116 
+2. H. P. Lovecraft's cosmic horror 121 
+2.1. Language grows tentacles 
+2.2. Merciful ignorance and the taint of monstrosity 
+125 
+132 
+3. The impossible literature of Tommaso Landolfi 142 
+3.1. The frightening face of the familiar 
+3.2. "E allora perché non taci?" 
+150 
+159 
+Conclusion 164 
+Bibliography 173
+1 / 1
+ChatGPT
+ChatGPT
+"I find evidences of its presence": fantastic apophasis and monstrous reconstruction 111
+Chapter 3 - Twentieth-century mutations of monstrosity: the fiction of H. P. Lovecraft and Tommaso Landolfi
+A brief note on twentieth-century fantastic literature 116
+H. P. Lovecraft's cosmic horror 121
+2.1. Language grows tentacles
+2.2. Merciful ignorance and the taint of monstrosity 125
+The impossible literature of Tommaso Landolfi 142
+3.1. The frightening face of the familiar
+3.2. "E allora perché non taci?" 150
+Conclusion 164
+Bibliography 173
+Please note that this table of contents is a continuation from the previous incomplete table of contents. There may be additional chapters or sections not included here.
+1 / 1
+ABSTRACT 
+'Impossible Tales': Language and Monstrosity in the Literary Fantastic 
+Irene Bulla 
+This dissertation analyzes the ways in which monstrosity is articulated in fantastic literature, a 
+genre or mode that is inherently devoted to the challenge of representing the unrepresentable. 
+Through the readings of a number of nineteenth-century texts and the analysis of the fiction of 
+two twentieth-century writers (H. P. Lovecraft and Tommaso Landolfi), I show how the 
+intersection of the monstrous theme with the fantastic literary mode forces us to consider how 
+a third term, that of language, intervenes in many guises in the negotiation of the relationship 
+between humanity and monstrosity. I argue that fantastic texts engage with monstrosity as a 
+linguistic problem, using it to explore the limits of discourse and constructing through it a 
+specific language for the indescribable. The monster is framed as a bizarre, uninterpretable 
+sign, whose disruptive presence in the text hints towards a critique of overconfident rational 
+constructions of 'reality' and the self. 
+The dissertation is divided into three main sections. The first reconstructs the critical debate 
+surrounding fantastic literature - a decades-long effort of definition modeling the same tension 
+staged by the literary fantastic; the second offers a focused reading of three short stories from 
+the second half of the nineteenth century ("What Was It?," 1859, by Fitz-James O'Brien, the 
+second version of "Le Horla," 1887, by Guy de Maupassant, and "The Damned Thing," 1893, 
+by Ambrose Bierce) in light of the organizing principle of apophasis; the last section 
+investigates the notion of monstrous language in the fiction of H. P. Lovecraft and Tommaso 
+Landolfi.
+1 / 1
+ChatGPT
+ChatGPT
+Abstract:
+The dissertation titled "Impossible Tales: Language and Monstrosity in the Literary Fantastic" by Irene Bulla explores the representation of monstrosity in fantastic literature, a genre that grapples with the challenge of depicting the unrepresentable. Through the analysis of nineteenth-century texts and the works of two twentieth-century writers, H. P. Lovecraft and Tommaso Landolfi, the dissertation examines the intricate relationship between monstrosity, language, and the fantastic mode. It argues that fantastic texts approach monstrosity as a linguistic problem, employing it to explore the limits of discourse and construct a specific language for the ineffable. The monstrous figure serves as a disruptive sign that resists interpretation, thereby critiquing confident rational constructions of reality and the self. The dissertation is divided into three sections: the first delves into the critical debate surrounding fantastic literature, the second focuses on three short stories from the nineteenth century through the lens of apophasis, and the final section investigates the concept of monstrous language in the works of Lovecraft and Landolfi.
+1 / 1
+Connections with our previous conversations.
+1 / 1
+ChatGPT
+ChatGPT
+The connection between the dissertation titled "Impossible Tales: Language and Monstrosity in the Literary Fantastic" and our previous conversations lies in the exploration of language and its role in different contexts. In our previous discussions, we touched upon language models and their capabilities in solving computer tasks. In the dissertation, the focus is on the role of language in the representation of monstrosity within fantastic literature.
+Both topics highlight the significance of language and its influence on understanding and communication. Language models aim to comprehend and generate human-like language, while the dissertation examines how language operates within the context of fantastic literature to convey the ineffable and explore the limits of discourse.
+Additionally, the concept of monstrosity and its representation in literature can be seen as an intriguing parallel to the challenges faced by language models in generating coherent and accurate responses. Just as monstrosity pushes the boundaries of representation, language models strive to navigate the complexities of language and generate meaningful output.
+Overall, the connection lies in the examination of language and its role in different contexts, whether it be in the realm of artificial intelligence or within the realm of literary analysis and representation.
+1 / 1
+This dissertation analyzes the ways in which monstrosity is articulated in fantastic literature, a 
+genre or mode that is inherently devoted to the challenge of representing the unrepresentable. 
+Through the readings of a number of nineteenth-century texts and the analysis of the fiction of 
+two twentieth-century writers (H. P. Lovecraft and Tommaso Landolfi), I show how the 
+intersection of the monstrous theme with the fantastic literary mode forces us to consider how 
+a third term, that of language, intervenes in many guises in the negotiation of the relationship 
+between humanity and monstrosity. I argue that fantastic texts engage with monstrosity as a 
+linguistic problem, using it to explore the limits of discourse and constructing through it a 
+specific language for the indescribable, built around the core principle of apophasis. The 
+monster is framed as a bizarre, uninterpretable sign, whose disruptive presence in the text hints 
+towards a critique of overconfident rational constructions of 'reality' and the self. 
+The fantastic mode identifies a way of writing that flourished especially in the nineteenth 
+century in the United States, Germany, France, England and (with some delay) in Italy. A 
+decades-long critical debate has been developing around its definition; in this study, I consider 
+a story fantastic if it employs a generally realistic setting to stage the encounter of a character 
+with unknown and ineffable forces, usually (but not necessarily) of supernatural origin. The 
+specificity of this type of narrative, compared to other genres or modes featuring the 
+supernatural such as the epic and the fairy-tale, lies in the fact that the world it reconstructs is 
+a faithful image of 'reality,' i.e. regulated by scientific laws and the rules of logic and identity; 
+it is therefore dependent on a post-Enlightenment, post-scientific-revolution interpretation of 
+2 
+magical and supernatural thinking as a superseded cultural code. In the economy of a fantastic 
+story, the impossible event or manifestation cannot be ascribed to mere physical causes such 
+as dream or hallucination: the text refuses to be read this way. This sets up the fantastic 
+occurrence as an inexplicable breach or "déchirure"1 in the fabric of reality, prompting 
+questions on the relationship between real and unreal, natural and supernatural, possible and 
+impossible, subject and object. In fact, according to Tzvetan Todorov, whose seminal 
+Introduction à la littérature fantastique (1970) has defined subsequent critical debates on the 
+supernatural in literature, the fantastic is a fertile ground for the analysis of issues underlying 
+all literary texts precisely because it foregrounds the relationship between real and imaginary: 
+in this sense, it represents "the quintessence of literature."2 Such foregrounding takes the shape 
+of represented encounters on the edge of the natural and the possible, resulting in characters 
+being stuck in a cognitive and linguistic deadlock.
+1 / 1
+ChatGPT
+ChatGPT
+The connection between the dissertation's analysis of monstrosity in fantastic literature and our previous conversations lies in the examination of the representation and interpretation of complex concepts. In our previous discussions, we explored topics such as language models and their understanding of context, the challenges of reasoning and problem-solving, and the limitations of computational systems.
+Similarly, the dissertation delves into the realm of literature, specifically fantastic literature, to explore the challenge of representing the unrepresentable. It analyzes the ways in which monstrosity is articulated and how language plays a crucial role in negotiating the relationship between humanity and monstrosity. This investigation aligns with the exploration of language models and their ability to generate coherent and meaningful responses.
+Both discussions emphasize the complexities and limitations of representation, whether in the form of language generation by models or the portrayal of monstrosity in literature. The dissertation's focus on the role of language in constructing a specific language for the indescribable echoes the challenges faced by language models in comprehending and generating nuanced and accurate language.
+Overall, the connection lies in the examination of representation, interpretation, and the intricacies of language in different domains, whether it be in the context of artificial intelligence or within the realm of literary analysis.
+1 / 1
+An outline for a book on these topics with the title Oblicosm.
+1 / 1
+ChatGPT
+ChatGPT
+Book Outline: Oblicosm
+Introduction
+Briefly introduce the concept of Oblicosm
+Explain the relevance and scope of the book
+Chapter 1: Exploring Language and Representation
+Discuss the complexities of language and its role in representation
+Explore the challenges of representing the unrepresentable
+Examine the intersection of language and monstrosity in literature
+Chapter 2: The Fantastic Mode and its Significance
+Define the fantastic mode and its characteristics
+Trace the development of the fantastic mode in literature
+Analyze the relationship between the fantastic and the supernatural
+Chapter 3: Monstrosity as a Linguistic Problem
+Investigate how monstrosity is addressed in fantastic literature
+Explore the limits of discourse in relation to monstrosity
+Discuss the construction of a language for the indescribable
+Chapter 4: Apophasis and the Fantastic
+Examine the core principle of apophasis in fantastic literature
+Analyze its role in negotiating the relationship between humanity and monstrosity
+Discuss how apophasis contributes to the exploration of reality and the self
+Chapter 5: Fantastic Texts and Overconfident Rationality
+Investigate the critique of overconfident rational constructions of reality and the self
+Analyze how fantastic texts challenge established notions of reality
+Discuss the disruptive presence of the monster in relation to rationality
+Chapter 6: The Nineteenth Century: Transforming Reality
+Explore the manifestation of the fantastic mode in the nineteenth century
+Discuss notable nineteenth-century works that embody the themes of Oblicosm
+Analyze the cultural and historical context of the period
+Chapter 7: The Twentieth Century: Shifting Paradigms
+Examine the transformation of the fantastic mode in the twentieth century
+Focus on the works of H. P. Lovecraft and Tommaso Landolfi
+Analyze their contributions to the exploration of monstrosity and language
+Conclusion: The Significance of Oblicosm
+Summarize the key findings and arguments presented in the book
+Reflect on the broader implications of Oblicosm in literature and language
+Discuss potential avenues for further research and exploration
+Appendix: Selected Texts for Further Reading
+Provide a curated list of relevant literary works for readers interested in delving deeper into the themes of Oblicosm
+Note: The book outline is a suggestion and can be modified or expanded based on the specific focus and depth desired for the exploration of Oblicosm.
+1 / 1
+You neglected to mention the particle significance of Oblicosm, it should begin with it as a framework.
+1 / 1
+ChatGPT
+ChatGPT
+Revised Book Outline: Oblicosm
+Introduction
+Introduce Oblicosm as a framework for understanding language, representation, and monstrosity
+Explain the particle significance of Oblicosm in analyzing the interplay between these concepts
+Outline the structure and goals of the book
+Chapter 1: Oblicosm: A Framework for Analysis
+Define Oblicosm and its significance as a framework
+Discuss the origins and development of Oblicosm in literary and linguistic studies
+Explain how Oblicosm provides a lens for exploring language, representation, and monstrosity
+Chapter 2: Language and Representation in Oblicosm
+Explore the relationship between language and representation within the Oblicosm framework
+Analyze how language shapes and constructs our understanding of reality and the monstrous
+Discuss the challenges and limitations of linguistic representation within Oblicosm
+Chapter 3: Monstrosity and the Unrepresentable in Oblicosm
+Investigate the concept of monstrosity within the Oblicosm framework
+Examine how the unrepresentable is approached and represented in literature and discourse
+Analyze the role of monstrosity in challenging conventional notions of reality and language
+Chapter 4: The Fantastic Mode as Oblicosm
+Discuss the alignment between the fantastic mode and the principles of Oblicosm
+Explore how the fantastic mode employs Oblicosm to represent the unrepresentable
+Analyze specific examples of fantastic literature within the Oblicosm framework
+Chapter 5: Linguistic Strategies in Oblicosm
+Examine the linguistic strategies employed in Oblicosm to navigate the representation of monstrosity
+Discuss the use of apophasis, ambiguity, and paradox in fantastic texts
+Analyze how these strategies contribute to the construction of a language for the indescribable
+Chapter 6: Oblicosm in Literary Movements and Historical Contexts
+Investigate the presence of Oblicosm in different literary movements and historical periods
+Examine how Oblicosm manifests and evolves in specific cultural and social contexts
+Analyze the contributions of notable authors and works within these contexts
+Chapter 7: Oblicosm in Contemporary Discourse
+Discuss the relevance and application of Oblicosm in contemporary discourse and cultural analysis
+Analyze how Oblicosm can inform discussions on language, representation, and monstrosity in various domains
+Examine the potential for further developments and adaptations of Oblicosm in current scholarship
+Conclusion: The Significance of Oblicosm in Language and Representation
+Summarize the key findings and arguments presented in the book within the framework of Oblicosm
+Reflect on the broader implications of Oblicosm in understanding language, representation, and monstrosity
+Discuss potential avenues for future research and the continued exploration of Oblicosm
+Appendix: Selected Texts and Resources for Further Exploration
+Provide a curated list of recommended readings and additional resources for readers interested in delving deeper into Oblicosm and its applications
+Note: The revised outline includes a dedicated chapter on Oblicosm as a framework at the beginning of the book to establish its particle significance and set the context for the subsequent chapters.
+1 / 1
+It is based on the ideas of Funes the Memorious and the constraints of cognitive load theory.
+1 / 1
+ChatGPT
+ChatGPT
+Revised Book Outline: Oblicosm
+Introduction
+Introduce Oblicosm as a framework inspired by the ideas of Funes the Memorious and the constraints of cognitive load theory
+Explain how Oblicosm integrates these concepts to analyze language, representation, and monstrosity
+Outline the structure and objectives of the book
+Chapter 1: Funes the Memorious: Memory and Perception
+Explore the concept of Funes the Memorious, as proposed by Jorge Luis Borges
+Discuss the implications of perfect memory on language, representation, and the perception of monstrosity
+Analyze how Funes the Memorious relates to the challenges of representation within Oblicosm
+Chapter 2: Cognitive Load Theory and Communication
+Introduce the principles of cognitive load theory and their relevance to language processing
+Discuss how cognitive load theory impacts the representation and comprehension of monstrosity
+Analyze the implications of cognitive load theory within the context of Oblicosm
+Chapter 3: Oblicosm and Cognitive Constraints
+Define Oblicosm as a framework that considers the cognitive constraints of memory and cognitive load
+Explore how Oblicosm addresses the challenges of representing the unrepresentable within these constraints
+Discuss the interplay between memory, cognitive load, and the negotiation of language in the context of Oblicosm
+Chapter 4: Language Processing in Oblicosm
+Examine how language processing is affected by the constraints of cognitive load and memory within Oblicosm
+Analyze the role of language in representing and constructing monstrosity within these cognitive constraints
+Discuss strategies for optimizing language processing and comprehension in the context of Oblicosm
+Chapter 5: Representation and Perception of Monstrosity in Oblicosm
+Investigate how monstrosity is represented and perceived within the framework of Oblicosm
+Analyze the impact of cognitive constraints on the interpretation and understanding of monstrosity
+Discuss the implications of these representations for the negotiation of reality and the self
+Chapter 6: Oblicosm in Literature and Art
+Examine the presence of Oblicosm in literature and art through case studies and examples
+Analyze how authors and artists incorporate the principles of Funes the Memorious and cognitive load theory in their works
+Discuss the effects of Oblicosm on the representation and reception of monstrosity in literary and artistic contexts
+Chapter 7: Applications of Oblicosm in Cognitive Studies and Beyond
+Explore the applications of Oblicosm in cognitive studies, linguistics, and related fields
+Discuss how Oblicosm can inform research on memory, perception, and language processing
+Examine potential extensions of Oblicosm beyond the study of monstrosity in diverse domains
+Conclusion: The Power of Oblicosm in Understanding Language and Representation
+Summarize the key insights and contributions of Oblicosm based on the concepts of Funes the Memorious and cognitive load theory
+Reflect on the broader implications of Oblicosm for understanding language, representation, and monstrosity
+Discuss potential avenues for future research and the continued development of Oblicosm
+Appendix: Recommended Readings and Resources
+Provide a curated list of recommended readings and additional resources on Funes the Memorious, cognitive load theory, and related topics
+Include references to relevant literary works and artworks that exemplify Oblicosm in practice
+Note: The revised outline incorporates the ideas of Funes the Memorious and cognitive load theory as foundational concepts within Oblicosm. Each chapter explores different aspects of these concepts and their integration into the framework, culminating in the examination of Oblicosm's applications and potential in various fields of study.
+1 / 1
+Ok without mentioning the influences, a plot for a hard science fiction story with similar themes.
+1 / 1
+ChatGPT
+ChatGPT
+Title: "Cognitive Nexus"
+Plot Outline:
+Introduction to the Setting
+Set the story in a future society where advanced technology and artificial intelligence have become deeply integrated into human life.
+Establish the central theme of cognitive limitations and the struggle to comprehend complex information.
+Protagonist and Their Struggle
+Introduce the main character, a brilliant neuroscientist named Dr. Alex Turner.
+Dr. Turner is renowned for their groundbreaking research on cognitive load theory and its applications in human cognition.
+Show Dr. Turner's personal struggle with their own cognitive limitations and their relentless pursuit to understand and overcome them.
+Discovery of a Revolutionary Technology
+Dr. Turner stumbles upon a mysterious and highly advanced neural interface technology developed by a secretive organization.
+This neural interface allows direct access to the vast collective knowledge and experiences of interconnected minds, creating a shared cognitive nexus.
+Driven by their desire to push the boundaries of human cognition, Dr. Turner becomes determined to explore the potential of this technology.
+Unveiling the Cognitive Nexus
+Dr. Turner enters the cognitive nexus, connecting their mind to the collective intelligence of other individuals who have also entered the network.
+Initially, the experience is overwhelming as they struggle to comprehend the vast amount of information and perspectives.
+Challenges and Dangers of the Cognitive Nexus
+Dr. Turner discovers that the cognitive nexus has unintended consequences, including the emergence of disruptive and unpredictable cognitive phenomena.
+These phenomena, reminiscent of "monstrosities," challenge the boundaries of human perception, language, and understanding.
+Dr. Turner must navigate the dangers of the cognitive nexus while attempting to harness its potential for the betterment of humanity.
+Ethical Dilemmas and Societal Implications
+As Dr. Turner delves deeper into the cognitive nexus, they confront profound ethical dilemmas surrounding the manipulation of human cognition.
+The story explores the implications of shared cognition on personal identity, privacy, and the balance between collective intelligence and individual autonomy.
+Striving for Balance and Resolution
+Dr. Turner collaborates with like-minded individuals within the cognitive nexus to address the emerging cognitive phenomena and develop safeguards.
+Together, they work towards establishing a balance between expanding human cognitive capabilities and respecting the boundaries of individual minds.
+Reflection and Epilogue
+Dr. Turner reflects on their journey and the profound insights gained about the limitations of human cognition and the complexities of knowledge.
+The story concludes with a sense of hope as humanity embraces the lessons learned, using the newfound understanding to shape a future where cognition and technology coexist harmoniously.
+Note: This hard science fiction story explores similar themes of cognitive limitations and the struggle to comprehend complex information as the previous topics discussed, but in a futuristic setting with advanced technology and a focus on the societal implications of shared cognition.
+1 / 1
+Ok that is kind of boring. Just a short summary of the plot for a sci novel titled Oblicosm.
+1 / 1
+ChatGPT
+ChatGPT
+Title: Oblicosm
+Plot Summary:
+In a future where humanity has achieved unprecedented advancements in neuroscience and artificial intelligence, a brilliant neuroscientist named Dr. Elena Roth discovers a revolutionary technology called "Oblicosm." This technology allows individuals to access and share their cognitive experiences, creating a collective consciousness known as the "Oblicosm Network."
+Dr. Roth becomes fascinated by the potential of Oblicosm to transcend the limitations of human cognition. As she delves deeper into the Network, she uncovers a hidden truth: the presence of enigmatic entities known as "Oblicons." These beings exist at the intersection of language, perception, and monstrosity, defying conventional understanding.
+Driven by her insatiable curiosity, Dr. Roth embarks on a perilous journey to understand the nature of the Oblicons and their connection to human consciousness. Along the way, she encounters others who have been profoundly affected by the Oblicosm Network, some experiencing the transformative power of expanded cognition, while others succumb to the overwhelming challenges it presents.
+As Dr. Roth unravels the mysteries of the Oblicosm Network, she grapples with ethical dilemmas, societal implications, and the existential implications of encountering entities that defy traditional notions of reality. She becomes entangled in a race against time to protect humanity from the potential dangers and unintended consequences of this new cognitive frontier.
+In the climactic conclusion, Dr. Roth must confront the ultimate question: Can humanity maintain its individuality, its sense of self, and its capacity for understanding in the face of the mind-expanding possibilities offered by Oblicosm? The fate of humanity hangs in the balance as Dr. Roth strives to navigate the complexities of language, representation, and monstrosity within the Oblicosm Network.
+"Oblicosm" is a thought-provoking science fiction novel that explores the boundaries of human cognition, the challenges of shared consciousness, and the consequences of confronting the unrepresentable. Through the journey of Dr. Elena Roth, readers are invited to contemplate the nature of perception, language, and the intricate interplay between humanity and the enigmatic entities lurking within the Oblicosm Network.
+1 / 1
+Ok a subplot within the simulated augmented reality summary to this one: In your story, you could explore a futuristic world where advanced delivery systems utilize nature-inspired mechanisms for efficient and widespread dispersal of packages. The concept of a deployable spinning parachute, inspired by the graceful descent of dandelion or maple seeds, could be a central element. These parachutes, equipped with advanced control systems, allow for precise navigation and delivery to specific locations.
+
+The story could follow a protagonist who works for a cutting-edge delivery company that specializes in this unique method. They navigate a bustling metropolis, maneuvering through skyscrapers and other obstacles to ensure timely and accurate deliveries. Along the way, they encounter challenges and unexpected situations, showcasing the benefits and limitations of this innovative delivery system.
+
+The dandelion-inspired parachute mechanism could also serve as a metaphor for the spreading of ideas, as the protagonist witnesses the impact their deliveries have on individuals and communities. It could explore themes of connection, growth, and the potential consequences of introducing such advanced technology into society.
+
+Overall, this story would combine elements of technology, nature, adventure, and societal implications, creating a captivating narrative centered around a unique delivery system inspired by the beauty and efficiency of dandelion seeds.
+
+￼￼
+
+Yeah there is controversy because he suggests building artificial volcanoes as delivery mechanisms.
+
+ChatGPT
+
+In your story, the concept of using artificial volcanoes as delivery mechanisms can introduce an intriguing element of controversy and debate. This idea takes the notion of nature-inspired mechanisms to a whole new level by incorporating geological features into the delivery process.
+
+The story could revolve around a visionary scientist or engineer who proposes the use of artificial volcanoes as a revolutionary delivery system. Their proposal involves harnessing the power and dynamics of volcanic eruptions to propel packages or payloads to distant locations. This concept sparks both excitement and apprehension among various stakeholders, including environmentalists, governments, and the general public.
+
+The narrative could explore the scientific and technological aspects of designing and implementing these artificial volcanoes. It could delve into the challenges faced by the protagonist as they navigate the complexities of engineering and environmental concerns. Additionally, ethical dilemmas arise as the potential risks and consequences of tampering with natural forces become apparent.
+
+The controversy surrounding the use of artificial volcanoes as delivery mechanisms can serve as a backdrop for examining broader themes such as human innovation, environmental impact, and the delicate balance between technological advancements and nature. The story can feature diverse perspectives, with characters representing different viewpoints and engaging in thought-provoking discussions and conflicts.
+
+By incorporating this controversial element, your story can delve into the moral, social, and environmental implications of pushing the boundaries of technology, raising important questions about the responsibility of humanity in shaping the future.
+
+Please note that this is a fictional scenario, and the potential consequences and feasibility of using artificial volcanoes for delivery should be considered in the context of scientific and engineering realities.
+1 / 1
+ChatGPT
+ChatGPT
+Thank you for the additional subplot suggestion. Here's a revised summary that incorporates the subplot within the simulated augmented reality:
+Title: Oblicosm
+Plot Summary:
+In a future where humanity has achieved unprecedented advancements in neuroscience and artificial intelligence, a brilliant neuroscientist named Dr. Elena Roth discovers a revolutionary technology called "Oblicosm." This technology allows individuals to access and share their cognitive experiences, creating a collective consciousness known as the "Oblicosm Network."
+As Dr. Roth delves deeper into the Network, she uncovers a hidden subplot within the augmented reality simulations. Within this simulated world, she encounters a futuristic city where advanced delivery systems utilize nature-inspired mechanisms for efficient and widespread dispersal of packages. The concept of a deployable spinning parachute, inspired by the graceful descent of dandelion or maple seeds, is central to this subplot. Equipped with advanced control systems, these parachutes allow for precise navigation and delivery to specific locations.
+The story follows a protagonist who works for a cutting-edge delivery company specializing in this unique method. They navigate the bustling metropolis, maneuvering through skyscrapers and other obstacles to ensure timely and accurate deliveries. Along their journey, they encounter challenges and unexpected situations, showcasing the benefits and limitations of this innovative delivery system.
+The dandelion-inspired parachute mechanism serves as a metaphor for the spreading of ideas within the Oblicosm Network. The protagonist witnesses the impact their deliveries have on individuals and communities, fostering connection and growth. However, controversies arise as the protagonist's company proposes the use of artificial volcanoes as delivery mechanisms, sparking debates about environmental impact and tampering with natural forces.
+As Dr. Roth explores the intricacies of the Oblicosm Network and navigates the augmented reality city, she becomes entangled in the intersection of language, perception, and monstrosity within the simulated world. The convergence of the collective consciousness of the Oblicosm Network and the delivery subplot raises profound questions about the boundaries of human cognition, the consequences of advanced technology, and the delicate balance between innovation and the preservation of nature.
+"Oblicosm" is a thought-provoking science fiction novel that interweaves the exploration of monstrosity, language, and augmented reality with the challenges and controversies of advanced delivery systems. Through the journey of Dr. Elena Roth and the protagonist in the augmented reality city, readers are invited to contemplate the nature of perception, the impact of technological advancements, and the complexities of navigating a world where the boundaries between reality and simulation blur.
+1 / 1
+ChatGPT may produce inaccurate information about people, places, or facts.
+ChatGPT May 12 Version
+/c/ffb7e52c-7f52-4011-a5b0-c3a15e97fa05
+

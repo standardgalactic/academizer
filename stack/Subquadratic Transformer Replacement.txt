@@ -1,0 +1,109 @@
+Subquadratic Transformer Replacement
+Open sidebar
+Subquadratic Transformer Replacement
+Summarize: Hyena Hierarchy: 
+Towards Larger Convolutional Language Models 
+Michael Poli∗,1, Stefano Massaroli∗,2, Eric Nguyen1,∗, 
+Daniel Y. Fu1, Tri Dao1, Stephen Baccus1, 
+Yoshua Bengio2, Stefano Ermon1,†, Christopher Ré1,† 
+Version: submitted draft,Last Compiled: April 21, 2023 
+Abstract 
+Recent advances in deep learning have relied heavily on the use of large Transformers due to their 
+ability to learn at scale. However, the core building block of Transformers, the attention operator, exhibits 
+quadratic cost in sequence length, limiting the amount of context accessible.Existing subquadratic 
+methods based on low-rank and sparse approximations need to be combined with dense attention layers 
+to match Transformers, indicating a gap in capability. In this work, we propose Hyena, a subquadratic 
+drop-in replacement for attention constructed by interleaving implicitly parametrized long convolutions 
+and data-controlled gating. In recall and reasoning tasks on sequences of thousands to hundreds of 
+thousands of tokens, Hyena improves accuracy by more than 50 points over operators relying on state- 
+spaces and other implicit and explicit methods, matching attention-based models. We set a new state-of- 
+the-art for dense-attention-free architectures on language modeling in standard datasets (WikiText103 
+and The Pile), reaching Transformer quality with a 20% reduction in training compute required at 
+sequence length 2K. Hyena operators are twice as fast as highly optimized attention at sequence length 
+8K, and 100× faster at sequence length 64K. 
+1Introduction 
+Large Transformers have enabled a number of breakthrough advances in modeling language, vision, audio, 
+biology and numerous other domains (Vaswani et al., 2017), (Dosovitskiy et al., 2020), (Radford et al., 2022), 
+(Cramer, 2021). Much of the success of Transformers, powered by the attention operator (Vaswani et al., 
+2017), relies on their scaling properties (Hof f mann et al., 2022) and the emergence of in-context learning 
+(Garg et al., 2022), which allows them to generalize to unseen data and tasks given context as input. The 
+Transformer block is a powerful tool for sequence modeling, but it is not without its limitations. One of the 
+most notable is the computational cost, which grows rapidly as the length of the input sequence increases. 
+Specif i cally, the cost scales quadratically with the length L of the sequence, which places a strict limit on the 
+amount of context that can be considered by the model. Breaking the quadratic barrier is a key step towards 
+new possibilities for deep learning, such as using entire textbooks as context, generating long-form music or 
+processing gigapixel scale images. 
+Ef f orts to reduce the computational cost of attention in models primarily involve the use of linearized, 
+low-rank, and sparse approximations (Child et al., 2019; Wang et al., 2020; Kitaev et al., 2020; Zhai et al., 
+2021; Roy et al., 2021; Schlag et al., 2021; Tu et al., 2022). These approaches introduce a trade-of f between 
+expressivity and speed, requiring hybridization with standard attention layers to reach Transformer quality 
+(Mehta et al., 2022; Dao et al., 2022c). 
+A growing amount of evidence suggests that attention mechanisms only utilize a small portion of their 
+quadratic capabilities for language processing (Olsson et al., 2022; Dao et al., 2022c), leading us to question 
+its role as the gold-standard operator for deep learning at scale. Specif i cally, we ask: 
+Are there subquadratic operators that can match the quality of attention at scale? 
+∗Equal contribution. † Equal senior authorship.1Stanford University.2Mila and Université de Montréal. 
+1
+1 / 1
+The paper proposes Hyena, a subquadratic drop-in replacement for attention in large Transformers. Hyena uses implicitly parametrized long convolutions and data-controlled gating to improve accuracy in recall and reasoning tasks on sequences of thousands to hundreds of thousands of tokens. It sets a new state-of-the-art for dense-attention-free architectures on language modeling in standard datasets and requires 20% less training compute than Transformers at sequence length 2K. Hyena operators are also faster than highly optimized attention at sequence length 8K and 100x faster at sequence length 64K. The paper questions the role of attention as the gold-standard operator for deep learning at scale and explores the possibility of subquadratic operators that can match its quality.
+1 / 1
+Figure 1.1: The Hyena operator is def i ned as a recurrence of two ef i cient subquadratic primitives: an implicit 
+long convolution h (i.e. Hyena i lters parameterized by a feed-forward network) and multiplicative element- 
+wise gating of the (projected) input. The depth of the recurrence specif i es the size of the operator. Hyena 
+can equivalently be expressed as a multiplication with data-controlled (conditioned by the input u) diagonal 
+matrices Dxand Toeplitz matrices Sh. In addition, Hyena exhibits sublinear parameter scaling (in sequence 
+length) and unrestricted context, similar to attention, while having lower time complexity. 
+We obtain a positive answer based on a composition of ef i cient subquadratic primitives, such as element- 
+wise multiplication (gating) and long convolutions i.e., convolutions with i lter sizes as long as the input. We 
+rely on a set of targeted reasoning tasks, grounded in recent work on mechanistic interpretability (Elhage 
+et al., 2021; Power et al., 2022; Olsson et al., 2022; Zhang et al., 2022) such as recall and induction, to distill 
+three properties of attention correlated with its performance and the quality gap with existing subquadratic 
+approaches: 
+a. Data control: Attention implements an expressive data-controlled (Massaroli et al., 2020) linear operator1, 
+encoding an entire family of linear functions in a single block. 
+b. Sublinear parameter scaling: Parameter counts of attention layers are decoupled from sequence length, 
+allowing Transformers to allocate more parameters elsewhere e.g., the feed-forward neural networks (FFNs) 
+between attention layers. 
+c. Unrestricted context: For a given input, attention has an unrestricted context i.e., it can approximate 
+dependencies between any two inputs, without arbitrary restrictions such as locality (except in cases using 
+masking such as autoregressive models). 
+The Hyena hierarchyGuided by these i ndings, we introduce the Hyena hierarchy, an operator def i ned by a 
+recurrence of two ef i cient subquadratic primitives: a long convolution and element-wise multiplicative 
+gating (see Figure 1.1). A specif i ed depth (i.e., number of steps) of the recurrence controls the size of the 
+operator.For short recurrences, existing models are recovered as special cases (Mehta et al., 2022; Dao 
+et al., 2022c). By mapping each step in the Hyena recurrence to its corresponding matrix form, we reveal 
+Hyena operators to be equivalently def i ned as a decomposition of a data-controlled matrix i.e., a matrix 
+whose entries are functions of the input.Furthermore, we show how Hyena operators can be evaluated 
+ef i ciently without materializing the full matrix, by leveraging fast convolution algorithms (Selesnick and 
+Burrus, 2017). Empirically, Hyena operators are able to signif i cantly shrink the quality gap with attention at 
+scale, reaching similar perplexity and downstream performance with a smaller computational budget (Section 
+4.2) and without hybridization of attention. 
+Narrowing the capabilities gapThe design of Hyena is motivated by a quality gap between standard 
+dense attention and alternative subquadratic operators, which we identify by focusing on reasoning tasks cor- 
+related with language modeling performance at scale. We extend the suite of basic mechanistic interpretability 
+benchmarks (induction and recall) with additional tasks that probe how quickly model performance degrades 
+1Self-attention can be expressed as y = A(k,q)v where A is the attention matrix conditioned by linear projections k,q of the 
+input and multiplied by v, another projection. 2 
+when task complexity increases (e.g. vocabulary size grows). In addition, we investigate the optimal param- 
+eterization of long convolutions in Hyena. In the most challenging settings with hundreds of thousands of 
+tokens, our implicit parameterization scheme improves over other operators leveraging state spaces (Gu et al., 
+2021), frequency-domain parametrizations (Li et al., 2020), or standard convolutions by over 50% accuracy. 
+Scaling in language and vision
+1 / 1
+The Hyena hierarchy is a novel operator designed to narrow the quality gap between dense attention and subquadratic operators in large-scale language and vision tasks. The Hyena operator is defined as a recurrence of two efficient subquadratic primitives: an implicit long convolution and multiplicative element-wise gating of the input. The depth of the recurrence specifies the size of the operator.
+The Hyena operator exhibits several desirable properties for large-scale modeling, including sublinear parameter scaling, unrestricted context, and data control. Hyena can be expressed as a multiplication with data-controlled diagonal matrices and Toeplitz matrices, and it can be evaluated efficiently without materializing the full matrix.
+Empirically, Hyena operators perform similarly to attention at scale, achieving similar perplexity and downstream performance with a smaller computational budget and without hybridization of attention. In addition, the design of Hyena is motivated by a quality gap between standard dense attention and alternative subquadratic operators.
+The authors extend the suite of basic mechanistic interpretability benchmarks with additional tasks that probe how quickly model performance degrades when task complexity increases. They also investigate the optimal parameterization of long convolutions in Hyena, and show that their implicit parameterization scheme improves over other operators in challenging settings with hundreds of thousands of tokens by over 50% accuracy.
+1 / 1
+A final analysis.
+1 / 1
+I'm sorry, I'm not sure what you would like me to analyze. Could you please provide more context or specify the topic you would like me to analyze?
+1 / 1
+What the article was about.
+1 / 1
+The article discusses a new operator for deep learning called Hyena, which aims to bridge the quality gap between standard dense attention and alternative subquadratic operators. The authors identify three properties of attention that contribute to its performance and quality gap with other operators: data control, sublinear parameter scaling, and unrestricted context. They introduce the Hyena hierarchy, a recurrence of two efficient subquadratic primitives, to address these properties. They show that Hyena can be evaluated efficiently without materializing the full matrix, leveraging fast convolution algorithms. Empirical results show that Hyena can significantly shrink the quality gap with attention at scale, reaching similar perplexity and downstream performance with a smaller computational budget and without hybridization of attention. The article also discusses various tasks and benchmarks used to evaluate the performance of Hyena, including those related to language modeling and vision tasks.
+1 / 1
+ChatGPT Mar 23 Version
+. Free Research Preview. ChatGPT may produce inaccurate information about people, places, or facts.
+New chat
+

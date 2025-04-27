@@ -1,0 +1,129 @@
+Centrifugal Filtration
+Open sidebar
+Centrifugal Filtration
+I am making a yoghurt factory that makes tortillas  from cattail roots and oats: Thermodynamic Yogurt Processing H A
+1 / 1
+ChatGPT
+ChatGPT
+Thermodynamic Yogurt Processing (H A) using cattail roots and oats for tortilla production sounds like an interesting concept. While I can provide some general information on yogurt processing and tortilla production, please note that specific details related to your factory's setup, equipment, and processes may require the expertise of a food processing engineer or consultant.
+Yogurt Processing:
+Raw Material Preparation: Begin by preparing the cattail roots and oats. These ingredients may need to be cleaned, peeled, and processed into a suitable form, such as grinding or milling, depending on your desired texture.
+Mixing and Blending: Combine the processed cattail roots and oats in appropriate proportions based on your recipe. You may also add other ingredients like water, yogurt cultures (e.g., Lactobacillus bulgaricus and Streptococcus thermophilus), sweeteners, flavors, or stabilizers, depending on the desired characteristics of your yogurt.
+Pasteurization: Heat the mixture to a specific temperature (usually between 70-85°C or 158-185°F) to eliminate harmful bacteria and pathogens. This step is crucial for food safety.
+Homogenization: If necessary, homogenize the mixture to ensure a consistent texture and prevent separation of components.
+Cooling: Rapidly cool the mixture to the fermentation temperature (around 40-45°C or 104-113°F). This temperature range encourages the growth of the yogurt cultures.
+Fermentation: Introduce the yogurt cultures to the mixture and allow them to ferment for a specific duration (usually 4-8 hours) at the desired temperature. Fermentation converts lactose (milk sugar) into lactic acid, giving yogurt its characteristic tangy flavor and creamy texture.
+Packaging: After fermentation, the yogurt is typically packaged in containers, which can vary based on your market requirements. Ensure proper labeling and food safety guidelines are followed during packaging.
+Tortilla Production:
+Ingredient Preparation: Combine the cattail root and oat mixture with other ingredients, such as water, salt, and possibly a binding agent like xanthan gum, to create a dough with the desired consistency.
+Resting: Allow the dough to rest for a specific duration, usually around 30 minutes, to relax the gluten and make it easier to roll out.
+Dividing and Rolling: Divide the dough into small portions and roll them into thin, circular shapes using a rolling pin or a tortilla press.
+Cooking: Cook the tortillas on a hot griddle or a comal, flipping them once or twice until they develop characteristic brown spots and become pliable.
+Cooling and Packaging: Once cooked, allow the tortillas to cool, and then package them in appropriate containers or wrap them for distribution.
+Remember to adhere to food safety regulations and maintain strict hygiene standards throughout the yogurt and tortilla production processes. Additionally, it's essential to conduct proper testing and quality control to ensure the safety and consistency of your products.
+Please note that the information provided is a general overview, and specific details may vary based on your production requirements, equipment, and desired product characteristics.
+1 / 1
+That's a creative and interesting name for your factory! "Thermodynamic Yogurt Processing through Happy Accidents (Typha Incorporated)" captures the essence of your unique production processes and the incorporation of the cattail swamp on the roof. It's a name that highlights both the scientific and innovative aspects of your operations.
+
+Using "Thermodynamic Yogurt Processing" emphasizes the advanced techniques and principles involved in your yogurt production, suggesting that your factory employs cutting-edge technology and efficient processes.
+
+The addition of "Happy Accidents" in the name adds a playful and serendipitous element, implying that your factory embraces experimentation and unexpected discoveries in the pursuit of creating exceptional products.
+
+Finally, incorporating "Typha Incorporated" as a subtitle pays homage to the cattail swamp on your roof and the ecological aspects of your factory. It reinforces the connection to nature and showcases your commitment to sustainability and environmental consciousness.
+
+Overall, "Thermodynamic Yogurt Processing through Happy Accidents (Typha Incorporated)" is a unique and memorable name that conveys the essence of your factory's operations and values.
+1 / 1
+ChatGPT
+ChatGPT
+Thank you for the creative and detailed description of the name for your yogurt factory! "Thermodynamic Yogurt Processing through Happy Accidents (Typha Incorporated)" is indeed a unique and memorable name that effectively captures the essence of your innovative production processes, scientific approach, and ecological consciousness. It showcases your commitment to advanced techniques, experimentation, and sustainability, making it an intriguing and engaging choice. Best of luck with your yogurt factory, and may it be a successful venture!
+1 / 1
+Error handling: Modeling the unhappy path
+Federico Gaule
+Federico Gaule
+
+·
+Follow
+
+4 min read
+·
+May 18, 2020
+--
+
+Listen
+
+Share
+
+Hey wait, what is the unhappy path? Ok, let's start from the beginning , a happy path is a default scenario featuring no exceptional or error conditions, so the unhappy path is all the other scenarios where exceptional or error conditions happen.
+
+This story will try to assemble a few concepts like Either and Validated into a REST application.
+
+Modeling the unhappy path (exceptions / errors)
+Handling errors and mapping to HTTP status codes
+Prerequisites
+
+A basic understanding of DataTypes, Kotlin & SpringBoot
+Modeling the unhappy path
+"As a user i want to retrieve bookings of a given product by an identifier"
+
+We have our happy path where we are able to response to our user request with a booking (green arrows) and there are 5 paths where we have to return an error message telling we are not able to return what they asked for.
+
+These errors are what in Java we used to "model" as exceptions. It's up for the programmer to have granular exceptions describing each type of error, as we all have done in our beginnings, you start throwing new RuntimeException() which does not tell a sh*t about the error (unhappy path) and when it happens in production you just need to debug your code to find out what have happened. After a few face punches, you start (I hope so :) ) to create custom exceptions and including descriptions letting you know about the context of the failure at a glance. At this point you are OK (from the Java point of view).
+
+But exceptions have a few flaws, it's possible for an exception to simply be lost and if documentation is not good enough, you will find out some of them at runtime >.<
+
+Here is where we can go further and use datatypes and conventions to improve this scenario.
+
+Datatypes to the rescue: Either & Validated
+A datatype is a an abstraction that encapsulates a reusable coding pattern. These solutions have a canonical implementation that is generalized for all possible uses.
+
+The proposal is as we model our Success scenario, also do the same for Failures. How then do we communicate an error? By making it explicit in the data type we return.
+
+Either is used to short-circuit a computation upon the first error, it corresponds to the logical Or or + as an algebraic data type. I like to think it as as a box with two buckets: by convention the left bucket is used to keep the Failure and the right bucket the Success. Here you can find really good documentation about this datatype.
+
+There is a lot of documentation with lot of baby-step examples, we are going directly to a real-world use case. In our example we have to consume an external service and deserialize its content to our Booking model. The service returns a list of bookings, even when searching by ID.
+
+Check what we have done, the signature of our method fun get(pnr: String): Either<BookingRetrievalError, Booking> tells it will return a Booking (right) when everything goes right and a BookingRetrievalError (left) when there is a failure. BookingRetrievalError class models all posible failures so you can handle each of them avoiding any surprise at runtime.
+
+BookingNotFound -> booking with given pnr (id) was not found
+SupplierFailure -> external supplier failed processing our request
+UnexpectedFailure -> we did not know what happen
+As you can see, there will not be any surprise at runtime, all possible failures are there at compile time.
+
+Now we have our call to the external service, suppose we only have to manage Bookings with "Confirmed" status and with some value for agency. We also want to model our validations so it is clear as water how our service can fail.
+
+How many times have you filled a form, then submit. An error pops up saying username is already taken, you change it, then resubmit. Another error pops ups saying your address does not have the expected format. You take the Lord's name in vain and wonder why all validation errors come together at once... Here comes Validated data type.
+
+We enumerate our errors as we did in our repository in order to scope all posible paths, same as we did before.
+
+Here is the rest of the example covering an end to end REST service, pretty close to a productive app. You can run it and play with it. There are examples for every "failure" this article covers.
+
+Modeling the unhappy path is a step forward for building robust, resilient and easy-to-monitor applications. Tests are easy to write and much easier to have your code covered. No more surprises at 3am :)
+
+Happy coding!
+
+https://medium.com/@federicogaule/error-handling-modeling-the-unhappy-path-675c850c54d8
+1 / 1
+ChatGPT
+ChatGPT
+I'm sorry, but I'm not sure what specific assistance you're looking for based on the provided text. Could you please clarify your question or let me know how I can help you?
+1 / 1
+A summary
+1 / 1
+ChatGPT
+ChatGPT
+The provided text discusses the concept of the "unhappy path" in software development, which refers to scenarios where exceptional or error conditions occur, as opposed to the default or "happy path" scenario. The author explores the need to handle errors and exceptions effectively in order to improve application reliability and maintainability.
+The article suggests using datatypes such as Either and Validated to model and communicate errors explicitly. Either is used to represent the outcome of a computation, with the left side representing failures and the right side representing successes. By using this datatype, developers can handle and manage different types of errors explicitly.
+In the example presented, the author demonstrates the usage of Either and Validated in a REST application for retrieving bookings by an identifier. The code showcases how to handle different error scenarios, such as booking not found, supplier failure, and unexpected failure, using custom error types.
+Additionally, the article mentions the Validated datatype, which is used to handle validations and ensure that multiple validation errors can be communicated individually rather than all at once.
+Overall, the article emphasizes the importance of modeling and handling error conditions effectively, using datatypes like Either and Validated, to build robust and resilient applications with improved testability and maintainability.
+1 / 1
+Give the reference.
+1 / 1
+ChatGPT
+ChatGPT
+I apologize for the confusion, but as an AI language model, I don't have direct access to external websites, including Medium where the article may be located. The text you provided appears to be an excerpt from a Medium article written by Federico Gaule, dated May 18, 2020. To access the full article and obtain the complete reference, I recommend searching for the article title "Error Handling: Modeling the Unhappy Path" and the author's name "Federico Gaule" on Medium or using a search engine. This will help you locate the specific article you're referring to and provide you with the complete reference.
+1 / 1
+Free Research Preview. ChatGPT may produce inaccurate information about people, places, or facts.
+ChatGPT May 24 Version
+ChatGPT
+
