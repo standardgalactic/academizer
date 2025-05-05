@@ -2,70 +2,217 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xylomancy</title>
-    <link rel="stylesheet" type="text/css" href="styles.css">
+    <title>Academizer A-Z Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.19.0/cytoscape.min.js"></script>
     <style>
-        body {
-            background-color: #1e1e1e;
-            color: #dcdcdc;
-            font-family: 'Courier New', Courier, monospace;
-            margin: 20px;
-        }
-
-        a {
-            color: #d7ba7d;
-        }
-
-        h1, h2, h3, h4, h5, h6 {
-            color: #569cd6;
-        }
-
-        pre {
-            background-color: #252526;
-            padding: 10px;
-            overflow-x: auto;
-        }
-
-        code {
-            background-color: #252526;
-            color: #dcdcaa;
-        }
-
-        .content {
-            max-width: 800px;
-            margin: auto;
-            padding: 20px;
-            background-color: #2d2d2d;
-            border-radius: 8px;
-        }
-
-        img {
-            display: block;
-            margin: 20px auto;
-            max-width: 100%;
-            height: auto;
-        }
-
-        em {
-            color: #b5cea8;
-        }
+        body { font-family: Arial, sans-serif; background: #1a1a1a; color: #fff; margin: 0; }
+        #cy { width: 100%; height: 600px; background: #000; }
+        #info { padding: 20px; background: #222; border-top: 1px solid #444; max-height: 300px; overflow-y: auto; }
+        .node-info { display: none; }
+        h2 { color: #0ff; }
+        h3 { color: #f0f; }
+        a { color: #0ff; }
+        #filter { padding: 10px; background: #333; }
+        input { background: #444; color: #fff; border: 1px solid #666; padding: 5px; }
     </style>
 </head>
 <body>
-    <div class="content">
-        <h1 id="xylomancy">Xylomancy</h1>
-        <h1 id="good-at-computers"><em>Good at Computers</em></h1>
-        <p>In the future, if I ever get good at computers, I will build a robot army of virtual scholars to read PDFs and watch movies and listen to audiobooks for me, and to give me summaries.</p>
-        <p>Examples:</p>
-        <ul>
-            <li>Computer, read these ten thousand articles and pick out the good parts and then give me a five-minute report in Spanish at 3 o’clock.</li>
-            <li>Computer, where are my wallet and keys?</li>
-            <li>Computer, execute complete shutdown of the holodeck.</li>
-        </ul>
-        <p><em>December 6, 2019</em></p>
-
-        <img src="sobel-keyboard.jpg" alt="Sobel Keyboard Image">
+    <div id="filter">
+        <label for="project-filter">Filter by Project or Letter:</label>
+        <input type="text" id="project-filter" placeholder="e.g., Haplopraxis, J">
     </div>
+    <div id="cy"></div>
+    <div id="info">
+        <h2>Academizer A-Z Dashboard</h2>
+        <div id="default-info">
+            <p>Click a project node to view details and connections.</p>
+        </div>
+    </div>
+    <script>
+        // Sample data for all 26 A-Z projects
+        const academizerData = {
+            nodes: [
+                { id: 'abraxas', label: 'A: ABRAXAS', type: 'project', letter: 'A', desc: 'Recursive semiotic engine for paradox resolution.' },
+                { id: 'bone-matrix', label: 'B: Bone Matrix', type: 'project', letter: 'B', desc: 'Mathematical layer for swarm-care rules.' },
+                { id: 'cyclex', label: 'C: Cyclex', type: 'project', letter: 'C', desc: 'Eco-terraforming infrastructure.' },
+                { id: 'daughters-of-the-air', label: 'D: Daughters of the Air', type: 'project', letter: 'D', desc: 'Speculative film narrative with kelp-farming mermaids.' },
+                { id: 'everlasting-yarnball', label: 'E: Everlasting Self-Knitting Yarnball', type: 'project', letter: 'E', desc: 'Planetary cognition metaphor.' },
+                { id: 'flux-sphere', label: 'F: Flux Sphere Accord', type: 'project', letter: 'F', desc: 'Sustainable mobility framework.' },
+                { id: 'gaiacraft', label: 'G: GAIACRAFT', type: 'project', letter: 'G', desc: 'Civilization-scale evolution engine.' },
+                { id: 'haplopraxis', label: 'H: Haplopraxis', type: 'project', letter: 'H', desc: 'Procedural educational game.' },
+                { id: 'inforganic-codex', label: 'I: Inforganic Codex', type: 'project', letter: 'I', desc: 'Hybrid cognition model.' },
+                { id: 'janitor-centric-school', label: 'J: Janitor-Centric School', type: 'project', letter: 'J', desc: 'Education philosophy prioritizing low-status labor.' },
+                { id: 'keyhole-device', label: 'K: Keyhole Device', type: 'project', letter: 'K', desc: 'Semi-biological symbol channel.' },
+                { id: 'lavender-planet', label: 'L: Lavender Planet', type: 'project', letter: 'L', desc: 'Aesthetic-political framework.' },
+                { id: 'motile-womb', label: 'M: Motile Womb Theory', type: 'project', letter: 'M', desc: 'Mobile gestational cognition.' },
+                { id: 'new-twitter', label: 'N: New Twitter', type: 'project', letter: 'N', desc: 'Visual grammar input system.' },
+                { id: 'oblicosm-doctrine', label: 'O: Oblicosm Doctrine', type: 'project', letter: 'O', desc: 'Anti-productivity philosophy.' },
+                { id: 'peritellurian-technium', label: 'P: Peritellurian Geozotic Technium', type: 'project', letter: 'P', desc: 'Planetary infrastructure system.' },
+                { id: 'quantifier-subversion', label: 'Q: Quantifier Subversion', type: 'project', letter: 'Q', desc: 'Alternative logical structures.' },
+                { id: 'rsvp-theory', label: 'R: RSVP Theory', type: 'project', letter: 'R', desc: 'Cosmological model with scalar fields.' },
+                { id: 'semantic-ladle', label: 'S: Semantic Ladle Theory', type: 'project', letter: 'S', desc: 'Object perception via bundle metaphysics.' },
+                { id: 'techno-axiological-penteract', label: 'T: Techno-Axiological Penteract', type: 'project', letter: 'T', desc: 'Multidimensional value map.' },
+                { id: 'unified-mind', label: 'U: Unified Mind', type: 'project', letter: 'U', desc: 'Planetary cognition synthesis.' },
+                { id: 'volsorial-pediments', label: 'V: Volsorial Pediments', type: 'project', letter: 'V', desc: 'Floating oceanic platforms.' },
+                { id: 'womb-body-bioforge', label: 'W: Womb Body Bioforge', type: 'project', letter: 'W', desc: 'Biomechanical probiotic system.' },
+                { id: 'xenological-drift', label: 'X: Xenological Drift Engine', type: 'project', letter: 'X', desc: 'Alien semiotic encoder.' },
+                { id: 'yarncrawler', label: 'Y: Yarncrawler', type: 'project', letter: 'Y', desc: 'Recursive semantic train.' },
+                { id: 'zettelkasten-academizer', label: 'Z: Zettelkasten Academizer', type: 'project', letter: 'Z', desc: '3D note-taking system.' }
+            ],
+            edges: [
+                { source: 'abraxas', target: 'semantic-ladle', summary: 'Uses semiotic networks for paradox resolution.' },
+                { source: 'bone-matrix', target: 'inforganic-codex', summary: 'Provides swarm-care for hybrid cognition.' },
+                { source: 'cyclex', target: 'volsorial-pediments', summary: 'Incorporates floating platforms.' },
+                { source: 'daughters-of-the-air', target: 'oblicosm-doctrine', summary: 'Shares anti-productivity themes.' },
+                { source: 'everlasting-yarnball', target: 'yarncrawler', summary: 'Core metaphor for semantic locomotion.' },
+                { source: 'flux-sphere', target: 'cyclex', summary: 'Integrates sustainable mobility.' },
+                { source: 'gaiacraft', target: 'techno-axiological-penteract', summary: 'Uses value maps for simulations.' },
+                { source: 'haplopraxis', target: 'zettelkasten-academizer', summary: 'Implements note-taking in game.' },
+                { source: 'inforganic-codex', target: 'unified-mind', summary: 'Foundation for planetary cognition.' },
+                { source: 'janitor-centric-school', target: 'oblicosm-doctrine', summary: 'Shared anti-productivity themes.' },
+                { source: 'keyhole-device', target: 'everlasting-yarnball', summary: 'Symbol channel for cognition.' },
+                { source: 'lavender-planet', target: 'oblicosm-doctrine', summary: 'Aesthetic critique of spectacle.' },
+                { source: 'motile-womb', target: 'womb-body-bioforge', summary: 'Gestational cognition for bioforge.' },
+                { source: 'new-twitter-os', target: 'haplopraxis', summary: 'Input system for game navigation.' },
+                { source: 'oblicosm-doctrine', target: 'semantic-ladle', summary: 'Rituals as semiotic networks.' },
+                { source: 'peritellurian-technium', target: 'cyclex', summary: 'Core infrastructure component.' },
+                { source: 'quantifier-subversion', target: 'abraxas', summary: 'Explores logical paradoxes.' },
+                { source: 'rsvp-theory', target: 'everlasting-yarnball', summary: 'Cosmic sponge as cognition metaphor.' },
+                { source: 'semantic-ladle', target: 'haplopraxis', summary: 'Core for bubble logic.' },
+                { source: 'techno-axiological-penteract', target: 'gaiacraft', summary: 'Ethical framework for simulations.' },
+                { source: 'unified-mind', target: 'inforganic-codex', summary: 'Synthesizes hybrid cognition.' },
+                { source: 'volsorial-pediments', target: 'cyclex', summary: 'Key subcomponent.' },
+                { source: 'womb-body-bioforge', target: 'motile-womb', summary: 'Implements gestational cognition.' },
+                { source: 'xenological-drift', target: 'gaiacraft', summary: 'Encodes alien semiotics.' },
+                { source: 'yarncrawler', target: 'zettelkasten-academizer', summary: 'Navigates note-taking system.' },
+                { source: 'zettelkasten-academizer', target: 'haplopraxis', summary: 'Core for game progression.' }
+            ],
+            summaries: {
+                'abraxas': 'Recursive semiotic engine for paradox resolution, found in abraxas repo.',
+                'bone-matrix': 'Swarm-care rules in yarncrawler repo.',
+                'cyclex': 'Eco-terraforming in cyclex repo.',
+                'daughters-of-the-air': 'Speculative narrative in arcanum repo.',
+                'everlasting-yarnball': 'Planetary cognition in yarncrawler repo.',
+                'flux-sphere': 'Sustainable mobility in bubble-city repo.',
+                'gaiacraft': 'Evolution engine in codex repo.',
+                'haplopraxis': 'Educational game in Haplopraxis/IFM repo.',
+                'inforganic-codex': 'Hybrid cognition in cogniscium repo.',
+                'janitor-centric-school': 'Education philosophy in human repo.',
+                'keyhole-device': 'Symbol channel in substrate repo.',
+                'lavender-planet': 'Aesthetic framework in mirror repo.',
+                'motile-womb': 'Gestational cognition in umbilicus repo.',
+                'new-twitter': 'Input system in spherepop repo.',
+                'oblicosm-doctrine': 'Anti-productivity in negentropy repo.',
+                'peritellurian-technium': 'Planetary infrastructure in quadrivium repo.',
+                'quantifier-subversion': 'Logical structures in teleosemantics repo.',
+                'rsvp-theory': 'Cosmological model in quantum-soup repo.',
+                'semantic-ladle': 'Bundle metaphysics in spherepop repo.',
+                'techno-axiological-penteract': 'Value map in codex repo.',
+                'unified-mind': 'Planetary cognition in cogniscium repo.',
+                'volsorial-pediments': 'Floating platforms in cyclex repo.',
+                'womb-body-bioforge': 'Biomechanical system in umbilicus repo.',
+                'xenological-drift': 'Alien semiotics in codex repo.',
+                'yarncrawler': 'Semantic train in yarncrawler repo.',
+                'zettelkasten-academizer': 'Note-taking system in zetetics repo.'
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const cy = cytoscape({
+                container: document.getElementById('cy'),
+                elements: [
+                    ...academizerData.nodes.map(node => ({ data: node })),
+                    ...academizerData.edges.map(edge => ({ data: edge }))
+                ],
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'background-color': '#0ff',
+                            'label': 'data(label)',
+                            'color': '#fff',
+                            'text-outline-color': '#000',
+                            'text-outline-width': 2,
+                            'shape': 'square',
+                            'width': 60,
+                            'height': 60
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#f0f',
+                            'target-arrow-color': '#f0f',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
+                            'label': 'data(summary)',
+                            'text-rotation': 'autorotate',
+                            'color': '#fff',
+                            'text-outline-color': '#000',
+                            'text-outline-width': 1
+                        }
+                    }
+                ],
+                layout: {
+                    name: 'cose',
+                    animate: true,
+                    nodeRepulsion: 1000000,
+                    idealEdgeLength: 200
+                }
+            });
+
+            cy.on('tap', 'node', function(evt) {
+                const node = evt.target;
+                showNode(node.id());
+            });
+
+            function showNode(id) {
+                document.querySelectorAll('.node-info').forEach(el => el.remove());
+                const nodeData = academizerData.nodes.find(n => n.id === id);
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'node-info';
+                infoDiv.id = id;
+                infoDiv.style.display = 'block';
+                infoDiv.innerHTML = `
+                    <h3>${nodeData.label}</h3>
+                    <p>${nodeData.desc}</p>
+                    <p><strong>Summary:</strong> ${academizerData.summaries[id] || 'No summary available.'}</p>
+                    <p><strong>Connections:</strong></p>
+                    <ul>
+                        ${academizerData.edges
+                            .filter(e => e.source === id || e.target === id)
+                            .map(e => `<li><a href="#" onclick="showNode('${e.source === id ? e.target : e.source}')">${academizerData.nodes.find(n => n.id === (e.source === id ? e.target : e.source)).label}</a>: ${e.summary}</li>`)
+                            .join('')}
+                    </ul>
+                `;
+                document.getElementById('info').appendChild(infoDiv);
+                infoDiv.scrollIntoView({ behavior: 'smooth' });
+                // Play MIDI-like sound
+                const context = new AudioContext();
+                const oscillator = context.createOscillator();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(440 + (Math.random() * 200), context.currentTime);
+                oscillator.connect(context.destination);
+                oscillator.start();
+                oscillator.stop(context.currentTime + 0.2);
+            }
+
+            // Filter by project or letter
+            document.getElementById('project-filter').addEventListener('input', function(e) {
+                const filter = e.target.value.toLowerCase();
+                cy.nodes().forEach(node => {
+                    const isVisible = node.data('label').toLowerCase().includes(filter) || node.data('letter').toLowerCase() === filter;
+                    node.style('display', isVisible ? 'element' : 'none');
+                });
+                cy.edges().forEach(edge => {
+                    const sourceVisible = cy.$id(edge.data('source')).style('display') === 'element';
+                    const targetVisible = cy.$id(edge.data('target')).style('display') === 'element';
+                    edge.style('display', sourceVisible && targetVisible ? 'element' : 'none');
+                });
+                cy.layout({ name: 'cose', animate: true }).run();
+            });
+        });
+    </script>
 </body>
 </html>
