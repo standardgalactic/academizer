@@ -2,8 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <base href="/">
     <title>Academizer A-Z Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.19.0/cytoscape.min.js"></script>
     <style>
@@ -13,15 +11,9 @@
         .node-info { display: none; }
         h2 { color: #0ff; }
         h3 { color: #f0f; }
-        a { color: #0ff; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        a { color: #0ff; }
         #filter { padding: 10px; background: #333; }
-        input { background: #444; color: #fff; border: 1px solid #666; padding: 5px; width: 200px; }
-        @media (max-width: 600px) {
-            #cy { height: 400px; }
-            #info { font-size: 14px; }
-            input { width: 100%; }
-        }
+        input { background: #444; color: #fff; border: 1px solid #666; padding: 5px; }
     </style>
 </head>
 <body>
@@ -37,7 +29,6 @@
         </div>
     </div>
     <script>
-        // Sample data for all 26 A-Z projects
         const academizerData = {
             nodes: [
                 { id: 'abraxas', label: 'A: ABRAXAS', type: 'project', letter: 'A', desc: 'Recursive semiotic engine for paradox resolution.' },
@@ -92,37 +83,8 @@
                 { source: 'volsorial-pediments', target: 'cyclex', summary: 'Key subcomponent.' },
                 { source: 'womb-body-bioforge', target: 'motile-womb', summary: 'Implements gestational cognition.' },
                 { source: 'xenological-drift', target: 'gaiacraft', summary: 'Encodes alien semiotics.' },
-                { source: 'yarncrawler', target: 'zettelkasten-academizer', summary: 'Navigates note-taking system.' },
-                { source: 'zettelkasten-academizer', target: 'haplopraxis', summary: 'Core for game progression.' }
-            ],
-            summaries: {
-                'abraxas': 'Recursive semiotic engine for paradox resolution, found in abraxas repo.',
-                'bone-matrix': 'Swarm-care rules in yarncrawler repo.',
-                'cyclex': 'Eco-terraforming in cyclex repo.',
-                'daughters-of-the-air': 'Speculative narrative in arcanum repo.',
-                'everlasting-yarnball': 'Planetary cognition in yarncrawler repo.',
-                'flux-sphere': 'Sustainable mobility in bubble-city repo.',
-                'gaiacraft': 'Evolution engine in codex repo.',
-                'haplopraxis': 'Educational game in Haplopraxis/IFM repo.',
-                'inforganic-codex': 'Hybrid cognition in cogniscium repo.',
-                'janitor-centric-school': 'Education philosophy in human repo.',
-                'keyhole-device': 'Symbol channel in substrate repo.',
-                'lavender-planet': 'Aesthetic framework in mirror repo.',
-                'motile-womb': 'Gestational cognition in umbilicus repo.',
-                'new-twitter-os': 'Input system in spherepop repo.',
-                'oblicosm-doctrine': 'Anti-productivity in negentropy repo.',
-                'peritellurian-technium': 'Planetary infrastructure in quadrivium repo.',
-                'quantifier-subversion': 'Logical structures in teleosemantics repo.',
-                'rsvp-theory': 'Cosmological model in quantum-soup repo.',
-                'semantic-ladle': 'Bundle metaphysics in spherepop repo.',
-                'techno-axiological-penteract': 'Value map in codex repo.',
-                'unified-mind': 'Planetary cognition in cogniscium repo.',
-                'volsorial-pediments': 'Floating platforms in cyclex repo.',
-                'womb-body-bioforge': 'Biomechanical system in umbilicus repo.',
-                'xenological-drift': 'Alien semiotics in codex repo.',
-                'yarncrawler': 'Semantic train in yarncrawler repo.',
-                'zettelkasten-academizer': 'Note-taking system in zetetics repo.'
-            }
+                { source: 'yarncrawler', target: 'zettelkasten-academizer', summary: 'Navigates note-taking system.' }
+            ]
         };
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -172,57 +134,12 @@
 
             cy.on('tap', 'node', function(evt) {
                 const node = evt.target;
-                showNode(node.id());
-            });
-
-            function showNode(id) {
-                document.querySelectorAll('.node-info').forEach(el => el.remove());
-                const nodeData = academizerData.nodes.find(n => n.id === id);
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'node-info';
-                infoDiv.id = id;
-                infoDiv.style.display = 'block';
-                infoDiv.innerHTML = `
-                    <h3>${nodeData.label}</h3>
-                    <p>${nodeData.desc}</p>
-                    <p><strong>Summary:</strong> ${academizerData.summaries[id] || 'No summary available.'}</p>
-                    <p><strong>Connections:</strong></p>
-                    <ul>
-                        ${academizerData.edges
-                            .filter(e => e.source === id || e.target === id)
-                            .map(e => `<li><a href="#" onclick="showNode('${e.source === id ? e.target : e.source}')">${academizerData.nodes.find(n => n.id === (e.source === id ? e.target : e.source)).label}</a>: ${e.summary}</li>`)
-                            .join('')}
-                    </ul>
-                `;
-                document.getElementById('info').appendChild(infoDiv);
-                infoDiv.scrollIntoView({ behavior: 'smooth' });
-                // Play MIDI-like sound with fallback
-                try {
-                    const context = new AudioContext();
-                    const oscillator = context.createOscillator();
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(440 + (Math.random() * 200), context.currentTime);
-                    oscillator.connect(context.destination);
-                    oscillator.start();
-                    oscillator.stop(context.currentTime + 0.2);
-                } catch (e) {
-                    console.warn('AudioContext failed:', e);
-                }
-            }
-
-            // Filter by project or letter
-            document.getElementById('project-filter').addEventListener('input', function(e) {
-                const filter = e.target.value.toLowerCase();
-                cy.nodes().forEach(node => {
-                    const isVisible = node.data('label').toLowerCase().includes(filter) || node.data('letter').toLowerCase() === filter;
-                    node.style('display', isVisible ? 'element' : 'none');
-                });
-                cy.edges().forEach(edge => {
-                    const sourceVisible = cy.$id(edge.data('source')).style('display') === 'element';
-                    const targetVisible = cy.$id(edge.data('target')).style('display') === 'element';
-                    edge.style('display', sourceVisible && targetVisible ? 'element' : 'none');
-                });
-                cy.layout({ name: 'cose', animate: true }).run();
+                const nodeData = academizerData.nodes.find(n => n.id === node.id());
+                const connections = academizerData.edges
+                    .filter(e => e.source === node.id() || e.target === node.id())
+                    .map(e => `<li>${e.source === node.id() ? e.target : e.source}: ${e.summary}</li>`)
+                    .join('');
+                alert(`Node: ${nodeData.label}\nDescription: ${nodeData.desc}\nConnections:\n${connections}`);
             });
         });
     </script>
